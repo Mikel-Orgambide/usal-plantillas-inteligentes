@@ -1,0 +1,51 @@
+{
+  "format_version": "1.0",
+  "device_id": "SIM-001",
+  "capture_id": "SIM-CAPTURE-001",
+  "configuration_id": "SIM-CONFIG-001",
+  "sequence": 0,
+  "samples": [
+    {
+      "channel_id": "L_HEEL",
+      "time_us": 0,
+      "raw_value": 100,
+      "unit": "adc_count",
+      "status": "ok"
+    },
+    {
+      "channel_id": "L_MEDIAL",
+      "time_us": 400,
+      "raw_value": 200,
+      "unit": "adc_count",
+      "status": "ok"
+    },
+    {
+      "channel_id": "L_LATERAL",
+      "time_us": 800,
+      "raw_value": 300,
+      "unit": "adc_count",
+      "status": "ok"
+    },
+    {
+      "channel_id": "R_HEEL",
+      "time_us": 1200,
+      "raw_value": 400,
+      "unit": "adc_count",
+      "status": "ok"
+    },
+    {
+      "channel_id": "R_MEDIAL",
+      "time_us": 1600,
+      "raw_value": 500,
+      "unit": "adc_count",
+      "status": "ok"
+    },
+    {
+      "channel_id": "R_LATERAL",
+      "time_us": 2000,
+      "raw_value": null,
+      "unit": "adc_count",
+      "status": "read_error"
+    }
+  ]
+}
