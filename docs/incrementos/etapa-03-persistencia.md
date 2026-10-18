@@ -1,6 +1,7 @@
 # Etapa 3 - Persistencia básica
 
-- Estado: implementada; **verificación en dispositivo pendiente** (P01 en el Pixel)
+- Fecha de cierre: 2026-10-18
+- Tag: v0.3-etapa3
 - Paquete: `packages/storage` (`@plantillas/storage` 0.1.0); adaptador `apps/mobile/src/infrastructure/sqlite`
 
 ## Qué se implementó
@@ -33,6 +34,16 @@
 - Segunda sesión rechazada por `capture_id` repetido: el simulador generaba el mismo identificador para la misma semilla y la base, correctamente, no lo reutiliza en otra sesión. Corregido: la fuente simulada genera un prefijo de captura único por ejecución (como debe hacerlo el dispositivo); el contenido sigue siendo determinista.
 - Errores de inicio/detención no capturados y fecha del historial mal formateada. Corregido; una sesión sin captura o con lotes fallidos se cierra como `incomplete`, y al arrancar la app las sesiones abiertas se marcan `incomplete` (S02).
 
-## Pendiente para cerrar la etapa
+## Verificación en dispositivo (P01, 2026-10-18)
 
-Repetir en el Pixel: dos sesiones simuladas consecutivas sin errores, cerrar la app por completo, reabrirla y comprobar que el historial muestra ambas con sus cantidades.
+Google Pixel 10 Pro XL, development build eb1a21a0 (expo-sqlite 57.0.4), código JavaScript del commit 307f9e9. Dos sesiones simuladas consecutivas a 5 registros/s: `normal` (50 recibidos, 50 aceptados, 50 confirmados, 4 eventos, 10,5 s) y `disconnect` (48 aceptados y confirmados, 1 hueco de secuencia, 6 eventos, 10,1 s), sin errores. La aplicación se cerró por completo y, al reabrirla, el historial leído de SQLite mostró ambas sesiones con las mismas cantidades. Condición de cierre cumplida.
+
+## Limitaciones
+
+- La duración mostrada proviene del reloj monotónico del teléfono; no se reconstruye desde `time_us`.
+- Sin respaldo ni restauración (P05, etapa 10). Sin sincronización remota (etapa 11).
+- Las métricas no se calculan todavía; los resultados tendrán su propia migración.
+
+## Próxima tarea
+
+Etapa 4: máquina de estados de sesión (prepared → recording → interrupted → finalizing → completed / incomplete), coordinación de capturas y reinicios, cierre idempotente (S01) y recuperación explicable de sesiones incompletas.

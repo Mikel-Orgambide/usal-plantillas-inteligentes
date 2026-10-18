@@ -7,8 +7,8 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 0 - Preparación del entorno | cerrada 2026-10-18 | v0.0-etapa0 |
 | 1 - Contrato y validación | cerrada 2026-10-18 | v0.1-etapa1 |
 | 2 - Simulador determinista | cerrada 2026-10-18 | v0.2-etapa2 |
-| 3 - Persistencia básica | en curso | - |
-| 4 - Coordinación de sesiones | pendiente | - |
+| 3 - Persistencia básica | cerrada 2026-10-18 | v0.3-etapa3 |
+| 4 - Coordinación de sesiones | en curso | - |
 | 5 - Pantallas mínimas | pendiente | - |
 | 6 - Métricas descriptivas | pendiente | - |
 | 7 - Historial y comparación | pendiente | - |
