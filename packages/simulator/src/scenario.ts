@@ -15,7 +15,7 @@ export type Fault =
   | { readonly kind: "duplicate"; readonly at_sequence: number }
   /** El registro `at_sequence` se emite dos veces con contenido distinto (conflicto). */
   | { readonly kind: "conflict"; readonly at_sequence: number }
-  /** Después de `after_sequence` la captura se reinicia: nuevo capture_id, tiempo y secuencia desde 0. */
+  /** Después de `after_sequence` la captura se reinicia una vez: nuevo capture_id, tiempo y secuencia desde 0. */
   | { readonly kind: "capture_restart"; readonly after_sequence: number }
   /** El registro `at_sequence` viola el contrato: ok con null (contradicción). */
   | { readonly kind: "contradiction"; readonly at_sequence: number; readonly channel: string }

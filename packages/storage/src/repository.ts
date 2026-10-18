@@ -5,7 +5,6 @@ import {
   type DataSourceKind,
   type NormalizedRecord,
   type Sample,
-  type SourceEvent,
 } from "@plantillas/contract";
 import { withSavepoint, type SqlDriver, type SqlExecutor } from "./driver";
 
@@ -67,6 +66,9 @@ export interface EventRow {
   readonly received_at: string;
   readonly detail: string | null;
 }
+
+/** Evento persistible: los de la fuente (`SourceEvent`) o los del coordinador de sesión. */
+export type EventLike = { readonly type: string; readonly at_us?: number | null } & Record<string, unknown>;
 
 export interface SessionSummary extends SessionRow {
   readonly capture_count: number;
@@ -324,12 +326,12 @@ export class SessionRepository {
 
   // ---- eventos y diagnóstico ---------------------------------------------
 
-  async addEvent(sessionId: string, captureId: number | null, event: SourceEvent, receivedAt: string): Promise<void> {
+  async addEvent(sessionId: string, captureId: number | null, event: EventLike, receivedAt: string): Promise<void> {
     const { type, at_us, ...rest } = event;
     const detail = Object.keys(rest).length > 0 ? JSON.stringify(rest) : null;
     await this.db.run(
       "INSERT INTO event (session_id, capture_id, type, at_us, received_at, detail) VALUES (?, ?, ?, ?, ?, ?)",
-      [sessionId, captureId, type, at_us, receivedAt, detail],
+      [sessionId, captureId, type, at_us ?? null, receivedAt, detail],
     );
   }
 

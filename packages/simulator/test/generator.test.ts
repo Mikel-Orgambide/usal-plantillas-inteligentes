@@ -118,6 +118,10 @@ describe("generador determinista", () => {
     expect(second[0]?.sequence).toBe(0);
     expect(second[0]?.samples[0]?.time_us).toBe(0);
     expect(ps.filter((p) => p.capture_id === "SIM-CAPTURE-0001-001").map((p) => p.sequence)).toEqual([0, 1, 2, 3]);
+    // El reinicio ocurre una sola vez: la segunda captura continúa más allá de la secuencia 3.
+    const longer = payloads(take(new SimulatedGenerator({ scenario: SCENARIOS.capture_restart }), 30)) as { capture_id: string; sequence: number }[];
+    expect(new Set(longer.map((p) => p.capture_id)).size).toBe(2);
+    expect(Math.max(...longer.filter((p) => p.capture_id === "SIM-CAPTURE-0001-002").map((p) => p.sequence))).toBeGreaterThan(3);
   });
 
   it("modos contradiction y missing_channel producen payloads que el validador rechaza", () => {

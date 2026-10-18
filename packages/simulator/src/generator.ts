@@ -59,6 +59,8 @@ export class SimulatedGenerator implements Iterator<GeneratorOutput> {
   private generated = 0;
   private pending: GeneratorOutput[] = [];
   private disconnected = false;
+  /** Fallas de una sola vez ya aplicadas (reinicio de captura). */
+  private restartsApplied = 0;
 
   constructor(options: Partial<GeneratorOptions> = {}) {
     this.options = { ...DEFAULT_GENERATOR_OPTIONS, ...options };
@@ -133,8 +135,11 @@ export class SimulatedGenerator implements Iterator<GeneratorOutput> {
     this.capture.sequence = seq + step;
     this.capture.time_us = t0 + step * this.options.record_period_us;
 
-    const restart = this.faultsAt("capture_restart").find((f) => f.after_sequence === seq);
-    if (restart) {
+    // El reinicio se aplica una sola vez por falla: la captura nueva vuelve a secuencia 0
+    // y no debe disparar la misma falla otra vez.
+    const restart = this.faultsAt("capture_restart")[this.restartsApplied];
+    if (restart && restart.after_sequence === seq) {
+      this.restartsApplied += 1;
       const previous = this.capture.capture_id;
       this.captureIndex += 1;
       this.capture = { capture_id: this.captureId(this.captureIndex), sequence: 0, time_us: 0 };
