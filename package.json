@@ -1,0 +1,19 @@
+{
+  "name": "proyecto-final-plantillas-inteligentes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Plataforma wearable basada en plantillas inteligentes - Proyecto Final de Ingeniería en Informática (USAL)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "mobile": "npm run start --workspace apps/mobile",
+    "android": "npm run android --workspace apps/mobile"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

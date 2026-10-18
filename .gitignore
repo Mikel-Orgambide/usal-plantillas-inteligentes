@@ -1,0 +1,36 @@
+# Dependencias
+node_modules/
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+.metro-health-check*
+apps/mobile/android/
+apps/mobile/ios/
+
+# Firmware (PlatformIO)
+firmware/.pio/
+firmware/.vscode/
+
+# Secretos y entornos locales
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+google-services.json
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.log
+npm-debug.*

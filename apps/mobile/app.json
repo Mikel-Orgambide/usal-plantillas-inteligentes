@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Plantillas Inteligentes",
+    "slug": "plantillas-inteligentes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mikelorgambide.plantillasinteligentes"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mikelorgambide.plantillasinteligentes"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "mikel-orgambide",
+    "scheme": "plantillas"
+  }
+}
