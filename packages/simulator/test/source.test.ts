@@ -27,3 +27,35 @@ describe("SimulatedDataSource", () => {
     vi.useRealTimers();
   });
 });
+
+describe("identificadores de captura", () => {
+  it("dos ejecuciones de la fuente no repiten capture_id, aunque la semilla sea la misma", async () => {
+    vi.useFakeTimers();
+    const ids: string[] = [];
+    for (let i = 0; i < 2; i++) {
+      const source = new SimulatedDataSource({ seed: 1, emit_interval_ms: 10 });
+      source.subscribe({ onPayload: (p) => ids.push((p as { capture_id: string }).capture_id), onEvent: () => undefined });
+      await source.connect();
+      await source.startCapture();
+      await vi.advanceTimersByTimeAsync(5);
+      await source.disconnect();
+    }
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(ids[0]).toMatch(/^SIM-CAPTURE-[0-9A-Z]+-0001-001$/);
+    vi.useRealTimers();
+  });
+
+  it("un prefijo explícito se respeta (reproducibilidad en pruebas)", async () => {
+    vi.useFakeTimers();
+    const ids: string[] = [];
+    const source = new SimulatedDataSource({ seed: 1, emit_interval_ms: 10, capture_prefix: "FIJO" });
+    source.subscribe({ onPayload: (p) => ids.push((p as { capture_id: string }).capture_id), onEvent: () => undefined });
+    await source.connect();
+    await source.startCapture();
+    await vi.advanceTimersByTimeAsync(5);
+    await source.disconnect();
+    expect(ids[0]).toBe("FIJO-0001-001");
+    vi.useRealTimers();
+  });
+});

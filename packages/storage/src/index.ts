@@ -2,7 +2,7 @@ export { withSavepoint } from "./driver";
 export type { RunResult, SqlDriver, SqlExecutor, SqlRow, SqlValue } from "./driver";
 export { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 export type { Migration } from "./schema";
-export { enableForeignKeys, getSchemaVersion, migrate } from "./migrate";
+export { enableForeignKeys, getSchemaVersion, migrate, prepareConnection } from "./migrate";
 export type { MigrationReport } from "./migrate";
 export { DIAGNOSTIC_LIMIT, SessionRepository } from "./repository";
 export type {

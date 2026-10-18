@@ -14,6 +14,16 @@ export async function enableForeignKeys(db: SqlDriver): Promise<void> {
   if (row?.foreign_keys !== 1) throw new Error("no se pudieron habilitar las claves foráneas");
 }
 
+/**
+ * Prepara la conexión: claves foráneas, espera ante bloqueos y modo WAL
+ * (lecturas concurrentes con una escritura; en memoria no aplica).
+ */
+export async function prepareConnection(db: SqlDriver): Promise<void> {
+  await enableForeignKeys(db);
+  await db.exec("PRAGMA busy_timeout = 5000");
+  await db.exec("PRAGMA journal_mode = WAL");
+}
+
 export async function getSchemaVersion(db: SqlDriver): Promise<number> {
   const row = await db.get<{ user_version: number }>("PRAGMA user_version");
   return row?.user_version ?? 0;
@@ -21,7 +31,7 @@ export async function getSchemaVersion(db: SqlDriver): Promise<number> {
 
 /** Aplica, en orden y cada una en su transacción, las migraciones pendientes. */
 export async function migrate(db: SqlDriver, migrations: readonly Migration[] = MIGRATIONS): Promise<MigrationReport> {
-  await enableForeignKeys(db);
+  await prepareConnection(db);
   const from = await getSchemaVersion(db);
   const applied: number[] = [];
   for (const m of migrations) {

@@ -14,6 +14,13 @@ const LEFT: ChannelCode[] = ["L_HEEL", "L_MEDIAL", "L_LATERAL"];
 const RIGHT: ChannelCode[] = ["R_HEEL", "R_MEDIAL", "R_LATERAL"];
 const SCENARIO_NAMES = Object.keys(SCENARIOS) as ScenarioName[];
 
+/** Fecha/hora local en 24 h, sin depender de los datos de localización del teléfono. */
+function formatLocal(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 function Channel({ code, v }: { code: ChannelCode; v: ChannelValue }) {
   const label = CHANNEL_POSITIONS[code].zone.replace("forefoot_", "");
   const text = v.status === "read_error" ? "error" : v.value === null ? "—" : String(v.value);
@@ -81,7 +88,7 @@ export function SimulatorScreen() {
           <View key={s.id} style={styles.historyRow}>
             <Text style={styles.historyMain}>{s.activity} · {s.state}</Text>
             <Text style={styles.historySub}>
-              {new Date(s.started_at).toLocaleString()} · {s.record_count} registros · {s.capture_count} captura(s) · {s.event_count} eventos
+              {formatLocal(s.started_at)} · {s.record_count} registros · {s.capture_count} captura(s) · {s.event_count} eventos
               {s.duration_ms != null ? ` · ${(s.duration_ms / 1000).toFixed(1)} s` : ""}
             </Text>
           </View>

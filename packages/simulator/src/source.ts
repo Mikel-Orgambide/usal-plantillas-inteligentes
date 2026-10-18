@@ -12,6 +12,19 @@ export interface SimulatedSourceOptions extends Partial<GeneratorOptions> {
   readonly emit_interval_ms?: number;
 }
 
+/** Contador de ejecuciones del proceso, para que dos fuentes creadas en el mismo milisegundo no coincidan. */
+let runCounter = 0;
+
+/**
+ * Prefijo de captura único por ejecución: igual que un dispositivo real, la
+ * fuente no debe reutilizar un capture_id entre reinicios. El contenido de los
+ * registros sigue siendo determinista; solo cambia el identificador.
+ */
+export function uniqueCapturePrefix(): string {
+  runCounter += 1;
+  return `SIM-CAPTURE-${Date.now().toString(36).toUpperCase()}${runCounter.toString(36).toUpperCase()}`;
+}
+
 export class SimulatedDataSource implements DataSource {
   readonly configuration: AcquisitionConfiguration;
   private readonly options: SimulatedSourceOptions;
@@ -50,7 +63,7 @@ export class SimulatedDataSource implements DataSource {
   async startCapture(): Promise<void> {
     if (!this.connected) throw new Error("la fuente no está conectada");
     if (this.timer !== undefined) return;
-    this.generator = new SimulatedGenerator(this.options);
+    this.generator = new SimulatedGenerator({ capture_prefix: uniqueCapturePrefix(), ...this.options });
     const interval = this.options.emit_interval_ms ?? this.generator.options.record_period_us / 1000;
     const tick = () => {
       if (!this.generator) return;

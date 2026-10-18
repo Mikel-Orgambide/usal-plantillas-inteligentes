@@ -77,15 +77,19 @@ export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
 
   useEffect(() => {
     getDatabase()
-      .then(async ({ migration }) => {
-        setDbInfo(`SQLite v${migration.to}${migration.applied.length ? ` (migrado desde ${migration.from})` : ""}`);
+      .then(async ({ migration, recoveredSessions }) => {
+        const recovered = recoveredSessions.length ? ` · ${recoveredSessions.length} sesión(es) abierta(s) marcada(s) incompleta(s)` : "";
+        setDbInfo(`SQLite v${migration.to}${migration.applied.length ? ` (migrado desde ${migration.from})` : ""}${recovered}`);
         await refreshHistory();
       })
       .catch((e: unknown) => setDbInfo(`error al abrir la base: ${e instanceof Error ? e.message : String(e)}`));
   }, [refreshHistory]);
 
+  const fail = useCallback((e: unknown) => setStats((s) => ({ ...s, lastError: e instanceof Error ? e.message : String(e) })), []);
+
   const start = useCallback(async () => {
     if (activeRef.current) return;
+    try {
     const { repository } = await getDatabase();
     const sessionId = Crypto.randomUUID();
     const startedAt = nowIso();
@@ -117,7 +121,7 @@ export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
 
     // Las operaciones sobre la base se encadenan para conservar el orden de llegada.
     let chain: Promise<void> = Promise.resolve();
-    const serial = (fn: () => Promise<void>) => { chain = chain.then(fn).catch((e: unknown) => setStats((s) => ({ ...s, lastError: e instanceof Error ? e.message : String(e) }))); };
+    const serial = (fn: () => Promise<void>) => { chain = chain.then(fn).catch(fail); };
 
     source.subscribe({
       onPayload: (payload) => {
@@ -169,22 +173,34 @@ export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
     await source.startCapture();
     setRunning(true);
     await refreshHistory();
-  }, [scenario, seed, refreshHistory]);
+    } catch (e) {
+      fail(e);
+      activeRef.current = null;
+    }
+  }, [scenario, seed, refreshHistory, fail]);
 
   const stop = useCallback(async () => {
     const active = activeRef.current;
     if (!active) return;
-    await active.source.disconnect();
-    const { repository } = await getDatabase();
-    await repository.setSessionState(active.sessionId, "finalizing");
-    await active.queue?.close();
-    const durationMs = Math.round(monotonicMs() - active.startedMono);
-    await repository.closeSession(active.sessionId, nowIso(), durationMs, "completed");
-    setStats((s) => ({ ...s, committed: active.queue?.stats.committed ?? s.committed, pending: 0 }));
     activeRef.current = null;
-    setRunning(false);
-    await refreshHistory();
-  }, [refreshHistory]);
+    try {
+      await active.source.disconnect();
+      const { repository } = await getDatabase();
+      await repository.setSessionState(active.sessionId, "finalizing");
+      await active.queue?.close();
+      const durationMs = Math.round(monotonicMs() - active.startedMono);
+      // Sin captura asociada o con lotes fallidos, la sesión no se declara completa.
+      const stats = active.queue?.stats;
+      const complete = active.captureRowId !== undefined && (stats?.failedBatches ?? 0) === 0;
+      await repository.closeSession(active.sessionId, nowIso(), durationMs, complete ? "completed" : "incomplete");
+      setStats((s) => ({ ...s, committed: stats?.committed ?? s.committed, pending: 0 }));
+    } catch (e) {
+      fail(e);
+    } finally {
+      setRunning(false);
+      await refreshHistory().catch(fail);
+    }
+  }, [refreshHistory, fail]);
 
   useEffect(() => () => { void activeRef.current?.source.disconnect(); }, []);
 

@@ -6,5 +6,5 @@ export { SCENARIOS } from "./scenario";
 export type { Fault, Scenario, ScenarioName } from "./scenario";
 export { DEFAULT_GENERATOR_OPTIONS, SimulatedGenerator, take } from "./generator";
 export type { GeneratorOptions, GeneratorOutput } from "./generator";
-export { SimulatedDataSource } from "./source";
+export { SimulatedDataSource, uniqueCapturePrefix } from "./source";
 export type { SimulatedSourceOptions } from "./source";
