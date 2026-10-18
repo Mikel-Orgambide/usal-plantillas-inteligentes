@@ -190,6 +190,17 @@ export class SessionRepository {
       ORDER BY s.started_at DESC`);
   }
 
+  /** Última recepción registrada en la sesión (registro o evento), o `undefined` si no hay ninguna. */
+  async lastActivityAt(sessionId: string): Promise<string | undefined> {
+    const row = await this.db.get<{ last: string | null }>(`
+      SELECT MAX(t) AS last FROM (
+        SELECT MAX(r.received_at) AS t FROM record r JOIN capture c ON c.id = r.capture_id WHERE c.session_id = ?
+        UNION ALL
+        SELECT MAX(e.received_at) AS t FROM event e WHERE e.session_id = ?
+      )`, [sessionId, sessionId]);
+    return row?.last ?? undefined;
+  }
+
   /** Sesiones que quedaron abiertas (p. ej. tras cerrar la aplicación). */
   async listOpenSessions(): Promise<SessionRow[]> {
     return this.db.all<SessionRow>("SELECT * FROM session WHERE state IN ('prepared','recording','interrupted','finalizing') ORDER BY started_at");

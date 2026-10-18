@@ -402,8 +402,16 @@ export class SessionCoordinator {
 export async function recoverOpenSessions(repo: SessionRepository, clock: Clock = systemClock): Promise<string[]> {
   const open = await repo.listOpenSessions();
   for (const s of open) {
-    await repo.addEvent(s.id, null, { type: "recovered_incomplete", previous_state: s.state, reason: "la aplicación se reinició con la sesión abierta" }, clock.nowIso());
-    await repo.closeSession(s.id, clock.nowIso(), s.duration_ms ?? 0, "incomplete");
+    // Duración estimada: desde el inicio hasta la última recepción conocida. No es la duración
+    // medida por el reloj monotónico, y queda identificada como estimación en el evento.
+    const last = await repo.lastActivityAt(s.id);
+    const estimated = last ? Math.max(0, Date.parse(last) - Date.parse(s.started_at)) : 0;
+    await repo.addEvent(s.id, null, {
+      type: "recovered_incomplete", previous_state: s.state,
+      reason: "la aplicación se reinició con la sesión abierta",
+      duration_estimated_ms: estimated, duration_basis: last ? "última recepción" : "sin recepciones",
+    }, clock.nowIso());
+    await repo.closeSession(s.id, last ?? clock.nowIso(), estimated, "incomplete");
   }
   return open.map((s) => s.id);
 }

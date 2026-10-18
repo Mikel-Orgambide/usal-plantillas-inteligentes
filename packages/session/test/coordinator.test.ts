@@ -179,7 +179,10 @@ describe("SessionCoordinator", () => {
     const session = await repository.getSession("S1");
     expect(session?.state).toBe("incomplete");
     const ev = (await repository.getEvents("S1")).find((e) => e.type === "recovered_incomplete");
-    expect(JSON.parse(ev!.detail!)).toMatchObject({ previous_state: "recording" });
+    expect(JSON.parse(ev!.detail!)).toMatchObject({ previous_state: "recording", duration_basis: "última recepción" });
+    // La duración estimada va del inicio a la última recepción, no cero.
+    expect(session?.duration_ms).toBeGreaterThanOrEqual(0);
+    expect(session?.ended_at).not.toBeNull();
     expect(await recoverOpenSessions(repository, clock)).toEqual([]);
   });
 });

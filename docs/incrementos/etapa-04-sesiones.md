@@ -1,8 +1,8 @@
 # Etapa 4 - Coordinación de sesiones
 
-- Fecha de implementación: 2026-10-18
+- Fecha de cierre: 2026-10-18
+- Tag: v0.4-etapa4
 - Paquete: `packages/session` (`@plantillas/session` 0.1.0)
-- Estado: implementada y probada en Node; verificación en dispositivo pendiente (sin build nuevo)
 
 ## Qué se implementó
 
@@ -39,6 +39,14 @@ Corrección derivada: el modo `capture_restart` del simulador reiniciaba en cada
 - La ventana de datos tardíos se mide con el reloj del teléfono; no hay reconstrucción de huecos por recepción tardía.
 - Sin métricas (etapa 6) ni comparación (etapa 7).
 
-## Verificación en dispositivo
+## Verificación en dispositivo (2026-10-18)
 
-Pendiente: sesión `normal`, `disconnect` (estado "interrumpida" visible) y `capture_restart` (dos capturas) en el Pixel; cierre de la app durante una sesión y recuperación como incompleta al reabrir.
+Google Pixel 10 Pro XL, build eb1a21a0, código del commit d80afb0, 5 registros/s:
+
+- `disconnect`: tras la reconexión el estado volvió a "grabando" con 1 hueco registrado; cierre "completa" con 118 registros (118 confirmados), 8 eventos, 25,3 s.
+- `capture_restart`: segunda captura asociada en la misma sesión ("…-002 (2)", evento `capture_restarted`); cierre "completa" con 78 registros, 2 capturas, 6 eventos, 16,8 s.
+- Cierre brusco de la aplicación durante una sesión `normal` (18 registros confirmados a los 3,7 s): al reabrir, aviso "1 sesión recuperada como incompleta" y la sesión figura "incompleta" con 24 registros y 4 eventos.
+
+Hallazgo: la sesión recuperada mostraba 0,0 s porque la duración solo se calculaba al cerrar. Corregido: la recuperación estima la duración hasta la última recepción conocida y lo identifica como estimación en el evento `recovered_incomplete` (`duration_estimated_ms`, `duration_basis`).
+
+Condición de cierre cumplida: recorrido normal completo y registro interrumpido recuperado de manera explicable.
