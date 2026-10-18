@@ -1,0 +1,26 @@
+{
+  "name": "@plantillas/storage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Persistencia local: esquema SQLite, migraciones versionadas, repositorio de sesiones y cola de escritura",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@plantillas/contract": "1.0.0"
+  },
+  "devDependencies": {
+    "@plantillas/simulator": "0.1.0",
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}
