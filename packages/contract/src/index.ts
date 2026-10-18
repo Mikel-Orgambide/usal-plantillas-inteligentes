@@ -29,3 +29,5 @@ export { normalizeRecord } from "./normalize";
 
 export { classifySequence } from "./sequence";
 export type { SequenceRelation } from "./sequence";
+
+export type { DataSource, SourceEvent, SourceListener } from "./datasource";

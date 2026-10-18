@@ -1,0 +1,1036 @@
+[
+  {
+    "kind": "event",
+    "event": {
+      "type": "capture_started",
+      "at_us": 0,
+      "capture_id": "SIM-CAPTURE-0001-001"
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 0,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 0,
+          "raw_value": 1342,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 400,
+          "raw_value": 113,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 800,
+          "raw_value": 312,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 1200,
+          "raw_value": 124,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 1600,
+          "raw_value": 299,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 2000,
+          "raw_value": 244,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 1,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 20000,
+          "raw_value": 1562,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 20400,
+          "raw_value": 191,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 20800,
+          "raw_value": 277,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 21200,
+          "raw_value": 211,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 21600,
+          "raw_value": 215,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 22000,
+          "raw_value": 170,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 2,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 40000,
+          "raw_value": 1895,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 40400,
+          "raw_value": 205,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 40800,
+          "raw_value": 348,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 41200,
+          "raw_value": 148,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 41600,
+          "raw_value": 205,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 42000,
+          "raw_value": 173,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 3,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 60000,
+          "raw_value": 2205,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 60400,
+          "raw_value": 236,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 60800,
+          "raw_value": 422,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 61200,
+          "raw_value": 252,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 61600,
+          "raw_value": 163,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 62000,
+          "raw_value": 189,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 4,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 80000,
+          "raw_value": 2589,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 80400,
+          "raw_value": 280,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 80800,
+          "raw_value": 484,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 81200,
+          "raw_value": 199,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 81600,
+          "raw_value": 292,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 82000,
+          "raw_value": 170,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 5,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 100000,
+          "raw_value": 2751,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 100400,
+          "raw_value": 221,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 100800,
+          "raw_value": 636,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 101200,
+          "raw_value": 171,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 101600,
+          "raw_value": 221,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 102000,
+          "raw_value": 191,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 6,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 120000,
+          "raw_value": 3001,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 120400,
+          "raw_value": 328,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 120800,
+          "raw_value": 837,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 121200,
+          "raw_value": 148,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 121600,
+          "raw_value": 208,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 122000,
+          "raw_value": 263,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 7,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 140000,
+          "raw_value": 3062,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 140400,
+          "raw_value": 333,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 140800,
+          "raw_value": 1063,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 141200,
+          "raw_value": 188,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 141600,
+          "raw_value": 133,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 142000,
+          "raw_value": 208,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 8,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 160000,
+          "raw_value": 3054,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 160400,
+          "raw_value": 515,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 160800,
+          "raw_value": 1168,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 161200,
+          "raw_value": 220,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 161600,
+          "raw_value": 249,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 162000,
+          "raw_value": 282,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 9,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 180000,
+          "raw_value": 2952,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 180400,
+          "raw_value": 665,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 180800,
+          "raw_value": 1454,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 181200,
+          "raw_value": 186,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 181600,
+          "raw_value": 134,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 182000,
+          "raw_value": 175,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 10,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 200000,
+          "raw_value": 2760,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 200400,
+          "raw_value": 753,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 200800,
+          "raw_value": 1853,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 201200,
+          "raw_value": 152,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 201600,
+          "raw_value": 270,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 202000,
+          "raw_value": 231,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 11,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 220000,
+          "raw_value": 2506,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 220400,
+          "raw_value": 906,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 220800,
+          "raw_value": 2096,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 221200,
+          "raw_value": 337,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 221600,
+          "raw_value": 196,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 222000,
+          "raw_value": 216,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 12,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 240000,
+          "raw_value": 2215,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 240400,
+          "raw_value": 1121,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 240800,
+          "raw_value": 2401,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 241200,
+          "raw_value": 211,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 241600,
+          "raw_value": 161,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 242000,
+          "raw_value": 153,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 13,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 260000,
+          "raw_value": 1919,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 260400,
+          "raw_value": 1439,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 260800,
+          "raw_value": 2655,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 261200,
+          "raw_value": 235,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 261600,
+          "raw_value": 198,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 262000,
+          "raw_value": 141,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 14,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 280000,
+          "raw_value": 1593,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 280400,
+          "raw_value": 1652,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 280800,
+          "raw_value": 2881,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 281200,
+          "raw_value": 227,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 281600,
+          "raw_value": 211,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 282000,
+          "raw_value": 216,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 15,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 300000,
+          "raw_value": 1308,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 300400,
+          "raw_value": 2018,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 300800,
+          "raw_value": 3015,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 301200,
+          "raw_value": 262,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 301600,
+          "raw_value": 161,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 302000,
+          "raw_value": 154,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 16,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 320000,
+          "raw_value": 992,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 320400,
+          "raw_value": 2287,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 320800,
+          "raw_value": 3043,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 321200,
+          "raw_value": 198,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 321600,
+          "raw_value": 226,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 322000,
+          "raw_value": 122,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 17,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 340000,
+          "raw_value": 835,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 340400,
+          "raw_value": 2510,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 340800,
+          "raw_value": 3033,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 341200,
+          "raw_value": 244,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 341600,
+          "raw_value": 219,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 342000,
+          "raw_value": 232,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "payload",
+    "payload": {
+      "format_version": "1.0",
+      "device_id": "SIM-001",
+      "capture_id": "SIM-CAPTURE-0001-001",
+      "configuration_id": "SIM-CONFIG-001",
+      "sequence": 18,
+      "samples": [
+        {
+          "channel_id": "L_HEEL",
+          "time_us": 360000,
+          "raw_value": 582,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_MEDIAL",
+          "time_us": 360400,
+          "raw_value": 2787,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "L_LATERAL",
+          "time_us": 360800,
+          "raw_value": 3009,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_HEEL",
+          "time_us": 361200,
+          "raw_value": 223,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_MEDIAL",
+          "time_us": 361600,
+          "raw_value": 230,
+          "unit": "adc_count",
+          "status": "ok"
+        },
+        {
+          "channel_id": "R_LATERAL",
+          "time_us": 362000,
+          "raw_value": 135,
+          "unit": "adc_count",
+          "status": "ok"
+        }
+      ]
+    }
+  }
+]
