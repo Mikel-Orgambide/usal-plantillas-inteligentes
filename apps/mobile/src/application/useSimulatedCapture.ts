@@ -28,15 +28,20 @@ export interface CaptureStats {
   captureId: string | undefined;
   lastEvent: string | undefined;
   lastError: string | undefined;
+  /** Última lectura fallida aceptada (registro válido con una muestra read_error). */
+  lastReadError: string | undefined;
 }
 
 const emptyStats = (): CaptureStats => ({
   received: 0, accepted: 0, rejected: 0, duplicates: 0, gaps: 0, outOfOrder: 0,
-  lastSequence: undefined, captureId: undefined, lastEvent: undefined, lastError: undefined,
+  lastSequence: undefined, captureId: undefined, lastEvent: undefined, lastError: undefined, lastReadError: undefined,
 });
 
 const emptyValues = (): Record<ChannelCode, ChannelValue> =>
   Object.fromEntries(CHANNEL_CODES.map((c) => [c, { value: null, status: "stale" }])) as Record<ChannelCode, ChannelValue>;
+
+/** Intervalo de emisión de la pantalla de verificación, más lento que el del generador para poder observar las fallas. */
+const VERIFICATION_INTERVAL_MS = 200;
 
 export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
   const sourceRef = useRef<SimulatedDataSource | null>(null);
@@ -46,7 +51,7 @@ export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
 
   const start = useCallback(async () => {
     if (sourceRef.current) return;
-    const source = new SimulatedDataSource({ seed, scenario: SCENARIOS[scenario] });
+    const source = new SimulatedDataSource({ seed, scenario: SCENARIOS[scenario], emit_interval_ms: VERIFICATION_INTERVAL_MS });
     sourceRef.current = source;
     setValues(emptyValues());
     setStats(emptyStats());
@@ -76,6 +81,10 @@ export function useSimulatedCapture(scenario: ScenarioName, seed: number) {
           if (rel.kind !== "duplicate" && rel.kind !== "out_of_order") lastSeq = rec.sequence;
           next.accepted += 1;
           next.lastSequence = rec.sequence;
+          const failed = rec.samples.filter((smp) => smp.status === "read_error");
+          if (failed.length > 0) {
+            next.lastReadError = `secuencia ${rec.sequence}: ${failed.map((smp) => smp.channel_id).join(", ")}`;
+          }
           next.captureId = captureId;
           return next;
         });

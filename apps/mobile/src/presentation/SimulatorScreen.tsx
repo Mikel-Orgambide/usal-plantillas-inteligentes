@@ -32,7 +32,7 @@ export function SimulatorScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Simulador · contrato v{FORMAT_VERSION}</Text>
-      <Text style={styles.caption}>{SIMULATED_CONFIGURATION.configuration_id} · procedencia simulada</Text>
+      <Text style={styles.caption}>{SIMULATED_CONFIGURATION.configuration_id} · procedencia simulada · 5 registros/s (verificación)</Text>
 
       <View style={styles.feet}>
         <View style={styles.foot}>
@@ -50,6 +50,7 @@ export function SimulatorScreen() {
         <Text style={styles.stat}>Recibidos {stats.received} · aceptados {stats.accepted} · rechazados {stats.rejected}</Text>
         <Text style={styles.stat}>Secuencia {stats.lastSequence ?? "—"} · duplicados {stats.duplicates} · huecos {stats.gaps} · fuera de orden {stats.outOfOrder}</Text>
         <Text style={styles.stat}>Último evento: {stats.lastEvent ?? "—"}</Text>
+        <Text style={styles.stat}>Última lectura fallida: {stats.lastReadError ?? "—"}</Text>
         {stats.lastError ? <Text style={[styles.stat, styles.errorText]} numberOfLines={2}>Último rechazo: {stats.lastError}</Text> : null}
       </View>
 
