@@ -3,9 +3,9 @@ import { StyleSheet, Switch, View } from "react-native";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { SCENARIOS, type ScenarioName } from "@plantillas/simulator";
-import { Chip, Header, ListRow, Screen, Text } from "../../presentation/components";
-import { colors, size, space } from "../../presentation/theme/tokens";
-import { loadSettings, saveSettings, type Settings } from "../../infrastructure/settings/settings";
+import { Chip, Header, ListRow, Screen, Text } from "../presentation/components";
+import { colors, size, space } from "../presentation/theme/tokens";
+import { loadSettings, saveSettings, type Settings } from "../infrastructure/settings/settings";
 
 const SCENARIO_NAMES = Object.keys(SCENARIOS) as ScenarioName[];
 
@@ -30,11 +30,11 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <Header title="Ajustes" context={`Plantillas Inteligentes · versión ${version}`} />
+      <Header title="Ajustes" context={`Plantillas Inteligentes · versión ${version}`} onBack={() => router.back()} />
 
       <Text variant="label" color={colors.textSecondary}>Dispositivo</Text>
       <ListRow title="Simulador" subtitle="SIM-001 · 6 posiciones · única fuente disponible" chevron={false} />
-      <ListRow title="Buscar otro dispositivo" subtitle="Bluetooth · emparejamiento (etapa 8)" onPress={() => router.push("/bluetooth")} />
+      <ListRow title="Plantillas" subtitle="Estado del dispositivo y búsqueda Bluetooth" onPress={() => router.push("/plantillas")} />
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Datos</Text>
       <ListRow title="Unidad" subtitle="cuentas ADC (0–4095) · sin calibración" value="cuentas" chevron={false} />

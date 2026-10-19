@@ -29,7 +29,7 @@ El autor entregó el diseño completo hecho en Claude Design (`docs/plantillas-i
 
 Tras la primera verificación en dispositivo, el autor señaló que sin barra de navegación ni «volver» la app resultaba difícil de recorrer. El brief no había pedido la estructura de navegación, por lo que el diseño no la incluía. Se agregó:
 
-- **Barra inferior** con tres destinos permanentes (Hoy, Historial, Ajustes), en `surface` con hairline superior, acento para el activo, iconos del sistema.
+- **Barra inferior** con tres destinos permanentes **Historial · Hoy (centro) · Plantillas**, en `surface` con hairline superior, acento para el activo, iconos del sistema, y respeto del área de gestos de Android (inset inferior). Ajustes no va en la barra: se abre desde el icono superior derecho de Hoy y de Plantillas, porque el estado del dispositivo se consulta constantemente y los ajustes rara vez.
 - **Encabezado con flecha de volver** en las pantallas de flujo (Preparación, Detalle, Comparar, Bluetooth). En Grabación, la flecha vuelve a Hoy sin cortar la sesión; Hoy ofrece «Volver a la sesión en curso».
 - Una sola línea de metadatos por pantalla (chip de procedencia + dispositivo · configuración · unidad) y el mismo ritmo de secciones (24 arriba, 12 abajo).
 - Se retiraron los botones «Historial», «Volver» y «Listo» que duplicaban la barra.

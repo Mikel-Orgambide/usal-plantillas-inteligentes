@@ -29,6 +29,7 @@ export default function HistoryScreen() {
 
   return (
     <Screen
+      tabbed
       footer={
         selected.length === 2 ? (
           <Button variant="primary" icon="compare" onPress={() => router.push({ pathname: "/comparar", params: { a: selected[0]!, b: selected[1]! } })}>Comparar las 2 elegidas</Button>

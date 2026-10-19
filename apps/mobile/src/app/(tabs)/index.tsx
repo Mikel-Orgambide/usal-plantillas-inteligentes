@@ -21,6 +21,7 @@ export default function HomeScreen() {
 
   return (
     <Screen
+      tabbed
       footer={
         recording ? (
           <Button variant="primary" icon="play" onPress={() => router.push("/grabacion")}>Volver a la sesión en curso</Button>

@@ -7,8 +7,9 @@ import type { ReactNode } from "react";
  * Contenedor de pantalla: fondo bg, margen lateral 16, respeta las áreas
  * seguras. `footer` queda fijo al pie con 32 de aire arriba (botón principal).
  */
-export function Screen({ children, footer, scroll = true, style }: { children: ReactNode; footer?: ReactNode; scroll?: boolean; style?: StyleProp<ViewStyle> }) {
+export function Screen({ children, footer, scroll = true, tabbed = false, style }: { children: ReactNode; footer?: ReactNode; scroll?: boolean; /** La pantalla vive bajo la barra inferior: el pie no repite el área segura. */ tabbed?: boolean; style?: StyleProp<ViewStyle> }) {
   const insets = useSafeAreaInsets();
+  const bottom = tabbed ? 0 : insets.bottom;
   const body = scroll ? (
     <ScrollView contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
   ) : (
@@ -17,7 +18,7 @@ export function Screen({ children, footer, scroll = true, style }: { children: R
   return (
     <View style={[styles.root, { paddingTop: insets.top + space[4] }]}>
       {body}
-      {footer ? <View style={[styles.footer, { paddingBottom: insets.bottom + space[6] }]}>{footer}</View> : null}
+      {footer ? <View style={[styles.footer, { paddingBottom: bottom + space[4] }]}>{footer}</View> : null}
     </View>
   );
 }
