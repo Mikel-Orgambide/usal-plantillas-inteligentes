@@ -35,10 +35,12 @@ export default function RecordingScreen() {
   const keepAwake = loadSettings().keepAwake;
 
   // Refresco del reloj y del gráfico aunque no lleguen registros (huecos visibles).
+  const finished = !!active?.result;
   useEffect(() => {
+    if (finished) return;
     const id = setInterval(() => tick((n) => n + 1), 250);
     return () => clearInterval(id);
-  }, []);
+  }, [finished]);
 
   if (!active) {
     return (
@@ -59,7 +61,6 @@ export default function RecordingScreen() {
     { name: "Derecho", values: liveSeries(live, rc), stale },
   ];
   const rate = snapshot.durationMs > 0 ? snapshot.stats.accepted / (snapshot.durationMs / 1000) : 0;
-  const finished = !!result;
 
   const finish = async () => {
     setConfirm(false);
@@ -75,6 +76,7 @@ export default function RecordingScreen() {
   };
 
   return (
+    <>
     <Screen
       footer={
         finished ? (
@@ -142,6 +144,7 @@ export default function RecordingScreen() {
         <Text variant="caption" color={colors.textSecondary}>en cola {snapshot.stats.pending}</Text>
         <Text variant="caption" color={snapshot.stats.rejected ? colors.alert : colors.textSecondary}>rechazados {snapshot.stats.rejected}</Text>
       </View>
+    </Screen>
 
       <Sheet visible={confirm} onDismiss={() => setConfirm(false)}>
         <Text variant="heading">Finalizar la sesión</Text>
@@ -153,7 +156,7 @@ export default function RecordingScreen() {
           <Button onPress={() => setConfirm(false)}>Seguir grabando</Button>
         </View>
       </Sheet>
-    </Screen>
+    </>
   );
 }
 
