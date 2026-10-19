@@ -53,10 +53,10 @@ export default function CompareScreen() {
   }, [a, b]);
 
   if (error) {
-    return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" /><StatusBanner tone="alert" icon="alert" detail={error}>No se pudieron leer las sesiones</StatusBanner></Screen>;
+    return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><StatusBanner tone="alert" icon="alert" detail={error}>No se pudieron leer las sesiones</StatusBanner></Screen>;
   }
-  if (data === undefined) return <Screen><Header title="Comparar" context="Cargando…" /></Screen>;
-  if (data === null) return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" /><Text variant="body" color={colors.textSecondary}>Alguna de las sesiones no existe.</Text></Screen>;
+  if (data === undefined) return <Screen><Header title="Comparar" context="Cargando…" onBack={() => router.back()} /></Screen>;
+  if (data === null) return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><Text variant="body" color={colors.textSecondary}>Alguna de las sesiones no existe.</Text></Screen>;
 
   const [da, db] = data;
   const reqs = compatibility(da, db);
@@ -65,7 +65,7 @@ export default function CompareScreen() {
 
   return (
     <Screen footer={<Button onPress={() => router.back()}>Cambiar sesiones</Button>}>
-      <Header title="Comparar" context={compatible ? "Compatibles · misma configuración · cuentas ADC · misma procedencia" : "Estas dos sesiones no se pueden comparar por posición"} />
+      <Header title="Comparar" context={compatible ? "Compatibles · misma configuración · cuentas ADC · misma procedencia" : "Estas dos sesiones no se pueden comparar por posición"} onBack={() => router.back()} />
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <SessionCard letter="A" d={da} color={colors.accent} />
         <SessionCard letter="B" d={db} color={colors.textSecondary} />

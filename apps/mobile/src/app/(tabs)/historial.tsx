@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Button, Chip, Header, Icon, ListRow, Screen, StatusBanner, Text } from "../presentation/components";
-import { colors, formatDate, formatDuration, formatNumber, space } from "../presentation/theme/tokens";
-import { useSessionList } from "../application/useSessions";
-import { ACTIVITY_LABEL, type Activity } from "../application/sessionStore";
+import { Button, Chip, Header, Icon, ListRow, Screen, StatusBanner, Text } from "../../presentation/components";
+import { colors, formatDate, formatDuration, formatNumber, space } from "../../presentation/theme/tokens";
+import { useSessionList } from "../../application/useSessions";
+import { ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
 
 type Filter = "all" | Activity | "simulated";
 
@@ -32,9 +32,7 @@ export default function HistoryScreen() {
       footer={
         selected.length === 2 ? (
           <Button variant="primary" icon="compare" onPress={() => router.push({ pathname: "/comparar", params: { a: selected[0]!, b: selected[1]! } })}>Comparar las 2 elegidas</Button>
-        ) : (
-          <Button onPress={() => router.back()}>Volver</Button>
-        )
+        ) : undefined
       }
     >
       <Header title="Historial" context={sessions ? `${sessions.length} sesiones · ${physical} físicas · ${simulated} simuladas` : "Cargando…"} />
@@ -64,7 +62,7 @@ export default function HistoryScreen() {
       ) : (
         <>
           <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[4] }}>
-            Elegí dos sesiones para comparar · {selected.length} de 2 · tocá el título para ver el detalle
+            Tocá una sesión para marcarla · {selected.length} de 2 para comparar
           </Text>
           <View style={{ marginTop: space[1] }}>
             {list.map((s) => (
@@ -79,10 +77,10 @@ export default function HistoryScreen() {
               />
             ))}
           </View>
-          {selected.length === 1 ? (
-            <Text variant="label" color={colors.accent} style={{ marginTop: space[4] }} onPress={() => router.push({ pathname: "/sesion/[id]", params: { id: selected[0]! } })}>
-              Ver detalle de la sesión elegida
-            </Text>
+          {selected.length >= 1 ? (
+            <View style={{ marginTop: space[4] }}>
+              <Button icon="chevron-right" onPress={() => router.push({ pathname: "/sesion/[id]", params: { id: selected[selected.length - 1]! } })}>Ver detalle de la última marcada</Button>
+            </View>
           ) : null}
         </>
       )}

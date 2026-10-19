@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import type { ChannelCode } from "@plantillas/contract";
-import { Button, Chip, FootMap, LineChart, Screen, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
+import { Button, Chip, FootMap, Icon, LineChart, Screen, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
 import { colors, formatDuration, formatNumber, radius, space } from "../presentation/theme/tokens";
 import { ACTIVITY_LABEL, clearSession, liveSeries, stopSession, useActiveSession } from "../application/sessionStore";
 import { loadSettings } from "../infrastructure/settings/settings";
@@ -87,6 +87,11 @@ export default function RecordingScreen() {
       {keepAwake && !finished ? <KeepAwake /> : null}
 
       <View style={styles.statusRow}>
+        {!finished ? (
+          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Volver al inicio; la sesión sigue grabando" hitSlop={8} style={styles.back}>
+            <Icon name="chevron-right" size={20} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
         <View style={[styles.dot, { backgroundColor: stale ? colors.alert : finished ? colors.stale : colors.accent }]} />
         <Text variant="caption" color={colors.textSecondary}>
           {STATE_LABEL[snapshot.state]} · SIM-001 · simuladas · {ACTIVITY_LABEL[active.activity]}
@@ -154,6 +159,7 @@ export default function RecordingScreen() {
 
 const styles = StyleSheet.create({
   statusRow: { flexDirection: "row", alignItems: "center", gap: space[2], paddingTop: space[3] },
+  back: { width: 32, height: 32, alignItems: "center", justifyContent: "center", marginLeft: -8, transform: [{ scaleX: -1 }] },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   chips: { flexDirection: "row", gap: space[2], marginTop: space[6] },
   counters: { flexDirection: "row", justifyContent: "space-between", marginTop: space[3] },

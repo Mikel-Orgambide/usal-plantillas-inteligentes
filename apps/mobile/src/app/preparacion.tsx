@@ -33,7 +33,7 @@ export default function PrepareScreen() {
 
   return (
     <Screen footer={<Button variant="primary" icon="play" disabled={!allOk || starting} onPress={() => void start()}>{starting ? "Iniciando…" : "Iniciar"}</Button>}>
-      <Header title="Nueva sesión" status="connected" context="Simulador · SIM-001 · plantillas simuladas" />
+      <Header title="Nueva sesión" status="connected" context="Simulador · SIM-001 · plantillas simuladas" onBack={() => router.back()} />
 
       <Text variant="label" color={colors.textSecondary} style={{ marginBottom: space[2] }}>Actividad</Text>
       <View style={styles.chips}>

@@ -40,7 +40,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "fade_from_bottom" }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "slide_from_right" }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="grabacion" options={{ gestureEnabled: false, animation: "fade" }} />
+      </Stack>
       {dbError ? (
         <Sheet visible>
           <Text variant="heading">No se pudo abrir la base local</Text>

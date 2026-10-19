@@ -1,11 +1,11 @@
 import { View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback } from "react";
-import { Button, Card, Header, Icon, Screen, StatusBanner, Text, ValueCard } from "../presentation/components";
-import { colors, formatDate, formatDuration, formatNumber, space } from "../presentation/theme/tokens";
-import { useSessionList } from "../application/useSessions";
-import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../application/sessionStore";
-import { loadSettings } from "../infrastructure/settings/settings";
+import { Button, Card, Header, Icon, Screen, StatusBanner, Text, ValueCard } from "../../presentation/components";
+import { colors, formatDate, formatDuration, formatNumber, space } from "../../presentation/theme/tokens";
+import { useSessionList } from "../../application/useSessions";
+import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
+import { loadSettings } from "../../infrastructure/settings/settings";
 
 /** Inicio («Hoy»): estado del dispositivo, última sesión y las dos acciones. */
 export default function HomeScreen() {
@@ -22,14 +22,11 @@ export default function HomeScreen() {
   return (
     <Screen
       footer={
-        <>
-          <Button icon="history" onPress={() => router.push("/historial")}>Historial</Button>
-          {recording ? (
-            <Button variant="primary" icon="play" onPress={() => router.push("/grabacion")}>Volver a la sesión en curso</Button>
-          ) : (
-            <Button variant="primary" icon="plus" onPress={() => router.push("/preparacion")}>Nueva sesión</Button>
-          )}
-        </>
+        recording ? (
+          <Button variant="primary" icon="play" onPress={() => router.push("/grabacion")}>Volver a la sesión en curso</Button>
+        ) : (
+          <Button variant="primary" icon="plus" onPress={() => router.push("/preparacion")}>Nueva sesión</Button>
+        )
       }
     >
       <Header
@@ -80,9 +77,9 @@ export default function HomeScreen() {
           </Text>
         </View>
       )}
-      {sessions && sessions.length > 0 ? (
-        <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[3] }}>
-          {formatNumber(sessions.length)} {sessions.length === 1 ? "sesión guardada" : "sesiones guardadas"}
+      {sessions && sessions.length > 1 ? (
+        <Text variant="label" color={colors.accent} style={{ marginTop: space[4] }} onPress={() => router.push("/historial")}>
+          Ver las {formatNumber(sessions.length)} sesiones en Historial
         </Text>
       ) : null}
     </Screen>

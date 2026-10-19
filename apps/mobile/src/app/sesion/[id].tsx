@@ -41,18 +41,18 @@ export default function SessionDetailScreen() {
   if (error) {
     return (
       <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}>
-        <Header title="Sesión" />
+        <Header title="Sesión" onBack={() => router.back()} />
         <StatusBanner tone="alert" icon="alert" detail={error}>No se pudo leer la sesión</StatusBanner>
       </Screen>
     );
   }
   if (detail === undefined) {
-    return <Screen><Header title="Sesión" context="Cargando…" /></Screen>;
+    return <Screen><Header title="Sesión" context="Cargando…" onBack={() => router.back()} /></Screen>;
   }
   if (detail === null) {
     return (
       <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}>
-        <Header title="Sesión" />
+        <Header title="Sesión" onBack={() => router.back()} />
         <Text variant="body" color={colors.textSecondary}>No existe una sesión con ese identificador.</Text>
       </Screen>
     );
@@ -69,12 +69,13 @@ export default function SessionDetailScreen() {
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
+        onBack={() => router.back()}
       />
       <View style={styles.metaRow}>
-        <Text variant="label">{session.source === "simulated" ? "Simulada" : "Física"}</Text>
-        <Text variant="caption" color={colors.textSecondary}>· {captures[0]?.device_id ?? "—"} · 6 posiciones · {captures[0]?.configuration_id ?? "—"} · cuentas ADC 0–4095</Text>
+        <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
+        <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · 6 posiciones · cuentas ADC 0–4095</Text>
       </View>
-      {session.context ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[1] }}>Contexto: {session.context}</Text> : null}
+      {session.context ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Contexto: {session.context}</Text> : null}
       {session.state === "incomplete" ? (
         <View style={{ marginTop: space[4] }}>
           <StatusBanner tone="alert" icon="alert" detail="Lo que llegó quedó guardado; la duración puede ser estimada">Sesión incompleta</StatusBanner>
@@ -89,13 +90,13 @@ export default function SessionDetailScreen() {
         <ValueCard label="Capturas" value={quality.captures} sub={quality.captures > 1 ? `${quality.captures - 1} reinicio(s)` : "sin reinicios"} style={styles.half} />
       </View>
 
-      <Text variant="heading" style={{ marginTop: space[6] }}>Carga por posición</Text>
-      <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[1] }}>
+      <Text variant="heading" style={{ marginTop: space[6], marginBottom: space[3] }}>Carga por posición</Text>
+      <Text variant="caption" color={colors.textSecondary}>
         Los indicadores por posición (media, máximo, dispersión, válidas) se incorporan en la etapa 6.
       </Text>
 
-      <Text variant="heading" style={{ marginTop: space[6] }}>Sesión completa</Text>
-      <View style={styles.chips}>
+      <Text variant="heading" style={{ marginTop: space[6], marginBottom: space[3] }}>Sesión completa</Text>
+      <View style={styles.chipsRow}>
         {(Object.keys(ZONE_LABEL) as Zone[]).map((z) => (
           <Chip key={z} variant={z === zone ? "selected" : "neutral"} onPress={() => setZone(z)}>{ZONE_LABEL[z]}</Chip>
         ))}
@@ -133,9 +134,9 @@ export default function SessionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space[1] },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: space[3] },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space[3], marginTop: space[3] },
   half: { width: "47%", flexGrow: 1 },
-  chips: { flexDirection: "row", gap: space[2], marginTop: space[3] },
+  chipsRow: { flexDirection: "row", gap: space[2] },
   eventsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 });

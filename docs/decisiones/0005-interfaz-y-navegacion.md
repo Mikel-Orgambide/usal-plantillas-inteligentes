@@ -25,6 +25,17 @@ El autor entregó el diseño completo hecho en Claude Design (`docs/plantillas-i
 - La pantalla de Bluetooth es un marcador honesto hasta la etapa 8: la única fuente es el simulador, y las sesiones se marcan «Simulada».
 - El selector de escenario del simulador (verificación) vive en Ajustes → Demostración, no en Grabación.
 
+## Ajuste posterior (2026-10-18, misma fecha)
+
+Tras la primera verificación en dispositivo, el autor señaló que sin barra de navegación ni «volver» la app resultaba difícil de recorrer. El brief no había pedido la estructura de navegación, por lo que el diseño no la incluía. Se agregó:
+
+- **Barra inferior** con tres destinos permanentes (Hoy, Historial, Ajustes), en `surface` con hairline superior, acento para el activo, iconos del sistema.
+- **Encabezado con flecha de volver** en las pantallas de flujo (Preparación, Detalle, Comparar, Bluetooth). En Grabación, la flecha vuelve a Hoy sin cortar la sesión; Hoy ofrece «Volver a la sesión en curso».
+- Una sola línea de metadatos por pantalla (chip de procedencia + dispositivo · configuración · unidad) y el mismo ritmo de secciones (24 arriba, 12 abajo).
+- Se retiraron los botones «Historial», «Volver» y «Listo» que duplicaban la barra.
+
+Queda pendiente reflejar la barra y el encabezado con volver en el archivo de Claude Design cuando se itere el diseño.
+
 ## Consecuencias
 
 Agregar módulos nativos exige un nuevo development build. La pantalla provisional de verificación de las etapas 2–4 se retiró; su función la cumplen Grabación + Ajustes.

@@ -26,6 +26,10 @@ Google Pixel 10 Pro XL, development build 2c4c674f (expo-router, react-native-sv
 
 Condición de cierre cumplida: las tareas previstas se completan con datos simulados, incluidos estados vacíos y de error.
 
+## Ajuste de navegación (2026-10-18)
+
+Agregados tras la verificación: barra inferior (Hoy · Historial · Ajustes), flecha de volver en las pantallas de flujo, salida de Grabación sin cortar la sesión y limpieza de la línea de metadatos (ADR 0005, ajuste posterior). Sin módulos nativos nuevos.
+
 ## Limitaciones
 
 - Indicadores por posición (etapa 6) y diferencias numéricas en Comparación (etapa 7) todavía no se muestran; la interfaz lo indica.

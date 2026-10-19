@@ -11,13 +11,20 @@ export interface HeaderProps {
   action?: IconName;
   actionLabel?: string;
   onAction?: () => void;
+  /** Muestra la flecha de volver a la izquierda del título (pantallas de flujo). */
+  onBack?: () => void;
 }
 
 const STATUS_COLOR = { connected: colors.accent, searching: colors.alert, off: colors.stale } as const;
 
-export function Header({ title, context, status, action, actionLabel, onAction }: HeaderProps) {
+export function Header({ title, context, status, action, actionLabel, onAction, onBack }: HeaderProps) {
   return (
     <View style={styles.wrap}>
+      {onBack ? (
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Volver" hitSlop={8} style={styles.back}>
+          <Icon name="chevron-right" color={colors.textPrimary} />
+        </Pressable>
+      ) : null}
       <View style={styles.main}>
         <Text variant="title">{title}</Text>
         {context ? (
@@ -42,4 +49,5 @@ const styles = StyleSheet.create({
   contextRow: { flexDirection: "row", alignItems: "center", gap: space[2] },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   action: { width: 40, height: 40, alignItems: "center", justifyContent: "center", marginTop: -2 },
+  back: { width: 40, height: 40, alignItems: "center", justifyContent: "center", marginLeft: -12, marginTop: -2, transform: [{ scaleX: -1 }] },
 });
