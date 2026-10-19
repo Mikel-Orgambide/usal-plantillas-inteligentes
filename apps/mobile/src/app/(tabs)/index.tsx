@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback } from "react";
-import { Button, Card, Header, Icon, Screen, StatusBanner, Text, ValueCard } from "../../presentation/components";
+import { Button, Card, Header, Icon, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../presentation/theme/tokens";
 import { useSessionList } from "../../application/useSessions";
 import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
@@ -64,7 +64,7 @@ export default function HomeScreen() {
               <ValueCard elevated label="Registros" value={last.record_count} unit="reg." sub={`${last.capture_count} captura(s) · ${last.event_count} eventos`} style={{ flex: 1 }} />
             </View>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: space[3] }}>
-              <Text variant="label" color={colors.accent} onPress={() => router.push({ pathname: "/sesion/[id]", params: { id: last.id } })}>Ver detalle</Text>
+              <TextButton icon="chevron-right" onPress={() => router.push({ pathname: "/historial/sesion/[id]", params: { id: last.id } })}>Ver detalle</TextButton>
               <Icon name="chevron-right" size={20} color={colors.accent} />
             </View>
           </Card>
@@ -79,9 +79,9 @@ export default function HomeScreen() {
         </View>
       )}
       {sessions && sessions.length > 1 ? (
-        <Text variant="label" color={colors.accent} style={{ marginTop: space[4] }} onPress={() => router.push("/historial")}>
-          Ver las {formatNumber(sessions.length)} sesiones en Historial
-        </Text>
+        <TextButton icon="chevron-right" style={{ marginTop: space[3] }} onPress={() => router.navigate("/historial")}>
+          {`Ver las ${formatNumber(sessions.length)} sesiones en Historial`}
+        </TextButton>
       ) : null}
     </Screen>
   );

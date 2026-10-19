@@ -39,3 +39,12 @@ Queda pendiente reflejar la barra y el encabezado con volver en el archivo de Cl
 ## Consecuencias
 
 Agregar módulos nativos exige un nuevo development build. La pantalla provisional de verificación de las etapas 2–4 se retiró; su función la cumplen Grabación + Ajustes.
+
+## Ajuste posterior (2026-10-18, tras la etapa 6)
+
+Observación del autor en el teléfono: la barra inferior desaparecía en Detalle y Comparación, y en Historial tocar una fila la marcaba para comparar en vez de abrirla.
+
+- Detalle (`/historial/sesion/[id]`) y Comparación (`/historial/comparar`) pasan a ser una pila dentro de la pestaña Historial: la barra inferior sigue visible y «volver» regresa a la lista. Preparación, Grabación y Ajustes siguen fuera de las pestañas a propósito: Grabación bloquea la salida accidental mientras se graba, Preparación es su paso previo y Ajustes es una pantalla con «volver».
+- Historial: tocar la fila abre el detalle; un selector circular a la derecha (zona táctil de 48 px) marca hasta dos sesiones para comparar.
+- Zonas táctiles: botones 48 px, filas 64 px, chips 32 px + 8 px de área invisible arriba y abajo, acciones en texto (`TextButton`) con 44 px mínimos, flecha de volver y acción del encabezado 40 px + 8 px.
+- El botón flotante con engranaje que aparece sobre la app es el «Tools button» del cliente de desarrollo de Expo (expo-dev-menu), no parte de la interfaz; no existe en la APK final y se puede apagar desde el menú de desarrollo.

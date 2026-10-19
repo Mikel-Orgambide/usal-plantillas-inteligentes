@@ -14,3 +14,4 @@ export { Sheet } from "./Sheet";
 export { StatusBanner } from "./StatusBanner";
 export { Text } from "./Text";
 export { ValueCard } from "./ValueCard";
+export { TextButton } from "./TextButton";

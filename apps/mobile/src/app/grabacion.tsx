@@ -71,7 +71,7 @@ export default function RecordingScreen() {
   const close = () => {
     const id = active.coordinator.sessionId;
     clearSession();
-    router.replace({ pathname: "/sesion/[id]", params: { id } });
+    router.replace({ pathname: "/historial/sesion/[id]", params: { id } });
   };
 
   return (

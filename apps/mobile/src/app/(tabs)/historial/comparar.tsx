@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
-import { Button, Card, Chip, Header, Icon, LineChart, Screen, StatusBanner, Text, ValueCard } from "../presentation/components";
-import { colors, formatDate, formatDuration, formatNumber, radius, space } from "../presentation/theme/tokens";
-import { loadSessionDetail, type SessionDetail } from "../application/useSessions";
-import { ACTIVITY_LABEL, type Activity } from "../application/sessionStore";
+import { Button, Card, Chip, Header, Icon, LineChart, Screen, StatusBanner, Text, ValueCard } from "../../../presentation/components";
+import { colors, formatDate, formatDuration, formatNumber, radius, space } from "../../../presentation/theme/tokens";
+import { loadSessionDetail, type SessionDetail } from "../../../application/useSessions";
+import { ACTIVITY_LABEL, type Activity } from "../../../application/sessionStore";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = { heel: ["L_HEEL", "R_HEEL"], medial: ["L_MEDIAL", "R_MEDIAL"], lateral: ["L_LATERAL", "R_LATERAL"] };
@@ -53,10 +53,10 @@ export default function CompareScreen() {
   }, [a, b]);
 
   if (error) {
-    return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><StatusBanner tone="alert" icon="alert" detail={error}>No se pudieron leer las sesiones</StatusBanner></Screen>;
+    return <Screen tabbed footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><StatusBanner tone="alert" icon="alert" detail={error}>No se pudieron leer las sesiones</StatusBanner></Screen>;
   }
-  if (data === undefined) return <Screen><Header title="Comparar" context="Cargando…" onBack={() => router.back()} /></Screen>;
-  if (data === null) return <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><Text variant="body" color={colors.textSecondary}>Alguna de las sesiones no existe.</Text></Screen>;
+  if (data === undefined) return <Screen tabbed><Header title="Comparar" context="Cargando…" onBack={() => router.back()} /></Screen>;
+  if (data === null) return <Screen tabbed footer={<Button onPress={() => router.back()}>Volver</Button>}><Header title="Comparar" onBack={() => router.back()} /><Text variant="body" color={colors.textSecondary}>Alguna de las sesiones no existe.</Text></Screen>;
 
   const [da, db] = data;
   const reqs = compatibility(da, db);
@@ -64,7 +64,7 @@ export default function CompareScreen() {
   const [lc, rc] = ZONE_CHANNELS[zone];
 
   return (
-    <Screen footer={<Button onPress={() => router.back()}>Cambiar sesiones</Button>}>
+    <Screen tabbed footer={<Button onPress={() => router.back()}>Cambiar sesiones</Button>}>
       <Header title="Comparar" context={compatible ? "Compatibles · misma configuración · cuentas ADC · misma procedencia" : "Estas dos sesiones no se pueden comparar por posición"} onBack={() => router.back()} />
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <SessionCard letter="A" d={da} color={colors.accent} />

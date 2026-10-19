@@ -30,7 +30,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
       }}
     >
-      <Tabs.Screen name="historial" options={tab("Historial", "history")} />
+      <Tabs.Screen name="historial" options={{ ...tab("Historial", "history"), popToTopOnBlur: true }} />
       <Tabs.Screen name="index" options={tab("Hoy", "foot")} />
       <Tabs.Screen name="plantillas" options={tab("Plantillas", "bluetooth")} />
     </Tabs>

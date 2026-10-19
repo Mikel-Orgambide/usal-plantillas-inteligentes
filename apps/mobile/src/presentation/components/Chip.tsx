@@ -18,6 +18,7 @@ export function Chip({ variant = "neutral", icon, onPress, children }: ChipProps
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityState={{ selected: variant === "selected" }}
       style={({ pressed }) => [styles.chip, { backgroundColor: bg }, pressed && { opacity: 0.8 }]}

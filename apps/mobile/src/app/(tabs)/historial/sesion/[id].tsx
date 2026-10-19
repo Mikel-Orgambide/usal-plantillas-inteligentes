@@ -3,10 +3,10 @@ import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
 import type { ChannelMetrics } from "@plantillas/metrics";
-import { Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, ValueCard } from "../../presentation/components";
-import { colors, formatDate, formatDuration, formatNumber, space } from "../../presentation/theme/tokens";
-import { useSessionDetail } from "../../application/useSessions";
-import { ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
+import { Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
+import { colors, formatDate, formatDuration, formatNumber, space } from "../../../../presentation/theme/tokens";
+import { useSessionDetail } from "../../../../application/useSessions";
+import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = { heel: ["L_HEEL", "R_HEEL"], medial: ["L_MEDIAL", "R_MEDIAL"], lateral: ["L_LATERAL", "R_LATERAL"] };
@@ -54,18 +54,18 @@ export default function SessionDetailScreen() {
 
   if (error) {
     return (
-      <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}>
+      <Screen tabbed footer={<Button onPress={() => router.back()}>Volver</Button>}>
         <Header title="Sesión" onBack={() => router.back()} />
         <StatusBanner tone="alert" icon="alert" detail={error}>No se pudo leer la sesión</StatusBanner>
       </Screen>
     );
   }
   if (detail === undefined) {
-    return <Screen><Header title="Sesión" context="Cargando…" onBack={() => router.back()} /></Screen>;
+    return <Screen tabbed><Header title="Sesión" context="Cargando…" onBack={() => router.back()} /></Screen>;
   }
   if (detail === null) {
     return (
-      <Screen footer={<Button onPress={() => router.back()}>Volver</Button>}>
+      <Screen tabbed footer={<Button onPress={() => router.back()}>Volver</Button>}>
         <Header title="Sesión" onBack={() => router.back()} />
         <Text variant="body" color={colors.textSecondary}>No existe una sesión con ese identificador.</Text>
       </Screen>
@@ -80,7 +80,7 @@ export default function SessionDetailScreen() {
   const sorted = [...events].sort((a, b) => a.id - b.id);
 
   return (
-    <Screen footer={<Button icon="compare" onPress={() => router.push("/historial")}>Comparar con…</Button>}>
+    <Screen tabbed footer={<Button icon="compare" onPress={() => router.navigate("/historial")}>Comparar con…</Button>}>
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
@@ -169,7 +169,7 @@ export default function SessionDetailScreen() {
         <Card>
           <View style={styles.eventsHeader}>
             <Text variant="heading">Eventos <Text variant="label" color={colors.textSecondary}>· {events.length}</Text></Text>
-            <Text variant="label" color={colors.accent} onPress={() => setShowEvents((s) => !s)}>{showEvents ? "Ocultar" : "Ver"}</Text>
+            <TextButton onPress={() => setShowEvents((s) => !s)}>{showEvents ? "Ocultar" : "Ver"}</TextButton>
           </View>
           {showEvents ? (
             <View style={{ marginTop: space[1] }}>

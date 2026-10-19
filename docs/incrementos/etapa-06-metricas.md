@@ -24,6 +24,8 @@
 - Descriptores de cuentas ADC; no son fuerza ni presión, y no hay comparación numérica entre sesiones (etapa 7) ni calibración (etapa 9).
 - Sin ventanas temporales dentro de una captura (evolución intra-sesión): queda para una iteración posterior sobre la misma tabla `result` (campo de ventana).
 
-## Verificación en dispositivo
+## Verificación en dispositivo (2026-10-18)
 
-Pendiente: recargar la app (sin build nueva), finalizar una sesión y abrir el Detalle; abrir una sesión anterior y comprobar que las métricas se calculan al abrirla. Escenario `read_error` debe mostrar válidas < recibidas en `R_LATERAL`.
+Pixel 10 Pro XL, build 2c4c674f (sin build nueva). Sesión «Caminata» simulada de 16 s, 232 registros (100 % de los esperados), 0 huecos, 0 lecturas fallidas, 1 captura. «Carga por posición» muestra siluetas y seis tarjetas: medias 823/825 (talón), 892/819 (medial), 935/900 (lateral) cuentas; máximos 3 073–3 123; σ 969–1 004; 232/232 válidas en las seis posiciones. Los valores son coherentes con la señal del simulador (alternancia entre ~0 y ~3 100 cuentas por pie). Primer intento falló al arrancar Metro por no haber corrido `npm install` tras agregar el paquete `@plantillas/metrics`; resuelto con `npm install` en la raíz.
+
+Ajustes de navegación derivados de la prueba: ver ADR 0005 (Detalle y Comparación dentro de la pestaña Historial; tocar una fila abre el detalle; selector para comparar; zonas táctiles).
