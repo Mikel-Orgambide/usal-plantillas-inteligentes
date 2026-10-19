@@ -33,6 +33,7 @@ export class BleDataSource implements DataSource {
   private requestedDisconnect = false;
   private waiters: Array<{ event: string; resolve: (captureId: string) => void }> = [];
   private t0 = 0;
+  private currentCaptureId: string | undefined;
   /** Notificaciones que no se pudieron decodificar (tamaño o versión): se cuentan, no se descartan en silencio. */
   decodeErrors = 0;
 
@@ -82,6 +83,7 @@ export class BleDataSource implements DataSource {
     await this.link.write(CONTROL_UUID, [COMMAND_START]);
     const captureId = await ack;
     this.capturing = true;
+    this.currentCaptureId = captureId;
     this.emitEvent({ type: "capture_started", at_us: this.atUs(), capture_id: captureId });
   }
 
@@ -156,14 +158,35 @@ export class BleDataSource implements DataSource {
       try {
         this.link = await this.opts.reconnect();
         await this.attach();
-        // La placa sigue capturando durante el corte; lo que no llegó aparece como hueco de secuencia.
         this.emitEvent({ type: "reconnected", at_us: this.atUs() });
+        if (this.capturing) await this.resumeCapture();
         return;
       } catch { /* siguiente intento */ }
     }
     this.connected = false;
     this.capturing = false;
     this.emitEvent({ type: "source_error", at_us: this.atUs(), message: `no se pudo reconectar tras ${this.opts.reconnectAttempts} intentos` });
+  }
+
+  /**
+   * Tras reconectar, se reenvía start. La placa confirma con el capture_id
+   * vigente: si es el mismo, siguió capturando durante el corte (lo perdido
+   * es un hueco de secuencia); si es otro (p. ej. se reinició), es una captura
+   * nueva y se informa como reinicio para que no se mezcle con la anterior.
+   */
+  private async resumeCapture(): Promise<void> {
+    try {
+      const ack = this.waitFor("capture_started");
+      await this.link.write(CONTROL_UUID, [COMMAND_START]);
+      const captureId = await ack;
+      if (captureId !== this.currentCaptureId) {
+        const previous = this.currentCaptureId ?? "";
+        this.currentCaptureId = captureId;
+        this.emitEvent({ type: "capture_restarted", at_us: this.atUs(), capture_id: captureId, previous_capture_id: previous });
+      }
+    } catch (error) {
+      this.emitEvent({ type: "source_error", at_us: this.atUs(), message: `la placa no confirmó la captura al reconectar: ${error instanceof Error ? error.message : String(error)}` });
+    }
   }
 
   private atUs(): number {

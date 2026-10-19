@@ -23,7 +23,13 @@ static void sampler_task(void*) {
 }
 
 static void start_capture() {
-  if (!capture::start()) { usb::send_status("ignored", "captura ya activa"); return; }
+  if (!capture::start()) {
+    // Ya activa: se confirma igual con el capture_id vigente (orden idempotente; la app
+    // la reenvía al reconectar y así distingue «sigue la misma captura» de «captura nueva»).
+    usb::send_status("capture_started", "ya activa");
+    ble::notify_status("capture_started");
+    return;
+  }
   rb::begin();
   sampling = true;
   usb::send_status("capture_started");

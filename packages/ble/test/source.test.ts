@@ -59,6 +59,33 @@ describe("BleDataSource", () => {
     expect(payloads.map((p) => (p as { sequence: number }).sequence)).toEqual([0, 2]);
   });
 
+  it("corte sin reinicio: al reconectar la placa confirma la misma captura y no hay reinicio", async () => {
+    const board = new FakeBoard();
+    const src = new BleDataSource(board, configuration, info, { reconnect: async () => board, reconnectDelayMs: 5 });
+    const { events } = collect(src);
+    await src.connect();
+    await src.startCapture();
+    board.cut();
+    await tick(30);
+    expect(events.map((e) => e.type)).toEqual(["connected", "capture_started", "disconnected", "reconnected"]);
+    expect(board.writes).toEqual([[0x01], [0x01]]);
+  });
+
+  it("reinicio de la placa durante la sesión: reconexión y captura nueva informada como reinicio", async () => {
+    const board = new FakeBoard();
+    const src = new BleDataSource(board, configuration, info, { reconnect: async () => board, reconnectDelayMs: 5 });
+    const { payloads, events } = collect(src);
+    await src.connect();
+    await src.startCapture();
+    board.emit();
+    board.reboot();
+    await tick(30);
+    board.emit();
+    expect(events.map((e) => e.type)).toEqual(["connected", "capture_started", "disconnected", "reconnected", "capture_restarted"]);
+    expect(events[4]).toMatchObject({ capture_id: "ESP32-9E7EE4-B9-C1", previous_capture_id: "ESP32-9E7EE4-B8-C1" });
+    expect(payloads.map((p) => (p as { capture_id: string }).capture_id)).toEqual(["ESP32-9E7EE4-B8-C1", "ESP32-9E7EE4-B9-C1"]);
+  });
+
   it("notificaciones malformadas se cuentan y no llegan al coordinador", async () => {
     const board = new FakeBoard();
     const src = new BleDataSource(board, configuration, info);

@@ -22,6 +22,7 @@ export class FakeBoard implements BleLink {
   capture = 0;
   sequence = 0;
   ackStart = true;
+  active = false;
   private monitors = new Map<string, (v: readonly number[]) => void>();
   private lost = new Set<(reason: string) => void>();
   writes: number[][] = [];
@@ -40,10 +41,10 @@ export class FakeBoard implements BleLink {
       event, capture_id: `ESP32-9E7EE4-B${this.boot}-C${this.capture}`, boot: this.boot, n: this.capture, dropped: 0,
     })));
     if (data[0] === COMMAND_START) {
-      this.capture += 1;
-      this.sequence = 0;
+      if (!this.active) { this.capture += 1; this.sequence = 0; this.active = true; }
       if (this.ackStart) queueMicrotask(() => status("capture_started"));
     } else if (data[0] === COMMAND_STOP) {
+      this.active = false;
       queueMicrotask(() => status("capture_stopped"));
     }
   }
@@ -72,5 +73,14 @@ export class FakeBoard implements BleLink {
   cut(reason = "supervision timeout") {
     this.monitors.clear();
     for (const cb of [...this.lost]) cb(reason);
+  }
+
+  /** Reinicio de la placa: nuevo arranque, captura inactiva, enlace cortado. */
+  reboot() {
+    this.boot += 1;
+    this.capture = 0;
+    this.sequence = 0;
+    this.active = false;
+    this.cut("reinicio de la placa");
   }
 }
