@@ -1,7 +1,8 @@
 // Firmware de la plantilla instrumentada. Etapas H1 (USB), H5 (protocolo USB) y H6 (BLE).
-// Adquisición por temporizador a período fijo; transmisión desde loop() por USB y BLE.
+// Adquisición en una tarea propia del núcleo 1 a período fijo (vTaskDelayUntil);
+// transmisión desde loop() por USB y BLE. El núcleo 0 queda para el controlador BLE:
+// con esp_timer en ese núcleo la tasa caía de 20 a 12 reg/s con un cliente conectado.
 #include <Arduino.h>
-#include <esp_timer.h>
 #include "ble_transport.h"
 #include "capture_controller.h"
 #include "diagnostics.h"
@@ -9,21 +10,29 @@
 #include "record_builder.h"
 #include "usb_transport.h"
 
-static esp_timer_handle_t sampler = nullptr;
+static TaskHandle_t sampler = nullptr;
+static volatile bool sampling = false;
 
-static void on_sample(void*) { rb::acquire_one(); }
+static void sampler_task(void*) {
+  TickType_t last = xTaskGetTickCount();
+  const TickType_t period = pdMS_TO_TICKS(cfg::SAMPLE_PERIOD_US / 1000);
+  for (;;) {
+    vTaskDelayUntil(&last, period);
+    if (sampling) rb::acquire_one();
+  }
+}
 
 static void start_capture() {
   if (!capture::start()) { usb::send_status("ignored", "captura ya activa"); return; }
   rb::begin();
-  esp_timer_start_periodic(sampler, cfg::SAMPLE_PERIOD_US);
+  sampling = true;
   usb::send_status("capture_started");
   ble::notify_status("capture_started");
 }
 
 static void stop_capture() {
   if (!capture::active()) { usb::send_status("ignored", "sin captura activa"); return; }
-  esp_timer_stop(sampler);
+  sampling = false;
   capture::stop();
   usb::send_status("capture_stopped");
   ble::notify_status("capture_stopped");
@@ -34,9 +43,8 @@ void setup() {
   capture::begin();
   acq::begin();
   rb::begin();
-  const esp_timer_create_args_t args = {.callback = &on_sample, .arg = nullptr, .dispatch_method = ESP_TIMER_TASK, .name = "sampler", .skip_unhandled_events = true};
-  esp_timer_create(&args, &sampler);
   ble::begin();
+  xTaskCreatePinnedToCore(sampler_task, "sampler", 4096, nullptr, 5, &sampler, 1);
   usb::send_info();
   usb::send_status("boot");
 }
@@ -69,6 +77,12 @@ void loop() {
       diag::counters().dropped++;  // la pila BLE no pudo enviarlo: hueco observable en la app
     }
     sent++;
+  }
+  // Progreso por USB cada 5 s durante la captura (diagnóstico H04/H05: generados vs. transmitidos).
+  static uint32_t last_progress = 0;
+  if (capture::active() && millis() - last_progress >= 5000) {
+    last_progress = millis();
+    usb::send_status("progress");
   }
   if (diag::counters().dropped != last_dropped) {
     last_dropped = diag::counters().dropped;
