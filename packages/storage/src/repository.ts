@@ -68,6 +68,33 @@ export interface EventRow {
 }
 
 /** Evento persistible: los de la fuente (`SourceEvent`) o los del coordinador de sesión. */
+export interface ResultRow {
+  readonly id: number;
+  readonly capture_id: number;
+  readonly channel_code: ChannelCode;
+  readonly metric_version: string;
+  readonly unit: string;
+  readonly n_received: number;
+  readonly n_valid: number;
+  readonly n_invalid: number;
+  readonly sample_mean: number | null;
+  readonly sample_max: number | null;
+  readonly sample_sd_population: number | null;
+  readonly calibration_id: string | null;
+  readonly computed_at: string;
+}
+
+export type NewResult = Omit<ResultRow, "id" | "capture_id" | "calibration_id"> & { readonly calibration_id?: string | null };
+
+export interface ChannelAggregate {
+  readonly channel_code: ChannelCode;
+  readonly n_received: number;
+  readonly n_valid: number;
+  readonly sum: number | null;
+  readonly sum_sq: number | null;
+  readonly max: number | null;
+}
+
 export type EventLike = { readonly type: string; readonly at_us?: number | null } & Record<string, unknown>;
 
 export interface SessionSummary extends SessionRow {
@@ -371,6 +398,52 @@ export class SessionRepository {
       [captureId],
     );
     return { records: r?.records ?? 0, max_sequence: r?.max_sequence ?? null, read_errors: e?.n ?? 0 };
+  }
+
+  /**
+   * Agregados por canal de una captura, calculados en SQL: lecturas recibidas,
+   * válidas (status ok), suma, suma de cuadrados y máximo de las válidas.
+   * Las métricas se derivan de estos agregados sin cargar todas las muestras.
+   */
+  async getChannelAggregates(captureId: number): Promise<ChannelAggregate[]> {
+    return this.db.all<ChannelAggregate>(
+      `SELECT s.channel_code,
+              COUNT(*) AS n_received,
+              SUM(CASE WHEN s.status = 'ok' THEN 1 ELSE 0 END) AS n_valid,
+              SUM(CASE WHEN s.status = 'ok' THEN s.raw_value END) AS sum,
+              SUM(CASE WHEN s.status = 'ok' THEN s.raw_value * s.raw_value END) AS sum_sq,
+              MAX(CASE WHEN s.status = 'ok' THEN s.raw_value END) AS max
+       FROM sample s JOIN record r ON r.id = s.record_id
+       WHERE r.capture_id = ?
+       GROUP BY s.channel_code ORDER BY s.channel_code`,
+      [captureId],
+    );
+  }
+
+  /** Guarda resultados de una captura; reemplaza los de la misma versión si existían. */
+  async saveResults(captureId: number, results: readonly NewResult[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      for (const r of results) {
+        await tx.run(
+          `INSERT INTO result (capture_id, channel_code, metric_version, unit, n_received, n_valid, n_invalid,
+             sample_mean, sample_max, sample_sd_population, calibration_id, computed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT (capture_id, channel_code, metric_version) DO UPDATE SET
+             unit = excluded.unit, n_received = excluded.n_received, n_valid = excluded.n_valid, n_invalid = excluded.n_invalid,
+             sample_mean = excluded.sample_mean, sample_max = excluded.sample_max, sample_sd_population = excluded.sample_sd_population,
+             calibration_id = excluded.calibration_id, computed_at = excluded.computed_at`,
+          [captureId, r.channel_code, r.metric_version, r.unit, r.n_received, r.n_valid, r.n_invalid,
+           r.sample_mean, r.sample_max, r.sample_sd_population, r.calibration_id ?? null, r.computed_at],
+        );
+      }
+    });
+  }
+
+  async getResults(captureId: number, metricVersion?: string): Promise<ResultRow[]> {
+    return this.db.all<ResultRow>(
+      `SELECT * FROM result WHERE capture_id = ? ${metricVersion ? "AND metric_version = ?" : ""} ORDER BY channel_code`,
+      metricVersion ? [captureId, metricVersion] : [captureId],
+    );
   }
 
   async countRecords(captureId: number): Promise<number> {

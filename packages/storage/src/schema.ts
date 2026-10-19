@@ -142,6 +142,31 @@ CREATE TABLE diagnostic (
 CREATE INDEX diagnostic_session_idx ON diagnostic(session_id, id);
 `,
   },
+  {
+    version: 2,
+    description: "Resultados: métricas descriptivas por canal y captura, con versión de algoritmo y cantidades",
+    sql: `
+CREATE TABLE result (
+  id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+  capture_id             INTEGER NOT NULL REFERENCES capture(id),
+  channel_code           TEXT NOT NULL,
+  metric_version         TEXT NOT NULL,
+  unit                   TEXT NOT NULL,
+  n_received             INTEGER NOT NULL CHECK (n_received >= 0),
+  n_valid                INTEGER NOT NULL CHECK (n_valid >= 0 AND n_valid <= n_received),
+  n_invalid              INTEGER NOT NULL CHECK (n_invalid = n_received - n_valid),
+  sample_mean            REAL,
+  sample_max             REAL,
+  sample_sd_population   REAL,
+  calibration_id         TEXT,
+  computed_at            TEXT NOT NULL,
+  UNIQUE (capture_id, channel_code, metric_version),
+  CHECK ((n_valid > 0 AND sample_mean IS NOT NULL AND sample_max IS NOT NULL AND sample_sd_population IS NOT NULL)
+      OR (n_valid = 0 AND sample_mean IS NULL AND sample_max IS NULL AND sample_sd_population IS NULL))
+);
+CREATE INDEX result_capture_idx ON result(capture_id);
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

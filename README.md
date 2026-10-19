@@ -12,6 +12,10 @@ Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visuali
 |---|---|
 | `apps/mobile` | Aplicación Android (Expo SDK 57, React Native, TypeScript) |
 | `packages/contract` | Contrato de datos compartido: versión, configuración de canales y validación |
+| `packages/simulator` | Fuente simulada determinista con escenarios de falla |
+| `packages/storage` | Esquema SQLite versionado, repositorio y cola de escritura |
+| `packages/session` | Coordinador de sesiones (máquina de estados, recuperación) |
+| `packages/metrics` | Métricas descriptivas por canal con versión de algoritmo |
 | `firmware` | Firmware del ESP32 (PlatformIO, Arduino Core) |
 | `test-data` | Fixtures y datos simulados identificados como tales |
 | `scripts` | Utilidades de desarrollo |

@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
     "@plantillas/contract": "1.0.0",
+    "@plantillas/metrics": "0.1.0",
     "@plantillas/session": "0.1.0",
     "@plantillas/simulator": "0.1.0",
     "@plantillas/storage": "0.1.0",

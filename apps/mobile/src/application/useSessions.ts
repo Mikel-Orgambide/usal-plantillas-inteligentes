@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ChannelCode } from "@plantillas/contract";
 import type { CaptureRow, EventRow, SessionRow, SessionSummary } from "@plantillas/storage";
 import { getDatabase } from "../infrastructure/sqlite/database";
+import { ensureSessionMetrics, type CaptureWithMetrics } from "./sessionMetrics";
 
 /** Lista de sesiones del historial, con recarga. */
 export function useSessionList() {
@@ -25,8 +26,10 @@ export interface SessionDetail {
   captures: CaptureRow[];
   events: EventRow[];
   quality: { records: number; expected: number; readErrors: number; gaps: number; captures: number };
-  /** Series reducidas por canal de la primera captura (etapa 5); las métricas llegan en la etapa 6. */
+  /** Series reducidas por canal de la primera captura (etapa 5). */
   series: Record<ChannelCode, Array<number | null>>;
+  /** Métricas descriptivas por posición, una ventana por captura (etapa 6). */
+  metrics: CaptureWithMetrics[];
 }
 
 const CHANNELS: ChannelCode[] = ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"];
@@ -50,7 +53,8 @@ export async function loadSessionDetail(id: string, buckets = 120): Promise<Sess
   if (first) {
     for (const c of CHANNELS) series[c] = await repository.getChannelSeries(first.id, c, buckets);
   }
-  return { session, captures, events, quality: { records, expected, readErrors, gaps, captures: captures.length }, series };
+  const metrics = session.state === "completed" || session.state === "incomplete" ? await ensureSessionMetrics(id) : [];
+  return { session, captures, events, quality: { records, expected, readErrors, gaps, captures: captures.length }, series, metrics };
 }
 
 export function useSessionDetail(id: string | undefined) {

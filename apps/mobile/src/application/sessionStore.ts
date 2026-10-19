@@ -4,6 +4,7 @@ import { CHANNEL_CODES, SIMULATED_CONFIGURATION, type ChannelCode } from "@plant
 import { SessionCoordinator, type SessionResult, type SessionSnapshot } from "@plantillas/session";
 import { SCENARIOS, SimulatedDataSource } from "@plantillas/simulator";
 import { getDatabase } from "../infrastructure/sqlite/database";
+import { ensureSessionMetrics } from "./sessionMetrics";
 import { loadSettings } from "../infrastructure/settings/settings";
 
 /**
@@ -89,6 +90,12 @@ export async function stopSession(): Promise<SessionResult | undefined> {
   const result = await active.coordinator.stop();
   active = { ...active, result, snapshot: active.coordinator.snapshot() };
   emit();
+  try {
+    await ensureSessionMetrics(result.sessionId);
+  } catch (e) {
+    // Las métricas se recalculan al abrir el detalle; la sesión ya quedó cerrada.
+    console.warn("no se pudieron calcular las métricas al cerrar", e);
+  }
   return result;
 }
 

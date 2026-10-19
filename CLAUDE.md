@@ -19,7 +19,8 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 ## Arquitectura de código
 
 - `packages/contract`: tipos, configuración y validador en ejecución; sin dependencias de React Native.
-- `apps/mobile/src`: `app` (rutas de Expo Router) → `presentation` → `application` → paquetes de dominio (`contract`, `session`, `simulator`, `storage`) ← `infrastructure`. El dominio no importa UI, BLE ni Supabase.
+- `packages/metrics`: descriptores por canal (media, máximo, σ poblacional, cantidades) con versión de algoritmo; cero válidas ⇒ no disponible, nunca cero.
+- `apps/mobile/src`: `app` (rutas de Expo Router) → `presentation` → `application` → paquetes de dominio (`contract`, `session`, `simulator`, `storage`, `metrics`) ← `infrastructure`. El dominio no importa UI, BLE ni Supabase.
 - Offline-first: SQLite local es la fuente primaria; Supabase sincroniza.
 
 ## Forma de trabajo
