@@ -70,7 +70,6 @@ void begin() {
   control->setCallbacks(new ControlCallbacks());
   status_chr = svc->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::NOTIFY);
   measurement_chr = svc->createCharacteristic(MEASUREMENT_UUID, NIMBLE_PROPERTY::NOTIFY);
-  svc->start();
   NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
   adv->addServiceUUID(SERVICE_UUID);
   adv->setName(name);

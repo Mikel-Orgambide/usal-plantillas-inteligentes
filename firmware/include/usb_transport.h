@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include "record.h"
 
 // JSON por línea a 115200 (H1/H5): status, record e info; órdenes start/stop/info.
