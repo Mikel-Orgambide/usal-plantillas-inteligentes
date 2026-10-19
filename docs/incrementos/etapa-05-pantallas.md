@@ -1,7 +1,8 @@
 # Etapa 5 - Pantallas mínimas
 
 - Fecha de implementación: 2026-10-18
-- Estado: implementada; **verificación en dispositivo pendiente** (requiere nuevo development build)
+- Fecha de cierre: 2026-10-18
+- Tag: v0.5-etapa5
 - Diseño de referencia: `docs/plantillas-inteligentes-diseno/` (Claude Design, entregado por el autor)
 
 ## Qué se implementó
@@ -19,6 +20,15 @@
 
 `npm run typecheck` sin errores; `npm test` 64 pruebas; `npx expo export --platform android` genera el bundle (1452 módulos). `expo-doctor` desde la VM no alcanza la API de Expo; verificar desde Windows.
 
-## Pendiente para cerrar la etapa
+## Verificación en dispositivo (2026-10-18)
 
-Nuevo development build (módulos nativos: expo-router, react-native-svg, expo-font, keep-awake, screens, safe-area, gesture-handler, reanimated) instalado por cable. Recorrido en el Pixel con datos simulados: Inicio vacío → Nueva sesión → Preparación → Grabación (escenario `disconnect` para ver interrumpida) → Finalizar → Detalle → Historial → Comparación de dos sesiones compatibles y de dos incompatibles no aplica aún (todas simuladas; verificar el caso compatible) → Ajustes → cierre brusco y diálogo de recuperación.
+Google Pixel 10 Pro XL, development build 2c4c674f (expo-router, react-native-svg, expo-font, keep-awake, screens, safe-area, gesture-handler, reanimated), `expo-doctor` 21/21 desde Windows. Recorrido completo con el simulador: Preparación → Grabación (duración, siluetas, gráfico de 10 s; al finalizar el gráfico muestra el hueco punteado donde dejan de llegar datos) → confirmación → Detalle (sesión «Caminata», 20 s, 309 registros = 100 % de los esperados, 0 huecos, 0 lecturas fallidas, 1 captura, gráfico de la sesión completa por posición con las dos series) → Historial y Comparación. El autor reporta funcionamiento correcto sin errores. Tasa observada 15–17 reg/s para un período nominal de 40 ms: es la tasa real del temporizador del teléfono y se muestra como tal.
+
+Condición de cierre cumplida: las tareas previstas se completan con datos simulados, incluidos estados vacíos y de error.
+
+## Limitaciones
+
+- Indicadores por posición (etapa 6) y diferencias numéricas en Comparación (etapa 7) todavía no se muestran; la interfaz lo indica.
+- Bluetooth es un marcador hasta la etapa 8.
+- Pulido visual (ícono, splash, transiciones, esqueletos, variante clara) previsto para la etapa 10.
+- Duplicados de módulos nativos resueltos con `overrides` (gesture-handler, reanimated, worklets, react).

@@ -9,8 +9,8 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 2 - Simulador determinista | cerrada 2026-10-18 | v0.2-etapa2 |
 | 3 - Persistencia básica | cerrada 2026-10-18 | v0.3-etapa3 |
 | 4 - Coordinación de sesiones | cerrada 2026-10-18 | v0.4-etapa4 |
-| 5 - Pantallas mínimas | implementada; verificación en dispositivo pendiente | - |
-| 6 - Métricas descriptivas | pendiente | - |
+| 5 - Pantallas mínimas | cerrada 2026-10-18 | v0.5-etapa5 |
+| 6 - Métricas descriptivas | en curso | - |
 | 7 - Historial y comparación | pendiente | - |
 | 8 - Fuente física BLE | pendiente | - |
 | 9 - Calibración | pendiente | - |
