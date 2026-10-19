@@ -40,12 +40,32 @@ export interface ActiveSession {
 
 type Listener = () => void;
 
+/** Estado interno, actualizado en cada registro. */
 let active: ActiveSession | null = null;
+/** Lo que leen las pantallas: una copia de `active` publicada como mucho cada PUBLISH_INTERVAL_MS. */
+let published: ActiveSession | null = null;
 const listeners = new Set<Listener>();
 let lastAccepted = -1;
+let publishTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Una placa real entrega 20 registros por segundo; redibujar la pantalla por
+ * cada uno saturaba el hilo de JavaScript (la app se atrasaba, la cola de
+ * escritura no tenía turno y los botones no respondían). Las pantallas se
+ * actualizan como mucho 8 veces por segundo; los registros se procesan todos.
+ */
+const PUBLISH_INTERVAL_MS = 125;
 
 function emit(): void {
+  if (publishTimer !== undefined) clearTimeout(publishTimer);
+  publishTimer = undefined;
+  published = active ? { ...active } : null;
   for (const l of listeners) l();
+}
+
+function emitThrottled(): void {
+  if (publishTimer !== undefined) return;
+  publishTimer = setTimeout(emit, PUBLISH_INTERVAL_MS);
 }
 
 function subscribe(l: Listener): () => void {
@@ -54,7 +74,7 @@ function subscribe(l: Listener): () => void {
 }
 
 export function useActiveSession(): ActiveSession | null {
-  return useSyncExternalStore(subscribe, () => active, () => active);
+  return useSyncExternalStore(subscribe, () => published, () => published);
 }
 
 export async function startSession(activity: Activity, context: string | undefined): Promise<void> {
@@ -78,7 +98,8 @@ export async function startSession(activity: Activity, context: string | undefin
     activity,
     ...(context ? { context } : {}),
     sessionId: Crypto.randomUUID(),
-    lateDataWindowMs: 300,
+    // Lo que una placa real ya envió y todavía no se procesó al detener sigue siendo válido.
+    lateDataWindowMs: 1500,
   });
   lastAccepted = -1;
   active = { coordinator, sourceKind: resolved.kind, sourceTitle: resolved.title, activity, context, snapshot: coordinator.snapshot(), live: [], result: undefined };
@@ -92,11 +113,12 @@ export async function startSession(activity: Activity, context: string | undefin
       const cutoff = Date.now() - LIVE_WINDOW_MS * 1.5;
       while (live.length > 0 && live[0]!.t < cutoff) live.shift();
     }
-    active = { ...active, snapshot, live };
-    emit();
+    active.snapshot = snapshot;
+    emitThrottled();
   });
   emit();
   await coordinator.start();
+  emit();
 }
 
 export async function stopSession(): Promise<SessionResult | undefined> {

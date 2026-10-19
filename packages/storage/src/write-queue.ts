@@ -55,7 +55,9 @@ export class WriteQueue {
     this.pending.push(record);
     this.counters.enqueued += 1;
     if (this.pending.length >= this.options.batchSize) {
-      this.scheduleFlush(0);
+      // Lote completo: se guarda ya, sin pasar por un temporizador (que puede no tener turno bajo carga).
+      this.clearTimer();
+      void this.drain();
     } else if (this.timer === undefined) {
       this.scheduleFlush(this.options.maxLatencyMs);
     }

@@ -7,7 +7,7 @@ import type { RunResult, SqlDriver, SqlExecutor, SqlRow, SqlValue } from "../dri
  */
 export class NodeSqliteDriver implements SqlDriver {
   private readonly db: DatabaseSync;
-  private inTransaction = false;
+  private lock: Promise<void> = Promise.resolve();
 
   constructor(path = ":memory:") {
     this.db = new DatabaseSync(path);
@@ -30,20 +30,26 @@ export class NodeSqliteDriver implements SqlDriver {
     return this.db.prepare(sql).get(...(params as SqlValue[])) as unknown as T | undefined;
   }
 
+  /**
+   * Las transacciones se serializan con una cola de promesas, igual que en el
+   * driver de expo-sqlite: dos cadenas independientes (cola de escritura y
+   * eventos) pueden pedir una transacción a la vez sin que una falle.
+   */
   async transaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T> {
-    if (this.inTransaction) throw new Error("transacción anidada no admitida; usar savepoints");
-    this.inTransaction = true;
-    this.db.exec("BEGIN IMMEDIATE");
-    try {
-      const result = await fn(this);
-      this.db.exec("COMMIT");
-      return result;
-    } catch (error) {
-      this.db.exec("ROLLBACK");
-      throw error;
-    } finally {
-      this.inTransaction = false;
-    }
+    const run = async (): Promise<T> => {
+      this.db.exec("BEGIN IMMEDIATE");
+      try {
+        const result = await fn(this);
+        this.db.exec("COMMIT");
+        return result;
+      } catch (error) {
+        this.db.exec("ROLLBACK");
+        throw error;
+      }
+    };
+    const turn = this.lock.then(run, run);
+    this.lock = turn.then(() => undefined, () => undefined);
+    return turn;
   }
 
   async close(): Promise<void> {
