@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Button, Chip, Header, Icon, ListRow, Screen, StatusBanner, Text } from "../../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../../presentation/theme/tokens";
 import { useSessionList } from "../../../application/useSessions";
@@ -14,6 +14,9 @@ export default function HistoryScreen() {
   const { sessions, error, reload } = useSessionList();
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<string[]>([]);
+  const { select } = useLocalSearchParams<{ select?: string }>();
+  // «Comparar con…» desde el detalle llega con la sesión ya marcada.
+  useEffect(() => { if (select) setSelected([select]); }, [select]);
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
 
   const toggle = (id: string) => {
@@ -70,7 +73,7 @@ export default function HistoryScreen() {
               <ListRow
                 key={s.id}
                 title={formatDate(s.started_at)}
-                subtitle={`${ACTIVITY_LABEL[s.activity as Activity] ?? s.activity} · ${formatDuration(s.duration_ms ?? 0)} · ${formatNumber(s.record_count)} registros${s.state === "completed" ? " · completa" : ""}`}
+                subtitle={`${ACTIVITY_LABEL[s.activity as Activity] ?? s.activity} · ${formatDuration(s.duration_ms ?? 0)} · ${formatNumber(s.record_count)} reg.${s.gap_count ? ` · ${s.gap_count} hueco(s)` : ""}${s.read_error_count ? ` · ${s.read_error_count} fallidas` : ""}${s.capture_count > 1 ? ` · ${s.capture_count} capturas` : ""}`}
                 chip={stateChip(s)}
                 selected={selected.includes(s.id)}
                 onSelect={() => toggle(s.id)}

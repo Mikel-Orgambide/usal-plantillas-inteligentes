@@ -100,6 +100,8 @@ export type EventLike = { readonly type: string; readonly at_us?: number | null 
 export interface SessionSummary extends SessionRow {
   readonly capture_count: number;
   readonly record_count: number;
+  readonly read_error_count: number;
+  readonly gap_count: number;
   readonly event_count: number;
   readonly configuration_id: string | null;
 }
@@ -212,6 +214,8 @@ export class SessionRepository {
         (SELECT COUNT(*) FROM capture c WHERE c.session_id = s.id) AS capture_count,
         (SELECT COUNT(*) FROM record r JOIN capture c ON c.id = r.capture_id WHERE c.session_id = s.id) AS record_count,
         (SELECT COUNT(*) FROM event e WHERE e.session_id = s.id) AS event_count,
+        (SELECT COUNT(*) FROM sample sm JOIN record r ON r.id = sm.record_id JOIN capture c ON c.id = r.capture_id WHERE c.session_id = s.id AND sm.status = 'read_error') AS read_error_count,
+        (SELECT COUNT(*) FROM event e WHERE e.session_id = s.id AND e.type = 'sequence_gap') AS gap_count,
         (SELECT c.configuration_id FROM capture c WHERE c.session_id = s.id ORDER BY c.id LIMIT 1) AS configuration_id
       FROM session s
       ORDER BY s.started_at DESC`);

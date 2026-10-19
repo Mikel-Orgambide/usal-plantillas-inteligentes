@@ -11,8 +11,8 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 4 - Coordinación de sesiones | cerrada 2026-10-18 | v0.4-etapa4 |
 | 5 - Pantallas mínimas | cerrada 2026-10-18 | v0.5-etapa5 |
 | 6 - Métricas descriptivas | cerrada 2026-10-18 | v0.6-etapa6 |
-| 7 - Historial y comparación | en curso | - |
-| 8 - Fuente física BLE | pendiente | - |
+| 7 - Historial y comparación | cerrada 2026-10-18 | v0.7-etapa7 |
+| 8 - Fuente física BLE | en curso | - |
 | 9 - Calibración | pendiente | - |
 | 10 - Respaldo y paquete | pendiente | - |
 | 11 - Complemento remoto | pendiente | - |

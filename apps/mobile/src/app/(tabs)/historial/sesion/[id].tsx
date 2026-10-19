@@ -80,7 +80,7 @@ export default function SessionDetailScreen() {
   const sorted = [...events].sort((a, b) => a.id - b.id);
 
   return (
-    <Screen tabbed footer={<Button icon="compare" onPress={() => router.navigate("/historial")}>Comparar con…</Button>}>
+    <Screen tabbed footer={<Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>}>
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
