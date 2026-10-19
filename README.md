@@ -16,6 +16,7 @@ Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visuali
 | `packages/storage` | Esquema SQLite versionado, repositorio y cola de escritura |
 | `packages/session` | Coordinador de sesiones (máquina de estados, recuperación) |
 | `packages/metrics` | Métricas descriptivas por canal con versión de algoritmo |
+| `packages/ble` | Protocolo BLE de la plantilla y fuente de datos física |
 | `firmware` | Firmware del ESP32 (PlatformIO, Arduino Core) |
 | `test-data` | Fixtures y datos simulados identificados como tales |
 | `scripts` | Utilidades de desarrollo |

@@ -1,11 +1,14 @@
 import { useSyncExternalStore } from "react";
 import * as Crypto from "expo-crypto";
-import { CHANNEL_CODES, SIMULATED_CONFIGURATION, type ChannelCode } from "@plantillas/contract";
+import { CHANNEL_CODES, type ChannelCode, type DataSource } from "@plantillas/contract";
+import { BleDataSource } from "@plantillas/ble";
 import { SessionCoordinator, type SessionResult, type SessionSnapshot } from "@plantillas/session";
 import { SCENARIOS, SimulatedDataSource } from "@plantillas/simulator";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { ensureSessionMetrics } from "./sessionMetrics";
 import { loadSettings } from "../infrastructure/settings/settings";
+import { getDevice, reconnectLink } from "../infrastructure/ble/deviceStore";
+import { resolveSource } from "./activeSource";
 
 /**
  * Sesión activa de la aplicación. Vive fuera de React para que sobreviva a la
@@ -24,6 +27,9 @@ interface LivePoint { t: number; values: Record<ChannelCode, number | null> }
 
 export interface ActiveSession {
   coordinator: SessionCoordinator;
+  /** Procedencia y título de la fuente, fijados al iniciar. */
+  sourceKind: "simulated" | "physical";
+  sourceTitle: string;
   activity: Activity;
   context: string | undefined;
   snapshot: SessionSnapshot;
@@ -54,12 +60,20 @@ export function useActiveSession(): ActiveSession | null {
 export async function startSession(activity: Activity, context: string | undefined): Promise<void> {
   if (active && !active.result) throw new Error("ya hay una sesión en curso");
   const settings = loadSettings();
+  const resolved = resolveSource(getDevice(), settings);
+  if (resolved.kind === "none" || !resolved.configuration) throw new Error(resolved.detail);
   const { repository } = await getDatabase();
-  const source = new SimulatedDataSource({ seed: settings.seed, scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40 });
+  let source: DataSource;
+  if (resolved.kind === "physical") {
+    const device = getDevice().connected!;
+    source = new BleDataSource(device.link, device.configuration, device.info, { reconnect: reconnectLink, reconnectAttempts: 10, reconnectDelayMs: 2000 });
+  } else {
+    source = new SimulatedDataSource({ seed: settings.seed, scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40 });
+  }
   const coordinator = new SessionCoordinator({
     repository,
     source,
-    configuration: SIMULATED_CONFIGURATION,
+    configuration: resolved.configuration,
     userId: "local",
     activity,
     ...(context ? { context } : {}),
@@ -67,7 +81,7 @@ export async function startSession(activity: Activity, context: string | undefin
     lateDataWindowMs: 300,
   });
   lastAccepted = -1;
-  active = { coordinator, activity, context, snapshot: coordinator.snapshot(), live: [], result: undefined };
+  active = { coordinator, sourceKind: resolved.kind, sourceTitle: resolved.title, activity, context, snapshot: coordinator.snapshot(), live: [], result: undefined };
   coordinator.subscribe((snapshot) => {
     if (!active || active.coordinator !== coordinator) return;
     const live = active.live;

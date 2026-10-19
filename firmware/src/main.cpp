@@ -60,9 +60,14 @@ void loop() {
   uint8_t sent = 0;
   while (sent < 8 && rb::pop(r)) {  // acotado por vuelta de loop para no monopolizar
     // Con un cliente BLE conectado los registros van solo por BLE; el USB conserva status/info.
-    if (!ble::connected()) usb::send_record(r);
-    else ble::notify_record(r);
-    diag::counters().transmitted++;
+    if (!ble::connected()) {
+      usb::send_record(r);
+      diag::counters().transmitted++;
+    } else if (ble::notify_record(r)) {
+      diag::counters().transmitted++;
+    } else {
+      diag::counters().dropped++;  // la pila BLE no pudo enviarlo: hueco observable en la app
+    }
     sent++;
   }
   if (diag::counters().dropped != last_dropped) {

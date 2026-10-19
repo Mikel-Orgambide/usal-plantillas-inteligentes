@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { StyleSheet, Switch, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useDevice } from "../infrastructure/ble/deviceStore";
+import { resolveSource } from "../application/activeSource";
 import Constants from "expo-constants";
 import { SCENARIOS, type ScenarioName } from "@plantillas/simulator";
 import { Chip, Header, ListRow, Screen, Text } from "../presentation/components";
@@ -27,21 +29,23 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const update = (patch: Partial<Settings>) => setSettings(saveSettings(patch));
   const version = Constants.expoConfig?.version ?? "—";
+  const device = useDevice();
+  const source = resolveSource(device, settings);
 
   return (
     <Screen>
       <Header title="Ajustes" context={`Plantillas Inteligentes · versión ${version}`} onBack={() => router.back()} />
 
       <Text variant="label" color={colors.textSecondary}>Dispositivo</Text>
-      <ListRow title="Simulador" subtitle="SIM-001 · 6 posiciones · única fuente disponible" chevron={false} />
-      <ListRow title="Plantillas" subtitle="Estado del dispositivo y búsqueda Bluetooth" onPress={() => router.push("/plantillas")} />
+      <ListRow title="Fuente de las sesiones nuevas" subtitle={`${source.title} · ${source.detail}`} chevron={false} />
+      <ListRow title="Plantillas" subtitle="Estado del dispositivo y búsqueda Bluetooth" onPress={() => router.navigate("/plantillas")} />
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Datos</Text>
       <ListRow title="Unidad" subtitle="cuentas ADC (0–4095) · sin calibración" value="cuentas" chevron={false} />
       <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Cuando exista una calibración por sensor, acá se podrá elegir N o kg. Hasta entonces los valores se muestran solo en cuentas.</Text>
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Demostración</Text>
-      <Toggle label="Modo simulador" detail="Genera lecturas sin plantillas. Toda sesión grabada así se marca «Simulada». No se puede apagar hasta que exista otra fuente." value={settings.simulatorMode} onChange={() => undefined} disabled />
+      <Toggle label="Simulador sin plantillas" detail="Si no hay plantillas conectadas, las sesiones usan el simulador y se marcan «Simulada». Con plantillas conectadas se usan siempre las plantillas." value={settings.simulatorMode} onChange={(v) => update({ simulatorMode: v })} />
       <Toggle label="Pantalla encendida al grabar" detail="Evita que Android pause la captura." value={settings.keepAwake} onChange={(v) => update({ keepAwake: v })} />
       <View style={{ marginTop: space[4], gap: space[2] }}>
         <Text variant="body">Escenario del simulador</Text>

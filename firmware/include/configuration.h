@@ -5,7 +5,7 @@
 namespace cfg {
 
 constexpr const char* FORMAT_VERSION = "1.0";
-constexpr const char* FIRMWARE_VERSION = "0.1.0-h1";
+constexpr const char* FIRMWARE_VERSION = "0.2.0-h6";
 constexpr uint8_t CHANNEL_COUNT = 6;
 constexpr uint16_t RAW_MAX = 4095;          // ADC de 12 bits
 constexpr uint16_t READ_ERROR_VALUE = 0xFFFF; // valor binario que representa read_error

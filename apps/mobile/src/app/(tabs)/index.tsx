@@ -5,14 +5,14 @@ import { Button, Card, Header, Icon, Screen, StatusBanner, Text, TextButton, Val
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../presentation/theme/tokens";
 import { useSessionList } from "../../application/useSessions";
 import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
-import { loadSettings } from "../../infrastructure/settings/settings";
+import { useActiveSource } from "../../application/activeSource";
 
 /** Inicio («Hoy»): estado del dispositivo, última sesión y las dos acciones. */
 export default function HomeScreen() {
   const router = useRouter();
   const { sessions, error, reload } = useSessionList();
   const active = useActiveSession();
-  const settings = loadSettings();
+  const source = useActiveSource();
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
 
   const last = sessions?.[0];
@@ -26,14 +26,14 @@ export default function HomeScreen() {
         recording ? (
           <Button variant="primary" icon="play" onPress={() => router.push("/grabacion")}>Volver a la sesión en curso</Button>
         ) : (
-          <Button variant="primary" icon="plus" onPress={() => router.push("/preparacion")}>Nueva sesión</Button>
+          <Button variant="primary" icon="plus" disabled={source.kind === "none"} onPress={() => router.push("/preparacion")}>Nueva sesión</Button>
         )
       }
     >
       <Header
         title="Hoy"
-        status={settings.simulatorMode ? "connected" : "off"}
-        context={settings.simulatorMode ? "Simulador · SIM-001 · plantillas simuladas" : "Sin dispositivo"}
+        status={source.kind === "none" ? "off" : "connected"}
+        context={source.title}
         action="settings"
         actionLabel="Ajustes"
         onAction={() => router.push("/ajustes")}
@@ -42,7 +42,7 @@ export default function HomeScreen() {
       <Text variant="label" color={colors.textSecondary} style={{ marginBottom: space[2] }}>Dispositivo</Text>
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <ValueCard label="Posiciones" value="6" unit="de 6" sub="talón · medial · lateral" style={{ flex: 1 }} />
-        <ValueCard label="Fuente activa" value={settings.simulatorMode ? "Simulada" : "—"} sub={settings.simulatorMode ? `SIM-CONFIG-001 · escenario ${settings.scenario}` : "conectá las plantillas"} style={{ flex: 1 }} />
+        <ValueCard label="Fuente activa" value={source.kind === "physical" ? "Plantillas" : source.kind === "simulated" ? "Simulada" : null} sub={source.kind === "none" ? "conectá las plantillas" : source.configuration?.configuration_id ?? ""} style={{ flex: 1 }} />
       </View>
 
       {error ? (
@@ -74,7 +74,7 @@ export default function HomeScreen() {
           <Icon name="foot" size={32} />
           <Text variant="heading">Todavía no hay sesiones</Text>
           <Text variant="body" color={colors.textSecondary} style={{ textAlign: "center" }}>
-            El simulador está listo. Tocá Nueva sesión para grabar la primera.
+            {source.kind === "physical" ? "Las plantillas están conectadas." : "El simulador está listo."} Tocá Nueva sesión para grabar la primera.
           </Text>
         </View>
       )}

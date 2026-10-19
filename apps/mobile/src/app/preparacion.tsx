@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { CHANNEL_CODES, CHANNEL_POSITIONS, SIMULATED_CONFIGURATION } from "@plantillas/contract";
+import { CHANNEL_CODES, CHANNEL_POSITIONS } from "@plantillas/contract";
 import { Button, Card, Chip, Header, Icon, Screen, Text } from "../presentation/components";
 import { colors, fonts, radius, size, space } from "../presentation/theme/tokens";
 import { ACTIVITY_LABEL, startSession, type Activity } from "../application/sessionStore";
+import { useActiveSource } from "../application/activeSource";
 
 const ZONE_LABEL = { heel: "Talón", forefoot_medial: "Medial", forefoot_lateral: "Lateral" } as const;
 
@@ -16,7 +17,9 @@ export default function PrepareScreen() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
-  const recognized = CHANNEL_CODES.filter((c) => SIMULATED_CONFIGURATION.channels.some((ch) => ch.code === c));
+  const source = useActiveSource();
+  const channels = source.configuration?.channels ?? [];
+  const recognized = CHANNEL_CODES.filter((c) => channels.some((ch) => ch.code === c));
   const allOk = recognized.length === 6;
 
   const start = async () => {
@@ -33,7 +36,7 @@ export default function PrepareScreen() {
 
   return (
     <Screen footer={<Button variant="primary" icon="play" disabled={!allOk || starting} onPress={() => void start()}>{starting ? "Iniciando…" : "Iniciar"}</Button>}>
-      <Header title="Nueva sesión" status="connected" context="Simulador · SIM-001 · plantillas simuladas" onBack={() => router.back()} />
+      <Header title="Nueva sesión" status={source.kind === "none" ? "off" : "connected"} context={source.title} onBack={() => router.back()} />
 
       <Text variant="label" color={colors.textSecondary} style={{ marginBottom: space[2] }}>Actividad</Text>
       <View style={styles.chips}>
@@ -55,7 +58,7 @@ export default function PrepareScreen() {
       <View style={{ marginTop: space[6] }}>
         <Card title="Dispositivo">
           <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>
-            {SIMULATED_CONFIGURATION.device_id} · simulado · {SIMULATED_CONFIGURATION.configuration_id} · cuentas ADC 0–4095
+            {source.kind === "physical" ? "Física" : source.kind === "simulated" ? "Simulada" : "Sin fuente"} · {source.detail}
           </Text>
           <View style={styles.grid}>
             {CHANNEL_CODES.map((code) => {

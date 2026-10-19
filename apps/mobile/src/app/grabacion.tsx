@@ -97,7 +97,7 @@ export default function RecordingScreen() {
         ) : null}
         <View style={[styles.dot, { backgroundColor: stale ? colors.alert : finished ? colors.stale : colors.accent }]} />
         <Text variant="caption" color={colors.textSecondary}>
-          {STATE_LABEL[snapshot.state]} · SIM-001 · simuladas · {ACTIVITY_LABEL[active.activity]}
+          {STATE_LABEL[snapshot.state]} · {active.sourceTitle} · {active.sourceKind === "physical" ? "físicas" : "simuladas"} · {ACTIVITY_LABEL[active.activity]}
         </Text>
       </View>
 

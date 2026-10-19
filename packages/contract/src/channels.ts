@@ -22,8 +22,11 @@ export type Foot = "left" | "right";
 
 export type Zone = "heel" | "forefoot_medial" | "forefoot_lateral";
 
-/** Modelo anunciado por el vendedor; no acredita fabricante ni rango de fuerza. */
-export type SensorModel = "FSR406" | "FSR402";
+/**
+ * Modelo anunciado por el vendedor; no acredita fabricante ni rango de fuerza.
+ * `synthetic`: canal sin sensor, con valores generados por la placa (pruebas de transporte).
+ */
+export type SensorModel = "FSR406" | "FSR402" | "synthetic";
 
 /** Unidad de los valores crudos en la primera versión del contrato. */
 export const RAW_UNIT = "adc_count" as const;

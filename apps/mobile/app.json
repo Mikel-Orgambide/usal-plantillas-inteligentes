@@ -32,7 +32,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-ble-manager",
+        {
+          "isBleRequired": false,
+          "neverForLocation": true,
+          "companionDeviceEnabled": false
+        }
+      ]
     ],
     "backgroundColor": "#0c0d10"
   }

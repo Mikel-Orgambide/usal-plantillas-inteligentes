@@ -70,9 +70,17 @@ void begin() {
   control->setCallbacks(new ControlCallbacks());
   status_chr = svc->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::NOTIFY);
   measurement_chr = svc->createCharacteristic(MEASUREMENT_UUID, NIMBLE_PROPERTY::NOTIFY);
+  // Un anuncio admite 31 bytes: flags (3) + UUID de 128 bits (18) van en el anuncio;
+  // el nombre (19) va en la respuesta de escaneo. Juntos no entran.
+  NimBLEAdvertisementData adv_data;
+  adv_data.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  adv_data.addServiceUUID(SERVICE_UUID);
+  NimBLEAdvertisementData scan_data;
+  scan_data.setName(name);
   NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
-  adv->addServiceUUID(SERVICE_UUID);
-  adv->setName(name);
+  adv->setAdvertisementData(adv_data);
+  adv->setScanResponseData(scan_data);
+  adv->enableScanResponse(true);
   adv->start();
 }
 
@@ -96,8 +104,8 @@ void notify_status(const char* event, const char* detail) {
 }
 
 // Registro binario little-endian (ADR 0006): u8 version, u16 boot, u16 n, u32 sequence, 6 × (u32 time_us, u16 value).
-void notify_record(const Record& r) {
-  if (!measurement_chr || !is_connected) return;
+bool notify_record(const Record& r) {
+  if (!measurement_chr || !is_connected) return false;
   uint8_t buf[45];
   size_t p = 0;
   auto put16 = [&](uint16_t v) { buf[p++] = v & 0xFF; buf[p++] = v >> 8; };
@@ -108,7 +116,7 @@ void notify_record(const Record& r) {
   put32(r.sequence);
   for (uint8_t i = 0; i < cfg::CHANNEL_COUNT; i++) { put32(r.samples[i].time_us); put16(r.samples[i].value); }
   measurement_chr->setValue(buf, sizeof(buf));
-  measurement_chr->notify();
+  return measurement_chr->notify();
 }
 
 uint8_t take_command() {

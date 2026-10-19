@@ -3,8 +3,10 @@ import type { ScenarioName } from "@plantillas/simulator";
 
 /** Ajustes locales de la app (clave-valor de expo-sqlite). */
 export interface Settings {
-  /** Única fuente disponible hasta la etapa 8 (BLE). */
+  /** Permite usar el simulador cuando no hay plantillas conectadas. Las sesiones así grabadas se marcan «Simulada». */
   simulatorMode: boolean;
+  /** Última placa conectada, para reconectar sin volver a buscar. */
+  lastDevice?: { id: string; name: string };
   keepAwake: boolean;
   /** Escenario del simulador para demostraciones y verificación. */
   scenario: ScenarioName;
