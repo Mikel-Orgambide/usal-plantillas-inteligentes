@@ -35,7 +35,15 @@ Registro: `test-data/firmware/h1-usb-2026-10-19-firmware-0.1.0.txt`. Validación
 
 Limitaciones: corrida corta (≈ 9 s), señal sintética, sin carga BLE simultánea. No acredita adquisición plantar ni la tasa física sostenible (H04), que se medirán con duración y límites fijados de antemano.
 
-## Pendiente
+## H5 - Segunda corrida (firmware corregido, 230400 baudios)
 
-- Repetir la corrida con el firmware corregido (230400, `type` en todos los mensajes) y una duración definida (H04/H05).
+Registro: `test-data/firmware/h5-usb-2026-10-19-firmware-0.1.0-230400.txt`. Captura `B8-C1`, ≈ 25 s.
+
+- Contadores del firmware al detener: `generated` 502, `transmitted` 502, `dropped` 0, `read_errors` 5 (esperado: uno cada 97 registros → 5).
+- La terminal de VS Code conservó solo las últimas 204 líneas (sequence 298…501): sin saltos, 0 líneas corruptas, período 49,55–50,44 ms (mediana 50,00), desfase entre canales 13–70 µs, campo `type` presente en `info`, `status` y `record`.
+- Para corridas largas el monitor guarda ahora todo en `firmware/logs/` (`monitor_filters = log2file`), de modo que la comparación generados/recibidos se haga sobre el total y no sobre lo visible.
+
+Cierre de la parte USB: registros físicos (sintéticos generados en la placa) con campos, canales, secuencias y unidades del contrato, sin pérdidas observadas en 25 s a 20 reg/s. ✔ La medición sostenida de H04 (duración y límites fijados antes del ensayo) queda pendiente.
+
+## Pendiente
 - H6: aplicación como cliente BLE (`react-native-ble-plx`, build nueva), `BleDataSource`, pestaña Plantillas.

@@ -38,3 +38,4 @@ npm-debug.*
 # PlatformIO
 firmware/.pio/
 firmware/.vscode/
+firmware/logs/
