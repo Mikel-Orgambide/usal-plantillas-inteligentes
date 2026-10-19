@@ -330,6 +330,49 @@ export class SessionRepository {
     return this.db.all<SampleRow>(sql, channel ? [captureId, channel] : [captureId]);
   }
 
+  /**
+   * Serie reducida de un canal para graficar: la captura se divide en `buckets`
+   * tramos por secuencia y cada tramo devuelve el promedio de las lecturas
+   * válidas o `null` si no hubo ninguna (hueco visible). La reducción no
+   * modifica las muestras almacenadas.
+   */
+  async getChannelSeries(captureId: number, channel: ChannelCode, buckets: number): Promise<Array<number | null>> {
+    const range = await this.db.get<{ min_seq: number | null; max_seq: number | null }>(
+      "SELECT MIN(sequence) AS min_seq, MAX(sequence) AS max_seq FROM record WHERE capture_id = ?",
+      [captureId],
+    );
+    if (!range || range.min_seq === null || range.max_seq === null) return [];
+    const span = range.max_seq - range.min_seq + 1;
+    const n = Math.max(1, Math.min(buckets, span));
+    const width = span / n;
+    const rows = await this.db.all<{ bucket: number; avg_value: number }>(
+      `SELECT CAST((r.sequence - ?) / ? AS INTEGER) AS bucket, AVG(s.raw_value) AS avg_value
+       FROM sample s JOIN record r ON r.id = s.record_id
+       WHERE r.capture_id = ? AND s.channel_code = ? AND s.status = 'ok'
+       GROUP BY bucket ORDER BY bucket`,
+      [range.min_seq, width, captureId, channel],
+    );
+    const out: Array<number | null> = new Array<number | null>(n).fill(null);
+    for (const row of rows) {
+      const i = Math.min(n - 1, Math.max(0, row.bucket));
+      out[i] = Math.round(row.avg_value);
+    }
+    return out;
+  }
+
+  /** Cantidades por captura: registros guardados, secuencia máxima (para estimar esperados) y lecturas fallidas. */
+  async getCaptureQuality(captureId: number): Promise<{ records: number; max_sequence: number | null; read_errors: number }> {
+    const r = await this.db.get<{ records: number; max_sequence: number | null }>(
+      "SELECT COUNT(*) AS records, MAX(sequence) AS max_sequence FROM record WHERE capture_id = ?",
+      [captureId],
+    );
+    const e = await this.db.get<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM sample s JOIN record r ON r.id = s.record_id WHERE r.capture_id = ? AND s.status = 'read_error'",
+      [captureId],
+    );
+    return { records: r?.records ?? 0, max_sequence: r?.max_sequence ?? null, read_errors: e?.n ?? 0 };
+  }
+
   async countRecords(captureId: number): Promise<number> {
     const row = await this.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM record WHERE capture_id = ?", [captureId]);
     return row?.n ?? 0;

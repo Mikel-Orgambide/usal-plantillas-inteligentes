@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Historial — dos sesiones elegidas</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Historial" context="12 sesiones · 9 físicas · 3 simuladas"></x-import>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap">
+    <x-import component-from-global-scope="Plantillas.Chip" variant="selected" icon="check">Todas</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Caminata</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Running</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Fuerza</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip" variant="sim" icon="settings">Simuladas</x-import>
+  </div>
+  <div style="margin-top: 16px; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Elegí dos sesiones para comparar · 2 de 2</div>
+  <div style="margin-top: 4px; flex: 1; min-height: 0; overflow: hidden">
+    <x-import component-from-global-scope="Plantillas.ListRow" title="dom 18 oct · 19:40" subtitle="Running · 32:08 · 41 220 registros · completa" selected="{{yes}}" chevron="{{no}}"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="sáb 17 oct · 08:12" subtitle="Caminata · 18:40 · 23 904 registros" chip="{{chipIncompleta}}"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="vie 16 oct · 21:05" subtitle="Fuerza · 41:12 · 50 102 registros · completa" chip="{{chipSim}}"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="jue 15 oct · 19:12" subtitle="Running · 30:51 · 39 980 registros · completa" selected="{{yes}}" chevron="{{no}}"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="mié 14 oct · 07:48" subtitle="Caminata · 25:30 · 32 118 registros · completa"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="lun 12 oct · 20:30" subtitle="Running · 09:14 · 11 004 registros" chip="{{chipCierre}}"></x-import>
+    <x-import component-from-global-scope="Plantillas.ListRow" title="dom 11 oct · 10:02" subtitle="Fuerza · 38:00 · 47 212 registros · completa" chip="{{chipSim}}"></x-import>
+  </div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="primary" block="{{yes}}" icon="compare" style="display: block; margin-top: 32px">Comparar las 2 elegidas</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  chip(variant, text, icon) {
+    var P = window.Plantillas;
+    if (typeof React === 'undefined' || !P || !P.Chip) return null;
+    return React.createElement(P.Chip, icon ? { variant: variant, icon: icon } : { variant: variant }, text);
+  }
+  renderVals() {
+    return {
+      yes: true,
+      no: false,
+      chipIncompleta: this.chip('alert', 'Incompleta · desconexión'),
+      chipCierre: this.chip('alert', 'Incompleta · cierre'),
+      chipSim: this.chip('sim', 'Simulada', 'settings')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comparación — dos sesiones compatibles</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+.cmp td,.cmp th{padding:10px 0;border-bottom:1px solid #2b3038;text-align:right;font-variant-numeric:tabular-nums}
+.cmp th{font-size:12px;line-height:16px;letter-spacing:.02em;font-weight:500;color:#98a2ad}
+.cmp td{font-size:20px;line-height:26px;font-weight:600}
+.cmp td:first-child,.cmp th:first-child{text-align:left}
+.cmp td:first-child{font-size:14px;line-height:18px;font-weight:500;color:#98a2ad}
+</style>
+</helmet>
+<div style="width: 412px; height: 1060px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Comparar" context="Compatibles · misma configuración · cuentas ADC · ambas físicas"></x-import>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+    <div style="background: #15181c; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 18px; font-weight: 500"><span style="width: 12px; height: 2px; background: #b48cff" aria-hidden="true"></span>A · dom 18 oct</div>
+      <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Running · 32:08 · 41 220 reg.</div>
+      <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Física · Plantillas-ESP32</div>
+    </div>
+    <div style="background: #15181c; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 18px; font-weight: 500"><span style="width: 12px; height: 2px; background: #98a2ad" aria-hidden="true"></span>B · jue 15 oct</div>
+      <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Running · 30:51 · 39 980 reg.</div>
+      <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Física · Plantillas-ESP32</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; font-size: 20px; line-height: 26px; font-weight: 600">Carga media por posición</div>
+  <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad; margin-top: 4px">cuentas ADC · 0–4095 · diferencia = A − B</div>
+  <table class="cmp" style="width: 100%; border-collapse: collapse; margin-top: 8px">
+    <thead>
+      <tr><th scope="col">Posición</th><th scope="col">A</th><th scope="col">B</th><th scope="col">Dif.</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Talón izq.</td><td>1 902</td><td>1 774</td><td>+128</td></tr>
+      <tr><td>Talón der.</td><td>1 847</td><td>1 802</td><td>+45</td></tr>
+      <tr><td>Medial izq.</td><td>1 388</td><td>1 421</td><td>−33</td></tr>
+      <tr><td>Medial der.</td><td>1 456</td><td>1 390</td><td>+66</td></tr>
+      <tr><td>Lateral izq.</td><td>742</td><td>810</td><td>−68</td></tr>
+      <tr><td>Lateral der.</td><td>811</td><td>796</td><td>+15</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 24px; font-size: 20px; line-height: 26px; font-weight: 600">Evolución · talón izquierdo</div>
+  <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap">
+    <x-import component-from-global-scope="Plantillas.Chip" variant="selected">Talón izq.</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Talón der.</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Medial</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Lateral</x-import>
+  </div>
+  <x-import component-from-global-scope="Plantillas.LineChart" series="{{series}}" start-label="0:00" end-label="32:08" ticks="{{ticks}}" label="Alineadas por tiempo de sesión · B termina en 30:51" style="display: block; margin-top: 12px"></x-import>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px">
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Datos recibidos · A" value="98,4" unit="%" sub="3 huecos · 12,6 s"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Datos recibidos · B" value="99,7" unit="%" sub="1 hueco · 1,8 s"></x-import>
+  </div>
+
+  <div style="flex: 1"></div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="secondary" block="{{yes}}" style="display: block; margin-top: 32px">Cambiar sesiones</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true,
+      ticks: ['0', '10 min', '20 min', '30 min'],
+      series: [
+        { name: 'A · dom 18 oct', values: [1650,1820,1900,1960,1880,1930,2010,1950,1890,1940,2020,1980,null,null,1900,1860,1920,1970,1890,1830,null,1880,1950,2000,1940,1900,1860,null,1820,1880,1940,1900] },
+        { name: 'B · jue 15 oct', values: [1540,1690,1760,1810,1770,1800,1850,1820,1780,1810,1860,1830,1790,1760,1800,1770,1810,1840,1790,1750,1720,1770,1820,1850,1800,1770,1740,1700,1730,1780,1800,null] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

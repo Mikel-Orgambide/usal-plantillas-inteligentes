@@ -200,3 +200,25 @@ describe("sesiones, capturas y registros", () => {
     await db.close();
   });
 });
+
+describe("consultas para visualización", () => {
+  it("la serie reducida promedia por tramo y deja null en los huecos", async () => {
+    const { db, repo } = await openRepo();
+    const { capture } = await seededSession(repo);
+    const records = simulatedRecords(20, "S1");
+    // Saltar las secuencias 8..11: hueco en el medio.
+    await repo.insertRecords(capture.id, records.filter((r) => r.sequence < 8 || r.sequence > 11));
+    const series = await repo.getChannelSeries(capture.id, "L_HEEL", 5);
+    expect(series).toHaveLength(5);
+    expect(series[2]).toBeNull(); // tramo 8..11
+    expect(series.filter((v) => v !== null)).toHaveLength(4);
+    const full = await repo.getChannelSeries(capture.id, "L_HEEL", 100);
+    expect(full).toHaveLength(20);
+    expect(full.slice(8, 12)).toEqual([null, null, null, null]);
+    expect(full[0]).toBe(records[0]!.samples[0]!.raw_value);
+    expect(await repo.getChannelSeries(999, "L_HEEL", 5)).toEqual([]);
+    const q = await repo.getCaptureQuality(capture.id);
+    expect(q).toEqual({ records: 16, max_sequence: 19, read_errors: 0 });
+    await db.close();
+  });
+});

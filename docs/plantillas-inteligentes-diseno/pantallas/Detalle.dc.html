@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Detalle de sesión</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+</style>
+</helmet>
+<div style="width: 412px; height: 1660px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Running" context="dom 18 oct · 19:40 · 32:08 min · completa"></x-import>
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">
+    <span style="font-size: 14px; line-height: 18px; font-weight: 500; color: #f2f4f7">Física</span>
+    <span>·</span><span>Plantillas-ESP32</span>
+    <span>·</span><span>6 posiciones</span>
+    <span>·</span><span>25 Hz</span>
+    <span>·</span><span>cuentas ADC 0–4095</span>
+  </div>
+  <div style="margin-top: 4px; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Contexto: zapatillas de ruta · asfalto</div>
+
+  <div style="margin-top: 24px; font-size: 20px; line-height: 26px; font-weight: 600">Calidad</div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px">
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Registros" value="41 220" unit="reg." sub="98,4 % de 41 890 esperados"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Huecos" value="3" unit="" sub="12,6 s sin datos"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Lecturas fallidas" value="118" unit="read_error" sub="0,05 % de los canales"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Capturas" value="2" unit="" sub="1 reinicio a los 14:02"></x-import>
+  </div>
+
+  <div style="margin-top: 24px; font-size: 20px; line-height: 26px; font-weight: 600">Carga media por posición</div>
+  <x-import component-from-global-scope="Plantillas.FootMap" left="{{left}}" right="{{right}}" caption="media de la sesión · cuentas ADC · 0–4095" style="display: block; margin-top: 12px"></x-import>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px">
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Talón izq." value="1 902" unit="cuentas" sub="máx 3 310 · σ 212 · 41 102 válidas"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Talón der." value="1 847" unit="cuentas" sub="máx 3 198 · σ 230 · 41 120 válidas"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Medial izq." value="1 388" unit="cuentas" sub="máx 2 604 · σ 184 · 41 090 válidas"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Medial der." value="1 456" unit="cuentas" sub="máx 2 712 · σ 191 · 41 115 válidas"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Lateral izq." value="742" unit="cuentas" sub="máx 1 490 · σ 126 · 41 098 válidas"></x-import>
+    <x-import component-from-global-scope="Plantillas.ValueCard" label="Lateral der." value="811" unit="cuentas" sub="máx 1 566 · σ 131 · 41 104 válidas"></x-import>
+  </div>
+
+  <div style="margin-top: 24px; font-size: 20px; line-height: 26px; font-weight: 600">Sesión completa</div>
+  <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap">
+    <x-import component-from-global-scope="Plantillas.Chip" variant="selected">Talón</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Medial</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Lateral</x-import>
+  </div>
+  <x-import component-from-global-scope="Plantillas.LineChart" series="{{series}}" start-label="0:00" end-label="32:08" ticks="{{ticks}}" label="Talón · izquierdo y derecho · 3 huecos" style="display: block; margin-top: 12px"></x-import>
+
+  <div style="margin-top: 24px">
+    <x-import component-from-global-scope="Plantillas.Card">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600">Eventos <span style="font-weight: 400; font-size: 14px; color: #98a2ad">· 7</span></div>
+        <x-import component-from-global-scope="Plantillas.Icon" name="chevron-down" style="color: #98a2ad"></x-import>
+      </div>
+      <div style="margin-top: 4px">
+        <x-import component-from-global-scope="Plantillas.ListRow" title="Sesión iniciada" subtitle="00:00 · Plantillas-ESP32 · 6 posiciones" chevron="{{no}}"></x-import>
+        <x-import component-from-global-scope="Plantillas.ListRow" title="Desconectado" subtitle="14:02 · hueco de secuencia · 4,2 s" chevron="{{no}}"></x-import>
+        <x-import component-from-global-scope="Plantillas.ListRow" title="Reinicio de captura" subtitle="14:02 · captura 2 de 2" chevron="{{no}}"></x-import>
+        <x-import component-from-global-scope="Plantillas.ListRow" title="Reconectado" subtitle="14:06 · 3 lecturas fuera de orden descartadas" chevron="{{no}}"></x-import>
+        <x-import component-from-global-scope="Plantillas.ListRow" title="Sesión finalizada" subtitle="32:08 · completa" chevron="{{no}}"></x-import>
+      </div>
+    </x-import>
+  </div>
+
+  <div style="flex: 1"></div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="secondary" block="{{yes}}" icon="compare" style="display: block; margin-top: 32px">Comparar con…</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":1660}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true,
+      no: false,
+      left: { heel: 1902, medial: 1388, lateral: 742 },
+      right: { heel: 1847, medial: 1456, lateral: 811 },
+      ticks: ['0', '10 min', '20 min', '30 min'],
+      series: [
+        { name: 'Talón izq.', values: [1650,1820,1900,1960,1880,1930,2010,1950,1890,1940,2020,1980,null,null,1900,1860,1920,1970,1890,1830,null,1880,1950,2000,1940,1900,1860,null,1820,1880,1940,1900] },
+        { name: 'Talón der.', values: [1580,1760,1840,1900,1830,1870,1950,1900,1840,1880,1960,1920,null,null,1850,1810,1860,1910,1840,1780,null,1830,1900,1950,1890,1850,1810,null,1770,1830,1890,1850] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

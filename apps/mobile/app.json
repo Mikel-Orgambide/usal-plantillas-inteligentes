@@ -5,14 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mikelorgambide.plantillasinteligentes"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0c0d10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -29,6 +29,11 @@
       "eas": {
         "projectId": "3b47649d-172b-4c2b-8ac4-1d9a13ea119c"
       }
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "backgroundColor": "#0c0d10"
   }
 }

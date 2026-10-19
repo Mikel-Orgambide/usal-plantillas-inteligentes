@@ -1,0 +1,104 @@
+/* Plantillas Inteligentes — estilos de componentes. Valores: tokens.css. */
+body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.pi-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* Button */
+.pi-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: 48px; padding: 0 var(--space-6); border-radius: var(--radius-md); border: 1px solid transparent; font: inherit; font-size: 16px; line-height: 22px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.pi-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.pi-btn-secondary { background: transparent; border-color: var(--line); color: var(--text-primary); }
+.pi-btn-danger { background: var(--alert); border-color: var(--alert); color: var(--on-alert); }
+.pi-btn-block { display: flex; width: 100%; }
+.pi-btn[disabled] { opacity: .4; cursor: default; }
+.pi-btn:focus-visible, .pi-chip:focus-visible, .pi-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.pi-btn .pi-icon { width: 20px; height: 20px; }
+
+/* Card */
+.pi-card { background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); }
+.pi-card-elevated { background: var(--surface-elevated); }
+.pi-card-title { margin: 0 0 var(--space-3); font-size: 20px; line-height: 26px; font-weight: 600; }
+.pi-card-body { font-size: 16px; line-height: 22px; }
+
+/* Chip */
+.pi-chip { display: inline-flex; align-items: center; gap: var(--space-1); height: 32px; padding: 0 var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; line-height: 18px; font-weight: 500; cursor: pointer; }
+.pi-chip .pi-icon { width: 16px; height: 16px; }
+.pi-chip-selected { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.pi-chip-alert { background: var(--alert-soft); border-color: transparent; color: var(--alert); }
+.pi-chip-sim { color: var(--text-secondary); }
+
+/* ListRow */
+.pi-row { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; padding: var(--space-3) 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: inherit; font: inherit; text-align: left; width: 100%; cursor: pointer; }
+.pi-row-main { flex: 1; min-width: 0; }
+.pi-row-title { font-size: 16px; line-height: 22px; font-weight: 400; margin: 0; }
+.pi-row-sub { font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); margin: var(--space-1) 0 0; }
+.pi-row-value { font-size: 20px; line-height: 26px; font-weight: 600; }
+.pi-row-chevron { color: var(--text-secondary); width: 24px; height: 24px; flex: none; }
+.pi-row-selected { color: var(--accent); }
+
+/* Header */
+.pi-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); padding: var(--space-6) 0 var(--space-4); }
+.pi-header-title { margin: 0; font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.01em; }
+.pi-header-context { margin: var(--space-1) 0 0; font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); display: flex; align-items: center; gap: var(--space-2); }
+.pi-dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--text-secondary); flex: none; }
+.pi-dot-connected { background: var(--accent); }
+.pi-dot-searching { background: var(--alert); animation: pi-pulse 1.2s ease-in-out infinite; }
+.pi-dot-off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-secondary); }
+@keyframes pi-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+.pi-header-action { color: var(--text-secondary); width: 24px; height: 24px; margin-bottom: var(--space-1); }
+
+/* StatusBanner */
+.pi-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-elevated); color: var(--text-primary); font-size: 14px; line-height: 18px; font-weight: 500; }
+.pi-banner .pi-icon { width: 20px; height: 20px; flex: none; color: var(--text-secondary); }
+.pi-banner-alert { background: var(--alert-soft); }
+.pi-banner-alert .pi-icon { color: var(--alert); }
+.pi-banner-text { flex: 1; min-width: 0; }
+.pi-banner-sub { display: block; font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: .02em; color: var(--text-secondary); margin-top: 2px; }
+.pi-banner-action { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; font-weight: 500; color: var(--accent); cursor: pointer; }
+.pi-banner-alert .pi-banner-action { color: var(--alert); }
+
+/* ValueCard */
+.pi-value { background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
+.pi-value-label { font-size: 14px; line-height: 18px; font-weight: 500; color: var(--text-secondary); margin: 0 0 var(--space-2); display: flex; align-items: center; gap: var(--space-2); }
+.pi-value-main { display: flex; align-items: baseline; gap: var(--space-1); }
+.pi-value-num { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.01em; color: var(--text-primary); }
+.pi-value-xl .pi-value-num { font-size: 56px; line-height: 60px; letter-spacing: -.02em; }
+.pi-value-unit { font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); }
+.pi-value-sub { margin: var(--space-2) 0 0; font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); }
+.pi-value-stale .pi-value-num { color: var(--stale); }
+.pi-value-empty .pi-value-num { color: var(--text-secondary); }
+.pi-value-live .pi-value-num { animation: pi-tick 160ms ease-out; }
+@keyframes pi-tick { from { opacity: .55 } to { opacity: 1 } }
+
+/* FootMap */
+.pi-feet { display: flex; gap: var(--space-4); justify-content: center; }
+.pi-foot { position: relative; width: 150px; }
+.pi-foot svg { display: block; width: 150px; height: 260px; }
+.pi-foot-outline { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.pi-foot-side { position: absolute; top: 0; font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); }
+.pi-foot-left .pi-foot-side { left: 0; }
+.pi-foot-right .pi-foot-side { right: 0; }
+.pi-foot-point { fill: var(--accent); }
+.pi-foot-ring { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.pi-foot-value { font-size: 20px; line-height: 26px; font-weight: 600; fill: var(--text-primary); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.pi-foot-name { font-size: 12px; letter-spacing: .02em; fill: var(--text-secondary); }
+.pi-foot-stale .pi-foot-point, .pi-foot-stale .pi-foot-ring { fill: var(--stale); stroke: var(--stale); }
+.pi-foot-stale .pi-foot-value { fill: var(--stale); }
+.pi-foot-none .pi-foot-point { fill: none; }
+.pi-foot-none .pi-foot-ring { stroke: var(--text-secondary); stroke-dasharray: 2 3; }
+.pi-foot-none .pi-foot-value { fill: var(--text-secondary); }
+.pi-feet-caption { text-align: center; margin: var(--space-3) 0 0; font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); }
+
+/* LineChart */
+.pi-chart { display: block; width: 100%; height: auto; }
+.pi-chart-axis { stroke: var(--line); stroke-width: 1; }
+.pi-chart-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.pi-chart-line-2 { stroke: var(--text-secondary); }
+.pi-chart-line-stale { stroke: var(--stale); }
+.pi-chart-gap { stroke: var(--chart-gap); stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }
+.pi-chart-tick { font-size: 12px; letter-spacing: .02em; fill: var(--text-secondary); }
+.pi-chart-legend { display: flex; gap: var(--space-4); margin: var(--space-2) 0 0; font-size: 12px; line-height: 16px; letter-spacing: .02em; color: var(--text-secondary); }
+.pi-chart-legend i { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: var(--space-1); background: var(--accent); }
+.pi-chart-legend i.s2 { background: var(--text-secondary); }
+.pi-chart-legend i.gap { background: none; border-top: 2px dotted var(--chart-gap); height: 0; }
+
+/* Icon */
+.pi-icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }

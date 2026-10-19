@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Grabación en vivo — conexión interrumpida</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; padding: 0 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <div style="display: flex; align-items: center; gap: 8px; padding: 28px 0 0; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">
+    <span style="width: 8px; height: 8px; border-radius: 999px; background: #e3a856; flex: none" aria-hidden="true"></span>
+    <span>Interrumpida · Plantillas-ESP32 · reconectando · Running</span>
+  </div>
+  <x-import component-from-global-scope="Plantillas.StatusBanner" tone="alert" icon="bluetooth-off" detail="Los valores en gris son anteriores a la desconexión" action-label="Reconectar" style="display: block; margin-top: 16px">Conexión interrumpida</x-import>
+  <x-import component-from-global-scope="Plantillas.ValueCard" label="Duración" value="14:02" unit="min" size="xl" live="{{yes}}" sub="La duración sigue; el hueco queda registrado" style="display: block; margin-top: 16px"></x-import>
+  <x-import component-from-global-scope="Plantillas.FootMap" left="{{left}}" right="{{right}}" stale="{{yes}}" style="display: block; margin-top: 16px"></x-import>
+  <div style="display: flex; gap: 8px; margin-top: 16px">
+    <x-import component-from-global-scope="Plantillas.Chip" variant="selected">Por pie</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Talón</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Medial</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Lateral</x-import>
+  </div>
+  <x-import component-from-global-scope="Plantillas.LineChart" series="{{series}}" start-label="−10 s" end-label="ahora" label="Carga por pie · últimos 10 segundos · hueco de 4,2 s" style="display: block; margin-top: 12px"></x-import>
+  <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad; font-variant-numeric: tabular-nums">
+    <span>19 203 registros</span>
+    <span style="color: #e3a856">1 hueco · 4,2 s</span>
+    <span>0 reg/s</span>
+  </div>
+  <div style="flex: 1"></div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="primary" block="{{yes}}" icon="stop" style="display: block; margin-top: 24px">Finalizar</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true,
+      left: { heel: 2418, medial: 1736, lateral: 904 },
+      right: { heel: 2290, medial: 1812, lateral: 1104 },
+      series: [
+        { name: 'Izquierdo', values: [1520,1980,2460,2890,3120,2740,2210,1690,1240,980,1310,1870,2420,null,null,null,null,null,null,null] },
+        { name: 'Derecho', values: [980,1250,1760,2310,2820,3080,2690,2150,1620,1190,960,1230,1740,null,null,null,null,null,null,null] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

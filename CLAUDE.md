@@ -11,10 +11,15 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 - Tiempo de adquisición (`time_us`) y tiempo de recepción (`received_at`) son referencias distintas.
 - No inventar GPIO, frecuencias, UUID BLE, autonomía ni resultados: se registran cuando se miden.
 
+## Diseño de la interfaz
+
+- Fuente de verdad visual: `docs/plantillas-inteligentes-diseno/` (tokens, componentes, pantallas). Los componentes de `apps/mobile/src/presentation/components` replican esos nombres y props; no inventar estilos fuera de los tokens.
+- Diferencias deliberadas respecto del diseño: ADR 0005.
+
 ## Arquitectura de código
 
 - `packages/contract`: tipos, configuración y validador en ejecución; sin dependencias de React Native.
-- `apps/mobile/src`: `presentation` → `application` → `domain` ← `infrastructure`. El dominio no importa UI, BLE ni Supabase.
+- `apps/mobile/src`: `app` (rutas de Expo Router) → `presentation` → `application` → paquetes de dominio (`contract`, `session`, `simulator`, `storage`) ← `infrastructure`. El dominio no importa UI, BLE ni Supabase.
 - Offline-first: SQLite local es la fuente primaria; Supabase sincroniza.
 
 ## Forma de trabajo

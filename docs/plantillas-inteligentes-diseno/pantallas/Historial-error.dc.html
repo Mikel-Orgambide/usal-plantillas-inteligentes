@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Historial — error de lectura</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Historial" context="Sin acceso a la base local"></x-import>
+  <x-import component-from-global-scope="Plantillas.StatusBanner" tone="alert" icon="alert" detail="La base de datos local no respondió. Las sesiones no se perdieron." action-label="Reintentar">No se pudo leer el historial</x-import>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; opacity: 0.4">
+    <x-import component-from-global-scope="Plantillas.Chip" variant="selected" icon="check">Todas</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Caminata</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Running</x-import>
+    <x-import component-from-global-scope="Plantillas.Chip">Fuerza</x-import>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; gap: 12px; color: #98a2ad">
+    <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #f2f4f7">Sin datos para mostrar</div>
+    <div style="font-size: 16px; line-height: 22px; max-width: 280px">Si el problema sigue después de reintentar, cerrá y volvé a abrir la app. La última lectura correcta fue dom 18 oct · 20:35.</div>
+  </div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="primary" block="{{yes}}">Reintentar</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

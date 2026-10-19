@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diálogo — sesión recuperada como incompleta</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; position: relative; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <div style="position: absolute; inset: 0; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; opacity: 0.35" aria-hidden="true">
+    <x-import component-from-global-scope="Plantillas.Header" title="Hoy" status="connected" context="Conectado · Plantillas-ESP32 · plantillas físicas" action="settings" action-label="Ajustes"></x-import>
+    <x-import component-from-global-scope="Plantillas.StatusBanner" icon="history" action-label="Ver">Sesión recuperada como incompleta</x-import>
+    <div style="margin-top: 24px">
+      <x-import component-from-global-scope="Plantillas.Card" title="Última sesión">
+        <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad; margin-bottom: 12px">dom 18 oct · 20:31 · Running · física · incompleta</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <x-import component-from-global-scope="Plantillas.ValueCard" label="Duración" value="14:02" unit="min" class-name="pi-card-elevated"></x-import>
+          <x-import component-from-global-scope="Plantillas.ValueCard" label="Registros" value="19 203" unit="reg." class-name="pi-card-elevated"></x-import>
+        </div>
+      </x-import>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 24px 16px 24px; background: #1f2329; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; gap: 12px" role="dialog" aria-labelledby="rec-title">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <x-import component-from-global-scope="Plantillas.Icon" name="history" style="color: #98a2ad"></x-import>
+      <h2 id="rec-title" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 600">Sesión recuperada como incompleta</h2>
+    </div>
+    <p style="margin: 0; font-size: 16px; line-height: 22px; color: #98a2ad">La app se cerró mientras grababa. Lo que llegó quedó guardado y la sesión se marcó como incompleta por cierre inesperado.</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <x-import component-from-global-scope="Plantillas.ValueCard" label="Grabado" value="14:02" unit="min" sub="dom 18 oct · 20:31 · Running"></x-import>
+      <x-import component-from-global-scope="Plantillas.ValueCard" label="Registros" value="19 203" unit="reg." sub="1 captura · física"></x-import>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <x-import component-from-global-scope="Plantillas.Chip" variant="alert">Incompleta · cierre inesperado</x-import>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px">
+      <x-import component-from-global-scope="Plantillas.Button" variant="primary" block="{{yes}}">Ver sesión</x-import>
+      <x-import component-from-global-scope="Plantillas.Button" variant="secondary" block="{{yes}}">Más tarde</x-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ajustes</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+.sw{appearance:none;-webkit-appearance:none;width:48px;height:28px;border-radius:999px;background:#2b3038;position:relative;cursor:pointer;margin:0;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;background:#98a2ad;transition:transform .12s}
+.sw:checked{background:#b48cff}
+.sw:checked::after{background:#0c0d10;transform:translateX(20px)}
+.sw:focus-visible{outline:2px solid #b48cff;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Ajustes" context="Plantillas Inteligentes · versión 0.4.1"></x-import>
+
+  <div style="font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Dispositivo</div>
+  <x-import component-from-global-scope="Plantillas.ListRow" title="Plantillas-ESP32" subtitle="Conectado · 6 posiciones · 25 Hz · guardado"></x-import>
+  <x-import component-from-global-scope="Plantillas.ListRow" title="Buscar otro dispositivo" subtitle="Bluetooth · emparejamiento"></x-import>
+
+  <div style="margin-top: 24px; font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Datos</div>
+  <x-import component-from-global-scope="Plantillas.ListRow" title="Unidad" subtitle="cuentas ADC (0–4095) · sin calibración" value="cuentas" chevron="{{no}}"></x-import>
+  <div style="padding: 8px 0 0; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Cuando exista una calibración por sensor, acá se podrá elegir N o kg. Hasta entonces los valores se muestran solo en cuentas.</div>
+
+  <div style="margin-top: 24px; font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Demostración</div>
+  <div style="display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 0; border-bottom: 1px solid #2b3038">
+    <div style="flex: 1; min-width: 0">
+      <label for="sim" style="display: block; font-size: 16px; line-height: 22px">Modo simulador</label>
+      <div style="margin-top: 4px; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Genera lecturas sin plantillas. Toda sesión grabada así se marca «Simulada».</div>
+    </div>
+    <input id="sim" class="sw" type="checkbox" aria-label="Modo simulador">
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 0; border-bottom: 1px solid #2b3038">
+    <div style="flex: 1; min-width: 0">
+      <label for="keep" style="display: block; font-size: 16px; line-height: 22px">Pantalla encendida al grabar</label>
+      <div style="margin-top: 4px; font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">Evita que Android pause la captura.</div>
+    </div>
+    <input id="keep" class="sw" type="checkbox" checked aria-label="Pantalla encendida al grabar">
+  </div>
+
+  <div style="margin-top: 24px; font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Acerca de</div>
+  <x-import component-from-global-scope="Plantillas.ListRow" title="Proyecto final de tesis" subtitle="Plantillas instrumentadas · ESP32 · datos locales, sin nube" chevron="{{no}}"></x-import>
+
+  <div style="flex: 1"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true, no: false }; }
+}
+</script>
+</body>
+</html>

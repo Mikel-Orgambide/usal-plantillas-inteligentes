@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Preparación de sesión — falta una posición</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/plantillas/components/bundle.css">
+<script src="ds/plantillas/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0c0d10;--surface:#15181c;--surface-elevated:#1f2329;--line:#2b3038;--text-primary:#f2f4f7;--text-secondary:#98a2ad;--accent:#b48cff;--accent-soft:#b48cff24;--on-accent:#0c0d10;--alert:#e3a856;--alert-soft:#e3a85622;--on-alert:#0c0d10;--stale:#6a7481;--focus-ring:#b48cff;--chart-gap:#2b3038;--font-sans:"Manrope","Segoe UI",Roboto,system-ui,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--radius-sm:6px;--radius-md:12px;--radius-lg:20px;--radius-pill:999px}
+body{margin:0;background:#0c0d10}
+a{color:#b48cff}a:hover{color:#f2f4f7}
+input::placeholder{color:#98a2ad}
+input:focus-visible{outline:2px solid #b48cff;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; background: #0c0d10; color: #f2f4f7; font-family: Manrope, 'Segoe UI', sans-serif; overflow: hidden">
+  <x-import component-from-global-scope="Plantillas.Header" title="Nueva sesión" status="connected" context="Conectado · Plantillas-ESP32 · plantillas físicas"></x-import>
+  <x-import component-from-global-scope="Plantillas.StatusBanner" tone="alert" icon="alert" detail="L_LATERAL no responde · podés iniciar y quedará sin datos" action-label="Reintentar" style="display: block; margin-top: 8px">Falta una posición</x-import>
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px">
+    <div style="font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Actividad</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <x-import component-from-global-scope="Plantillas.Chip" variant="selected" icon="check">Caminata</x-import>
+      <x-import component-from-global-scope="Plantillas.Chip">Running</x-import>
+      <x-import component-from-global-scope="Plantillas.Chip">Fuerza</x-import>
+      <x-import component-from-global-scope="Plantillas.Chip">Otra</x-import>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px">
+    <label for="ctx2" style="font-size: 14px; line-height: 18px; font-weight: 500; color: #98a2ad">Contexto (opcional)</label>
+    <input id="ctx2" type="text" value="Zapatillas de trail · tierra · lluvia leve" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid #2b3038; background: #15181c; color: #f2f4f7; font: inherit; font-size: 16px; line-height: 22px">
+  </div>
+  <div style="margin-top: 24px">
+    <x-import component-from-global-scope="Plantillas.Card" title="Dispositivo">
+      <div style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad; margin-bottom: 12px">Plantillas-ESP32 · físicas · 25 Hz · cuentas ADC 0–4095</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 16px; line-height: 22px">
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px"><x-import component-from-global-scope="Plantillas.Icon" name="check" style="color: #b48cff; width: 20px; height: 20px"></x-import><span>Talón izq.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #98a2ad">L_HEEL</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px"><x-import component-from-global-scope="Plantillas.Icon" name="check" style="color: #b48cff; width: 20px; height: 20px"></x-import><span>Talón der.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #98a2ad">R_HEEL</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px"><x-import component-from-global-scope="Plantillas.Icon" name="check" style="color: #b48cff; width: 20px; height: 20px"></x-import><span>Medial izq.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #98a2ad">L_MEDIAL</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px"><x-import component-from-global-scope="Plantillas.Icon" name="check" style="color: #b48cff; width: 20px; height: 20px"></x-import><span>Medial der.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #98a2ad">R_MEDIAL</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px; color: #e3a856"><x-import component-from-global-scope="Plantillas.Icon" name="alert" style="color: #e3a856; width: 20px; height: 20px"></x-import><span>Lateral izq.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #e3a856">sin respuesta</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px"><x-import component-from-global-scope="Plantillas.Icon" name="check" style="color: #b48cff; width: 20px; height: 20px"></x-import><span>Lateral der.</span><span style="margin-left: auto; font-size: 12px; letter-spacing: 0.02em; color: #98a2ad">R_LATERAL</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px">
+        <x-import component-from-global-scope="Plantillas.Chip" variant="alert">Falta L_LATERAL</x-import>
+        <span style="font-size: 12px; line-height: 16px; letter-spacing: 0.02em; color: #98a2ad">5 de 6 posiciones reconocidas</span>
+      </div>
+    </x-import>
+  </div>
+  <div style="flex: 1"></div>
+  <x-import component-from-global-scope="Plantillas.Button" variant="primary" block="{{yes}}" icon="play" style="display: block; margin-top: 32px">Iniciar con 5 posiciones</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>
