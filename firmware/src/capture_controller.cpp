@@ -1,6 +1,7 @@
 #include "capture_controller.h"
 #include <Arduino.h>
 #include <Preferences.h>
+#include <esp_mac.h>
 #include "clock.h"
 #include "diagnostics.h"
 
@@ -15,8 +16,10 @@ static bool is_active = false;
 static char dev_id[24] = {0};
 
 void begin() {
-  uint64_t mac = ESP.getEfuseMac();
-  snprintf(dev_id, sizeof(dev_id), "ESP32-%06llX", static_cast<unsigned long long>(mac & 0xFFFFFFULL));
+  // Últimos 3 bytes del MAC (propios de la placa; los 3 primeros son del fabricante).
+  uint8_t mac[6];
+  esp_efuse_mac_get_default(mac);
+  snprintf(dev_id, sizeof(dev_id), "ESP32-%02X%02X%02X", mac[3], mac[4], mac[5]);
   prefs.begin("plantillas", false);
   boot_count = static_cast<uint16_t>(prefs.getUShort("boot", 0) + 1);
   prefs.putUShort("boot", boot_count);
