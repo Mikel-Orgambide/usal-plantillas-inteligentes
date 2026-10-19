@@ -6,19 +6,21 @@
 
 namespace usb {
 
-// 460800: el JSON de un registro ronda 450 bytes; a 115200 baudios 20 reg/s saturan el puerto (H5).
-void begin() { Serial.begin(460800); }
+// 230400: un registro JSON ronda 450 bytes (≈ 9 KB/s a 20 reg/s); 115200 no alcanza y a 460800
+// se observaron bytes perdidos en la recepción del host (H1, 2026-10-19).
+void begin() { Serial.begin(230400); }
 
-static void add_identity(JsonObject o) {
-  o["format_version"] = cfg::FORMAT_VERSION;
-  o["device_id"] = capture::device_id();
-  o["configuration_id"] = cfg::CONFIGURATION_ID;
+// Agrega los campos comunes sin reiniciar el documento (doc.to<>() lo vaciaba y borraba "type").
+static void add_identity(JsonDocument& doc) {
+  doc["format_version"] = cfg::FORMAT_VERSION;
+  doc["device_id"] = capture::device_id();
+  doc["configuration_id"] = cfg::CONFIGURATION_ID;
 }
 
 void send_info() {
   JsonDocument doc;
   doc["type"] = "info";
-  add_identity(doc.to<JsonObject>());
+  add_identity(doc);
   doc["firmware"] = cfg::FIRMWARE_VERSION;
   doc["description"] = cfg::DESCRIPTION;
   doc["raw_range"]["min"] = 0;
@@ -60,7 +62,7 @@ void send_status(const char* event, const char* detail) {
 void send_record(const Record& r) {
   JsonDocument doc;
   doc["type"] = "record";
-  add_identity(doc.to<JsonObject>());
+  add_identity(doc);
   char cid[48];
   snprintf(cid, sizeof(cid), "%s-B%u-C%u", capture::device_id(), r.boot, r.capture);
   doc["capture_id"] = cid;

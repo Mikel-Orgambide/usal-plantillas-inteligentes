@@ -19,7 +19,7 @@ Hardware disponible: NodeMCU ESP32 (modelo exacto a confirmar en H0/H1). Sensore
 - Adquisición y transmisión separadas: lectura por temporizador a período fijo; cola acotada de registros; si la cola se llena, el registro se descarta **después** de haber consumido su `sequence`, y el descarte se cuenta en `diagnostics` (hueco observable, 04 §7).
 
 ### USB (H5)
-- 460800 baudios (115200 no sostiene 20 registros JSON por segundo), JSON por línea, UTF-8. Dos tipos: `{"type":"status",...}` y `{"type":"record",...}` con exactamente los campos del contrato (`format_version`, `device_id`, `capture_id`, `configuration_id`, `sequence`, `samples[]`). Órdenes desde el host: `start`, `stop`, `info` (una por línea). Sirve para H1, H5 y para diagnóstico permanente.
+- 230400 baudios (115200 no sostiene 20 registros JSON por segundo; a 460800 se perdieron bytes en el host), JSON por línea, UTF-8. Dos tipos: `{"type":"status",...}` y `{"type":"record",...}` con exactamente los campos del contrato (`format_version`, `device_id`, `capture_id`, `configuration_id`, `sequence`, `samples[]`). Órdenes desde el host: `start`, `stop`, `info` (una por línea). Sirve para H1, H5 y para diagnóstico permanente.
 
 ### BLE (H6)
 - ESP32 servidor GATT (NimBLE-Arduino); app cliente con `react-native-ble-plx` (plugin de configuración para Expo, build nativa nueva).

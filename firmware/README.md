@@ -11,7 +11,7 @@ Proyecto PlatformIO (Arduino Core, C++17). Decisiones de transporte en `docs/dec
 
 1. Abrir la carpeta `firmware/` en VS Code con PlatformIO.
 2. Conectar la placa por USB (cable con datos). Compilar y cargar (`PlatformIO: Upload`).
-3. Abrir el monitor serie (`PlatformIO: Monitor`, 460800). Al arrancar se imprime una línea `info` y una `status` con `event: boot`.
+3. Abrir el monitor serie (`PlatformIO: Monitor`, 230400). Al arrancar se imprime una línea `info` y una `status` con `event: boot`.
 4. Escribir `start` + Enter: se imprime `capture_started` y después un `record` por línea (20 por segundo). `stop` detiene la captura. `info` repite la identificación.
 
 Cada línea es un JSON del contrato v1.0 (`format_version`, `device_id`, `capture_id`, `configuration_id`, `sequence`, `samples[]`) o un `status` con contadores (`generated`, `transmitted`, `dropped`, `read_errors`).
