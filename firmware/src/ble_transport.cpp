@@ -34,6 +34,8 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
   }
 };
 
+// Compacta: el valor de una característica no puede superar 512 bytes (BLE_ATT_ATTR_MAX_LEN).
+// installation_id = "<configuration_id>-<code>"; la app lo deriva igual.
 static std::string info_json() {
   JsonDocument doc;
   doc["format_version"] = cfg::FORMAT_VERSION;
@@ -42,15 +44,9 @@ static std::string info_json() {
   doc["firmware"] = cfg::FIRMWARE_VERSION;
   doc["raw_max"] = cfg::RAW_MAX;
   doc["period_us"] = cfg::SAMPLE_PERIOD_US;
+  doc["model"] = cfg::MODEL;
   JsonArray ch = doc["channels"].to<JsonArray>();
-  for (uint8_t i = 0; i < cfg::CHANNEL_COUNT; i++) {
-    JsonObject c = ch.add<JsonObject>();
-    c["code"] = cfg::CHANNEL_CODES[i];
-    char inst[40];
-    snprintf(inst, sizeof(inst), "%s-%s", cfg::CONFIGURATION_ID, cfg::CHANNEL_CODES[i]);
-    c["installation_id"] = inst;
-    c["model"] = cfg::MODEL;
-  }
+  for (uint8_t i = 0; i < cfg::CHANNEL_COUNT; i++) ch.add(cfg::CHANNEL_CODES[i]);
   std::string out;
   serializeJson(doc, out);
   return out;

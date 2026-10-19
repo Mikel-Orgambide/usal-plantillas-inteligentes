@@ -46,6 +46,17 @@ export interface DeviceInfo {
   readonly channels: readonly { code: string; installation_id: string; model: string }[];
 }
 
+/**
+ * Forma compacta que publica la placa (una característica no puede superar 512 bytes):
+ * `model` único y `channels` como lista de códigos; `installation_id` se deriva como
+ * `<configuration_id>-<code>`. También se acepta la forma extendida por canal.
+ */
+interface RawInfo {
+  format_version?: unknown; device_id?: unknown; configuration_id?: unknown; firmware?: unknown;
+  raw_max?: unknown; period_us?: unknown; model?: unknown;
+  channels?: unknown;
+}
+
 const MODELS: readonly SensorModel[] = ["FSR406", "FSR402", "synthetic"];
 
 function bytesToText(bytes: Uint8Array | readonly number[]): string {
@@ -63,17 +74,26 @@ export function parseDeviceInfo(raw: Uint8Array | readonly number[]): { info: De
   } catch {
     throw new ProtocolError("la característica info no contiene JSON válido");
   }
-  const o = parsed as Partial<DeviceInfo>;
+  const o = parsed as RawInfo;
   if (typeof o.device_id !== "string" || !o.device_id) throw new ProtocolError("info sin device_id");
   if (typeof o.configuration_id !== "string" || !o.configuration_id) throw new ProtocolError("info sin configuration_id");
   if (o.format_version !== FORMAT_VERSION) throw new ProtocolError(`versión de formato no soportada: ${String(o.format_version)}`);
   if (typeof o.raw_max !== "number" || o.raw_max <= 0) throw new ProtocolError("info sin raw_max");
   if (!Array.isArray(o.channels)) throw new ProtocolError("info sin canales");
-  const codes = o.channels.map((c) => c.code);
+  const rawChannels = o.channels.map((c: unknown) => {
+    if (typeof c === "string") return { code: c, installation_id: `${o.configuration_id as string}-${c}`, model: typeof o.model === "string" ? o.model : "" };
+    const x = c as { code?: unknown; installation_id?: unknown; model?: unknown };
+    return {
+      code: String(x.code ?? ""),
+      installation_id: typeof x.installation_id === "string" ? x.installation_id : `${o.configuration_id as string}-${String(x.code ?? "")}`,
+      model: typeof x.model === "string" ? x.model : typeof o.model === "string" ? o.model : "",
+    };
+  });
+  const codes = rawChannels.map((c) => c.code);
   if (codes.length !== CHANNEL_CODES.length || CHANNEL_CODES.some((c, i) => codes[i] !== c)) {
     throw new ProtocolError(`canales inesperados: ${codes.join(", ")} (se esperan ${CHANNEL_CODES.join(", ")} en ese orden)`);
   }
-  const channels: ChannelDefinition[] = o.channels.map((c) => {
+  const channels: ChannelDefinition[] = rawChannels.map((c) => {
     if (!isChannelCode(c.code)) throw new ProtocolError(`canal desconocido: ${c.code}`);
     if (!MODELS.includes(c.model as SensorModel)) throw new ProtocolError(`modelo desconocido: ${c.model}`);
     return { code: c.code, installation_id: c.installation_id, model: c.model as SensorModel, unit: "adc_count" };
@@ -85,7 +105,7 @@ export function parseDeviceInfo(raw: Uint8Array | readonly number[]): { info: De
     firmware: typeof o.firmware === "string" ? o.firmware : "desconocido",
     raw_max: o.raw_max,
     period_us: typeof o.period_us === "number" ? o.period_us : 0,
-    channels: o.channels,
+    channels: rawChannels,
   };
   const configuration: AcquisitionConfiguration = {
     configuration_id: info.configuration_id,

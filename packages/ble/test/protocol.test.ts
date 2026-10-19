@@ -8,7 +8,9 @@ const bytes = (s: string) => Array.from(new TextEncoder().encode(s));
 describe("parseDeviceInfo", () => {
   it("construye la configuración física desde la info del firmware", () => {
     const { info, configuration } = parseDeviceInfo(bytes(JSON.stringify(FIRMWARE_INFO)));
-    expect(info.firmware).toBe("0.1.0-h1");
+    expect(info.firmware).toBe("0.2.1-h6");
+    expect(JSON.stringify(FIRMWARE_INFO).length).toBeLessThan(512);
+    expect(configuration.channels[0]).toMatchObject({ code: "L_HEEL", installation_id: "ESP32-SYN-001-L_HEEL" });
     expect(configuration).toMatchObject({ configuration_id: "ESP32-SYN-001", device_id: "ESP32-9E7EE4", source: "physical", raw_range: { min: 0, max: 4095, resolution_bits: 12 } });
     expect(configuration.channels.map((c) => c.model)).toEqual(Array(6).fill("synthetic"));
   });
@@ -17,6 +19,11 @@ describe("parseDeviceInfo", () => {
     expect(() => parseDeviceInfo(bytes(JSON.stringify({ ...FIRMWARE_INFO, format_version: "2.0" })))).toThrow(ProtocolError);
     const swapped = [...FIRMWARE_INFO.channels];
     [swapped[0], swapped[1]] = [swapped[1]!, swapped[0]!];
+    // Forma extendida (por canal) también se acepta.
+    const extended = { ...FIRMWARE_INFO, model: undefined, channels: FIRMWARE_INFO.channels.map((code) => ({ code, installation_id: `X-${code}`, model: "FSR402" })) };
+    expect(parseDeviceInfo(bytes(JSON.stringify(extended))).configuration.channels[0]).toMatchObject({ installation_id: "X-L_HEEL", model: "FSR402" });
+    // Un JSON truncado (como el que produce superar los 512 bytes) se rechaza con motivo.
+    expect(() => parseDeviceInfo(bytes(JSON.stringify(FIRMWARE_INFO).slice(0, 100)))).toThrow(/JSON/);
     expect(() => parseDeviceInfo(bytes(JSON.stringify({ ...FIRMWARE_INFO, channels: swapped })))).toThrow(/orden/);
     expect(() => parseDeviceInfo(bytes("{no es json"))).toThrow(/JSON/);
   });

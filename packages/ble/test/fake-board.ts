@@ -1,17 +1,16 @@
 import type { BleLink } from "../src/index";
 import { COMMAND_START, COMMAND_STOP, CONTROL_UUID, INFO_UUID, MEASUREMENT_UUID, STATUS_UUID, encodeMeasurement } from "../src/index";
 
-/** Info tal como la publica el firmware 0.1.0-h1 (`ble_transport.cpp::info_json`). */
+/** Info compacta tal como la publica el firmware 0.2.1-h6 (`ble_transport.cpp::info_json`, < 512 bytes). */
 export const FIRMWARE_INFO = {
   format_version: "1.0",
   device_id: "ESP32-9E7EE4",
   configuration_id: "ESP32-SYN-001",
-  firmware: "0.1.0-h1",
+  firmware: "0.2.1-h6",
   raw_max: 4095,
   period_us: 50000,
-  channels: ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"].map((code) => ({
-    code, installation_id: `ESP32-SYN-001-${code}`, model: "synthetic",
-  })),
+  model: "synthetic",
+  channels: ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"],
 };
 
 const text = (s: string) => Array.from(new TextEncoder().encode(s));

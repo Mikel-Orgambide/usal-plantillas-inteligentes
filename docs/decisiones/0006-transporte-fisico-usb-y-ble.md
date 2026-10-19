@@ -24,7 +24,7 @@ Hardware disponible: NodeMCU ESP32 (modelo exacto a confirmar en H0/H1). Sensore
 ### BLE (H6)
 - ESP32 servidor GATT (NimBLE-Arduino); app cliente con `react-native-ble-plx` (plugin de configuración para Expo, build nativa nueva).
 - Servicio `7a0e0001-5d3f-4b1a-9f4c-2e6b8c1d0001`. Características:
-  - `…0002` **info** (read): JSON con `format_version`, `device_id`, `configuration_id`, `firmware`, `channels[]` (código, `installation_id`, modelo). La app construye la `AcquisitionConfiguration` desde acá, nunca desde un nombre anunciado.
+  - `…0002` **info** (read): JSON compacto (< 512 bytes, límite de un valor de característica) con `format_version`, `device_id`, `configuration_id`, `firmware`, `raw_max`, `period_us`, `model` y `channels[]` como lista de códigos; `installation_id` se deriva como `<configuration_id>-<code>`. La app construye la `AcquisitionConfiguration` desde acá, nunca desde un nombre anunciado.
   - `…0003` **control** (write con respuesta): `0x01` start, `0x02` stop. La orden no acredita ejecución: la app espera el evento en **status**.
   - `…0004` **status** (notify): JSON corto: `capture_started {capture_id, boot, n}`, `capture_stopped`, `dropped {count}`, `error {code}`.
   - `…0005` **measurement** (notify): registro binario little-endian de 45 bytes: `u8 version(=1)`, `u16 boot`, `u16 n`, `u32 sequence`, 6 × (`u32 time_us`, `u16 value`) en el orden fijo L_HEEL, L_MEDIAL, L_LATERAL, R_HEEL, R_MEDIAL, R_LATERAL; `value = 0xFFFF` significa `read_error` (raw_value nulo). La app reconstruye el registro JSON del contrato (`capture_id` desde boot+n) y lo pasa por el mismo validador que usa el simulador.

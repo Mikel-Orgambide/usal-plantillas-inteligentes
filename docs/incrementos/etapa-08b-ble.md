@@ -33,6 +33,10 @@
 - Sin emparejamiento ni cifrado del enlace (prototipo de laboratorio, ADR 0006).
 - `time_us` en 32 bits: desborda a los 71 min de captura.
 
-## Verificación en dispositivo
+## Verificación en dispositivo (en curso, 2026-10-19)
+
+- Build de desarrollo 9b754d72 (`react-native-ble-manager`), `expo-doctor` 21/21, instalada por `adb`.
+- Búsqueda: la app encuentra `Plantillas-9E7EE4` (68:09:47:9E:7E:E6, −60 dBm) filtrando por el UUID del servicio. El permiso de dispositivos cercanos se pidió y concedió. ✔
+- Primer intento de conexión: «la característica info no contiene JSON válido». Causa: el JSON de *info* (≈ 630 bytes) superaba los 512 bytes máximos de un valor de característica y la pila de la placa lo recortaba. Corrección en firmware 0.2.1-h6: *info* compacta (≈ 230 bytes, `model` único y canales como códigos); la app deriva `installation_id` y acepta ambas formas.
 
 Pendiente: firmware 0.2.0-h6 cargado; build nueva instalada; buscar y conectar; sesión física de duración definida; comparación generados (firmware) / guardados (app); desconexión y reconexión alejando la placa o reiniciándola.
