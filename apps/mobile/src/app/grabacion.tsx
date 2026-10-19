@@ -80,9 +80,10 @@ export default function RecordingScreen() {
     <Screen
       footer={
         finished ? (
-          <Button variant="primary" onPress={close}>Ver la sesión</Button>
+          // key distinta: elemento nativo nuevo, no el de «Finalizar» reciclado tras pasar por disabled.
+          <Button key="ver" variant="primary" onPress={close}>Ver la sesión</Button>
         ) : (
-          <Button variant="primary" icon="stop" disabled={stopping} onPress={() => setConfirm(true)}>{stopping ? "Finalizando…" : "Finalizar"}</Button>
+          <Button key="finalizar" variant="primary" icon="stop" disabled={stopping} onPress={() => setConfirm(true)}>{stopping ? "Finalizando…" : "Finalizar"}</Button>
         )
       }
     >
