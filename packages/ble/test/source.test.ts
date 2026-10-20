@@ -86,6 +86,22 @@ describe("BleDataSource", () => {
     expect(payloads.map((p) => (p as { capture_id: string }).capture_id)).toEqual(["ESP32-9E7EE4-B8-C1", "ESP32-9E7EE4-B9-C1"]);
   });
 
+  it("detener sin enlace (reconexión agotada) informa el error sin promesas sin manejar", async () => {
+    const board = new FakeBoard();
+    const src = new BleDataSource(board, configuration, info, { reconnect: async () => { throw new Error("la placa no se anuncia"); }, reconnectAttempts: 2, reconnectDelayMs: 5 });
+    const { events } = collect(src);
+    await src.connect();
+    await src.startCapture();
+    board.cut();
+    await tick(40);
+    await src.stopCapture();
+    await src.disconnect();
+    const types = events.map((e) => e.type);
+    // Agotados los intentos, la fuente ya se declaró caída: detener y desconectar no agregan eventos.
+    expect(types).toEqual(["connected", "capture_started", "disconnected", "source_error"]);
+    expect((events[3] as { message: string }).message).toMatch(/2 intentos: la placa no se anuncia/);
+  });
+
   it("notificaciones malformadas se cuentan y no llegan al coordinador", async () => {
     const board = new FakeBoard();
     const src = new BleDataSource(board, configuration, info);

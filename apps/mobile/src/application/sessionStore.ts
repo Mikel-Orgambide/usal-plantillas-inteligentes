@@ -86,7 +86,7 @@ export async function startSession(activity: Activity, context: string | undefin
   let source: DataSource;
   if (resolved.kind === "physical") {
     const device = getDevice().connected!;
-    source = new BleDataSource(device.link, device.configuration, device.info, { reconnect: reconnectLink, reconnectAttempts: 10, reconnectDelayMs: 2000 });
+    source = new BleDataSource(device.link, device.configuration, device.info, { reconnect: reconnectLink, reconnectAttempts: 12, reconnectDelayMs: 1000 });
   } else {
     source = new SimulatedDataSource({ seed: settings.seed, scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40 });
   }

@@ -168,10 +168,35 @@ export async function connect(device: Pick<FoundDevice, "id" | "name">): Promise
   }
 }
 
+/**
+ * Espera a ver la placa anunciarse (escaneo filtrado por nuestro servicio).
+ * Android no reconecta de forma fiable a un dispositivo recién reiniciado si
+ * no lo ha vuelto a ver en un escaneo.
+ */
+async function waitForAdvertising(id: string, seconds: number): Promise<void> {
+  try { await BleManager.stopScan(); } catch { /* no estaba buscando */ }
+  await new Promise<void>((resolve, reject) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      sub.remove();
+      stop.remove();
+      if (ok) resolve(); else reject(new Error("la placa no se anuncia"));
+    };
+    const sub = BleManager.onDiscoverPeripheral((p) => { if (same(p.id, id)) finish(true); });
+    const stop = BleManager.onStopScan(() => finish(false));
+    BleManager.scan({ serviceUUIDs: [SERVICE_UUID], seconds, allowDuplicates: true, scanMode: BleScanMode.LowLatency }).catch((e: unknown) => { done = true; sub.remove(); stop.remove(); reject(e instanceof Error ? e : new Error(String(e))); });
+  });
+  try { await BleManager.stopScan(); } catch { /* ya detenido */ }
+}
+
 /** Reabre el enlace con la placa actual (lo usa la fuente BLE durante una sesión). */
 export async function reconnectLink(): Promise<BleLink> {
   const current = state.connected;
   if (!current) throw new Error("no hay plantillas conectadas");
+  try { await BleManager.disconnect(current.id); } catch { /* ya estaba cortado */ }
+  await waitForAdvertising(current.id, 4);
   const opened = await open(current.id);
   if (opened.info.configuration_id !== current.info.configuration_id || opened.info.device_id !== current.info.device_id) {
     throw new Error("al reconectar, la placa informó otra configuración");

@@ -31,7 +31,8 @@ export class BleDataSource implements DataSource {
   private connected = false;
   private capturing = false;
   private requestedDisconnect = false;
-  private waiters: Array<{ event: string; resolve: (captureId: string) => void }> = [];
+  private waiters: Array<{ event: string; resolve: (captureId: string) => void; reject: (error: Error) => void }> = [];
+  private linkLost = false;
   private t0 = 0;
   private currentCaptureId: string | undefined;
   /** Notificaciones que no se pudieron decodificar (tamaño o versión): se cuentan, no se descartan en silencio. */
@@ -79,9 +80,7 @@ export class BleDataSource implements DataSource {
   async startCapture(): Promise<void> {
     if (!this.connected) throw new Error("la fuente no está conectada");
     if (this.capturing) return;
-    const ack = this.waitFor("capture_started");
-    await this.link.write(CONTROL_UUID, [COMMAND_START]);
-    const captureId = await ack;
+    const captureId = await this.command(COMMAND_START, "capture_started");
     this.capturing = true;
     this.currentCaptureId = captureId;
     this.emitEvent({ type: "capture_started", at_us: this.atUs(), capture_id: captureId });
@@ -90,15 +89,36 @@ export class BleDataSource implements DataSource {
   async stopCapture(): Promise<void> {
     if (!this.capturing) return;
     this.capturing = false;
+    if (this.linkLost) {
+      this.emitEvent({ type: "source_error", at_us: this.atUs(), message: "sin enlace con la placa al detener: la captura sigue en la placa hasta que se reinicie" });
+      return;
+    }
     try {
-      const ack = this.waitFor("capture_stopped");
-      await this.link.write(CONTROL_UUID, [COMMAND_STOP]);
-      const captureId = await ack;
+      const captureId = await this.command(COMMAND_STOP, "capture_stopped");
       this.emitEvent({ type: "capture_stopped", at_us: this.atUs(), capture_id: captureId });
     } catch (error) {
       // Sin confirmación (p. ej. enlace cortado): se informa; la sesión se cierra igual con lo recibido.
       this.emitEvent({ type: "source_error", at_us: this.atUs(), message: `la placa no confirmó la detención: ${error instanceof Error ? error.message : String(error)}` });
     }
+  }
+
+  /** Envía una orden y espera su confirmación. Si la escritura falla, la espera se cancela (sin promesas huérfanas). */
+  private async command(code: number, ack: "capture_started" | "capture_stopped"): Promise<string> {
+    const confirmation = this.waitFor(ack);
+    confirmation.catch(() => undefined);
+    try {
+      await this.link.write(CONTROL_UUID, [code]);
+    } catch (error) {
+      this.cancelWaiters(ack);
+      throw error;
+    }
+    return confirmation;
+  }
+
+  private cancelWaiters(event: string): void {
+    const pending = this.waiters.filter((w) => w.event === event);
+    this.waiters = this.waiters.filter((w) => w.event !== event);
+    for (const w of pending) w.reject(new Error(`no se pudo enviar la orden (${event})`));
   }
 
   private async attach(): Promise<void> {
@@ -136,7 +156,7 @@ export class BleDataSource implements DataSource {
 
   private waitFor(event: "capture_started" | "capture_stopped"): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-      const waiter = { event, resolve: (id: string) => { clearTimeout(timer); resolve(id); } };
+      const waiter = { event, resolve: (id: string) => { clearTimeout(timer); resolve(id); }, reject: (e: Error) => { clearTimeout(timer); reject(e); } };
       const timer = setTimeout(() => {
         this.waiters = this.waiters.filter((w) => w !== waiter);
         reject(new Error(`sin confirmación de ${event} en ${this.opts.ackTimeoutMs} ms`));
@@ -146,26 +166,33 @@ export class BleDataSource implements DataSource {
   }
 
   private async onLinkLost(reason: string): Promise<void> {
-    if (this.requestedDisconnect || !this.connected) return;
+    if (this.requestedDisconnect || !this.connected || this.linkLost) return;
+    this.linkLost = true;
     this.offDisconnect?.();
     this.offDisconnect = undefined;
     this.stopMonitors = [];
+    this.cancelWaiters("capture_started");
+    this.cancelWaiters("capture_stopped");
     this.emitEvent({ type: "disconnected", at_us: this.atUs(), reason });
     if (!this.opts.reconnect) { this.connected = false; this.capturing = false; return; }
+    let lastError = "";
     for (let attempt = 1; attempt <= this.opts.reconnectAttempts; attempt++) {
       await new Promise((r) => setTimeout(r, this.opts.reconnectDelayMs));
-      if (this.requestedDisconnect) return;
+      if (this.requestedDisconnect || !this.capturing && !this.connected) return;
       try {
         this.link = await this.opts.reconnect();
         await this.attach();
+        this.linkLost = false;
         this.emitEvent({ type: "reconnected", at_us: this.atUs() });
         if (this.capturing) await this.resumeCapture();
         return;
-      } catch { /* siguiente intento */ }
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+      }
     }
     this.connected = false;
     this.capturing = false;
-    this.emitEvent({ type: "source_error", at_us: this.atUs(), message: `no se pudo reconectar tras ${this.opts.reconnectAttempts} intentos` });
+    this.emitEvent({ type: "source_error", at_us: this.atUs(), message: `no se pudo reconectar tras ${this.opts.reconnectAttempts} intentos: ${lastError}` });
   }
 
   /**
@@ -176,9 +203,7 @@ export class BleDataSource implements DataSource {
    */
   private async resumeCapture(): Promise<void> {
     try {
-      const ack = this.waitFor("capture_started");
-      await this.link.write(CONTROL_UUID, [COMMAND_START]);
-      const captureId = await ack;
+      const captureId = await this.command(COMMAND_START, "capture_started");
       if (captureId !== this.currentCaptureId) {
         const previous = this.currentCaptureId ?? "";
         this.currentCaptureId = captureId;
