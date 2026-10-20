@@ -85,6 +85,14 @@ export async function startSession(activity: Activity, context: string | undefin
   const { repository } = await getDatabase();
   let source: DataSource;
   if (resolved.kind === "physical") {
+    // Tras recargar la app o reiniciar la placa, el estado puede decir «conectadas» sin enlace real.
+    if (getDevice().linkLost) {
+      try {
+        await reconnectLink();
+      } catch (e) {
+        throw new Error(`Las plantillas no responden (${e instanceof Error ? e.message : String(e)}). Reconectalas desde la pestaña Plantillas.`);
+      }
+    }
     const device = getDevice().connected!;
     source = new BleDataSource(device.link, device.configuration, device.info, { reconnect: reconnectLink, reconnectAttempts: 12, reconnectDelayMs: 1000 });
   } else {

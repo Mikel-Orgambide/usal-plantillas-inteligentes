@@ -213,7 +213,15 @@ export async function disconnect(): Promise<void> {
 
 /** Reconecta con la última placa usada, si hay una guardada (al abrir Plantillas). */
 export async function connectLast(): Promise<void> {
+  if (state.connecting) return;
+  if (state.connected) {
+    if (!state.linkLost) return;
+    set({ connecting: state.connected.id, error: undefined });
+    try { await reconnectLink(); } catch (e) { set({ error: `No se pudo reconectar: ${message(e)}` }); }
+    set({ connecting: null });
+    return;
+  }
   const last = loadSettings().lastDevice;
-  if (!last || state.connected || state.connecting) return;
+  if (!last) return;
   await connect(last);
 }

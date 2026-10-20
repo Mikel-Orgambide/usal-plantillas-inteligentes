@@ -23,8 +23,8 @@ export function resolveSource(device: DeviceState, settings: Settings): ActiveSo
     return {
       kind: "physical",
       configuration: c.configuration,
-      title: `Plantillas · ${c.info.device_id}`,
-      detail: `${c.info.configuration_id} · firmware ${c.info.firmware}${synthetic ? " · lecturas sintéticas de la placa" : ""} · cuentas ADC 0–${c.info.raw_max}`,
+      title: `Plantillas · ${c.info.device_id}${device.linkLost ? " · enlace perdido" : ""}`,
+      detail: `${c.info.configuration_id} · firmware ${c.info.firmware}${synthetic ? " · lecturas sintéticas de la placa" : ""} · cuentas ADC 0–${c.info.raw_max}${device.linkLost ? " · se reconecta al iniciar" : ""}`,
     };
   }
   if (settings.simulatorMode) {
