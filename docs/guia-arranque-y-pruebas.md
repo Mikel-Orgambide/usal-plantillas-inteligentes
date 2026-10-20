@@ -159,6 +159,7 @@ eas build --profile preview --platform android
 - **Sesión simulada**: Hoy → Nueva sesión → Iniciar → esperar → Finalizar → Ver la sesión. En Ajustes se puede elegir un escenario de falla (read_error, disconnect, sequence_gap, capture_restart…) para ver cómo lo registra la app.
 - **Sesión física**: Plantillas → Buscar plantillas → tocar `Plantillas-9E7EE4` → Hoy debe decir «Plantillas · ESP32-9E7EE4» → Nueva sesión. Con el monitor serie abierto se puede comparar `transmitted` (placa) con «Registros» (Detalle): deben coincidir.
 - **Comparación**: Historial → marcar dos sesiones con el círculo → Comparar las 2 elegidas.
+- **Respaldo**: Detalle → ícono de exportar (arriba a la derecha) comparte un `.plantillas.json`; Ajustes → Respaldo → Importar una sesión lo restaura (si ya existe, lo dice). Copia completa: comparte un `.db`; Restaurar una copia completa lo reemplaza todo (guarda la actual en caché antes).
 - **Desconexión (H06)**: con una sesión física grabando, desenchufar la placa 5 s y volver a enchufarla: la app muestra «Conexión interrumpida», reconecta y el Detalle registra Desconectado / Reconectado / Reinicio de captura.
 
 ---
