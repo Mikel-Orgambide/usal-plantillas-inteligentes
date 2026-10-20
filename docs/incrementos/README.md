@@ -14,8 +14,8 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 7 - Historial y comparación | cerrada 2026-10-18 | v0.7-etapa7 |
 | 8 - Fuente física BLE | cerrada 2026-10-20 (H0, H1, H5, H6; faltan H2–H4 con sensores) | v0.8-etapa8 |
 | 9 - Calibración | pendiente (requiere FSR: H2–H4) | - |
-| 10 - Respaldo y paquete | en curso (implementada; falta verificar en el teléfono) | - |
-| 11 - Complemento remoto | pendiente | - |
+| 10 - Respaldo y paquete | cerrada 2026-10-20 | v0.10-etapa10 |
+| 11 - Complemento remoto | en curso | - |
 | 12 - Asistente explicativo (LLM) | pendiente · prototipo posterior al cierre funcional (guía 03 §15): responde sobre métricas y eventos ya calculados; no calcula ni diagnostica | - |
 
 Mejoras menores previstas tras la etapa 11: modo de números grandes en Grabación; exportar sesión a CSV.
