@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Svg, { G, Line, Path, Text as SvgText } from "react-native-svg";
 import { Text } from "./Text";
@@ -56,7 +56,7 @@ function buildPath(values: Array<number | null>, w: number, h: number, max: numb
   return { line: d, gaps };
 }
 
-export function LineChart({ series, max = 4095, height = 120, startLabel, endLabel, ticks, label }: LineChartProps) {
+function LineChartImpl({ series, max = 4095, height = 120, startLabel, endLabel, ticks, label }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const axisY = height - PAD_BOTTOM;
@@ -111,3 +111,21 @@ const styles = StyleSheet.create({
   legend: { flexDirection: "row", gap: space[4] },
   legendItem: { flexDirection: "row", alignItems: "center", gap: space[2] },
 });
+
+function sameSeries(a: LineSeries[], b: LineSeries[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!, y = b[i]!;
+    if (x.name !== y.name || x.stale !== y.stale || x.values.length !== y.values.length) return false;
+    for (let j = 0; j < x.values.length; j++) if (x.values[j] !== y.values[j]) return false;
+  }
+  return true;
+}
+
+/**
+ * Memorizado por contenido: con una placa real la pantalla se publica varias
+ * veces por segundo y el SVG solo se vuelve a dibujar si cambió algún valor.
+ */
+export const LineChart = memo(LineChartImpl, (prev, next) =>
+  prev.max === next.max && prev.height === next.height && prev.startLabel === next.startLabel && prev.endLabel === next.endLabel &&
+  prev.label === next.label && prev.ticks === next.ticks && sameSeries(prev.series, next.series));

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 import { Text } from "./Text";
@@ -59,7 +60,7 @@ function Foot({ side, values, stale, max, width }: { side: "left" | "right"; val
   );
 }
 
-export function FootMap({ left, right, stale = false, caption, max = 4095 }: FootMapProps) {
+function FootMapImpl({ left, right, stale = false, caption, max = 4095 }: FootMapProps) {
   const { width: screen } = useWindowDimensions();
   const footWidth = Math.min(150, (screen - space[4] * 2 - space[4]) / 2);
   const missing = [left.heel, left.medial, left.lateral, right.heel, right.medial, right.lateral].filter((v) => v === null).length;
@@ -79,3 +80,9 @@ const styles = StyleSheet.create({
   wrap: { gap: space[2] },
   feet: { flexDirection: "row", justifyContent: "center", gap: space[4] },
 });
+
+const sameFoot = (a: FootValues, b: FootValues) => a.heel === b.heel && a.medial === b.medial && a.lateral === b.lateral;
+
+/** Memorizado por valores: solo se redibuja cuando cambia alguna de las seis lecturas o el estado. */
+export const FootMap = memo(FootMapImpl, (prev, next) =>
+  prev.stale === next.stale && prev.caption === next.caption && prev.max === next.max && sameFoot(prev.left, next.left) && sameFoot(prev.right, next.right));

@@ -4,7 +4,7 @@ Proyecto Final de Ingeniería en Informática (USAL) · Mikel Orgambide Rueda.
 
 Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visualiza señales plantares de seis sensores FSR (tres por pie) mediante un ESP32 y una aplicación Android, con historial de sesiones y comparación entre sesiones compatibles.
 
-> Estado: **etapa 0 (preparación)**. Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/).
+> Estado: **etapas 0–8 cerradas** (contrato, simulador, persistencia, sesiones, pantallas, métricas, comparación, fuente física por BLE con lecturas sintéticas del ESP32); etapa 10 en curso. Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/). Los sensores FSR y la calibración (H2–H4, etapa 9) quedan pendientes.
 
 ## Estructura
 
@@ -26,18 +26,48 @@ Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visuali
 
 ## Requisitos
 
-- Node 24 (ver `.nvmrc`) y npm.
-- Android SDK + JDK 17/21 (Android Studio) para builds locales.
-- Cuenta de Expo (`eas login`) para builds en la nube.
+- Node 24 (ver `.nvmrc`) y npm 11.
+- Para la app en el teléfono: cuenta de Expo (`npm i -g eas-cli`, `eas login`) y Android SDK con `adb` para instalar el APK por cable.
+- Para el firmware: VS Code + PlatformIO IDE y el driver USB del conversor de la placa (CP210x).
 
-## Uso
+## Puesta en marcha desde una copia limpia
 
 ```bash
-npm install            # instala todo el monorepo
-npm run typecheck      # verificación de tipos
-npm test               # pruebas
-npm run android        # compila e instala el development build en el teléfono conectado
+git clone https://github.com/Mikel-Orgambide/proyecto-final-plantillas-inteligentes.git
+cd proyecto-final-plantillas-inteligentes
+npm ci                 # instala todo el monorepo con las versiones del lockfile
+npm run typecheck      # verificación de tipos de todos los paquetes y la app
+npm test               # pruebas (vitest), sin teléfono ni placa
 ```
+
+Comprobado el 2026-10-20 desde una copia limpia: `npm ci` + `npm run typecheck` + `npm test` (103 pruebas) + `npx expo export --platform android` sin errores.
+
+### App en el teléfono
+
+La app usa módulos nativos (SQLite, Bluetooth, archivos), así que no corre en Expo Go: se instala una build propia una vez y después se desarrolla con el servidor de Metro.
+
+```bash
+cd apps/mobile
+cp .env.example .env                                   # completar con la URL y la publishable key de Supabase
+npx expo-doctor
+eas build --profile development --platform android     # build de desarrollo (una vez, y cada vez que cambian módulos nativos)
+adb install -r <apk descargado>
+npx expo start                                         # servidor de desarrollo; la app se conecta por Wi-Fi
+```
+
+Paquete autónomo para demostración (sin servidor de desarrollo):
+
+```bash
+eas build --profile preview --platform android
+```
+
+### Firmware del ESP32
+
+Abrir la carpeta `firmware/` en VS Code con PlatformIO, conectar la placa por USB y ejecutar **Upload** (mantener `IO0` durante `Connecting…`). Detalles en [`firmware/README.md`](firmware/README.md) y en [`docs/guia-arranque-y-pruebas.md`](docs/guia-arranque-y-pruebas.md).
+
+## Guía operativa
+
+[`docs/guia-arranque-y-pruebas.md`](docs/guia-arranque-y-pruebas.md): arranque diario, carga del firmware, pruebas automáticas y manuales, builds, problemas frecuentes.
 
 ## Flujo de trabajo
 

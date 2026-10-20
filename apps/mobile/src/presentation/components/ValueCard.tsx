@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { Text } from "./Text";
@@ -18,7 +19,7 @@ export interface ValueCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function ValueCard({ label, value, unit, sub, size = "md", stale, live, elevated, style }: ValueCardProps) {
+function ValueCardImpl({ label, value, unit, sub, size = "md", stale, live, elevated, style }: ValueCardProps) {
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     if (!live) return;
@@ -50,3 +51,6 @@ const styles = StyleSheet.create({
   valueRow: { flexDirection: "row", alignItems: "baseline", gap: space[1] },
   unit: { paddingBottom: 4 },
 });
+
+/** Memorizado: las tarjetas de una pantalla en vivo solo se redibujan si cambia su contenido (el estilo se compara por referencia). */
+export const ValueCard = memo(ValueCardImpl);

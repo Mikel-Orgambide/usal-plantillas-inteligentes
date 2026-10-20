@@ -12,11 +12,13 @@ export interface Database {
 
 let instance: Promise<Database> | undefined;
 
+export const DATABASE_NAME = "plantillas.db";
+
 /** Abre (una sola vez) la base local, aplica migraciones y recupera sesiones abiertas. */
 export function getDatabase(): Promise<Database> {
   if (!instance) {
     instance = (async () => {
-      const driver = await ExpoSqliteDriver.open();
+      const driver = await ExpoSqliteDriver.open(DATABASE_NAME);
       const migration = await migrate(driver);
       const repository = new SessionRepository(driver);
       await repository.ensureLocalUser();
@@ -25,4 +27,12 @@ export function getDatabase(): Promise<Database> {
     })();
   }
   return instance;
+}
+
+/** Cierra la base actual; la próxima llamada a `getDatabase()` la vuelve a abrir (tras restaurar una copia). */
+export async function closeDatabase(): Promise<void> {
+  if (!instance) return;
+  const current = instance;
+  instance = undefined;
+  try { await (await current).driver.close(); } catch { /* ya cerrada */ }
 }

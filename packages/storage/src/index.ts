@@ -10,3 +10,5 @@ export type {
 } from "./repository";
 export { DEFAULT_WRITE_QUEUE_OPTIONS, WriteQueue } from "./write-queue";
 export type { WriteQueueOptions, WriteQueueStats } from "./write-queue";
+export { BUNDLE_FORMAT, countEntities, exportSessionBundle, restoreSessionBundle, validateBundle } from "./backup";
+export type { RestoreReport, SessionBundle } from "./backup";

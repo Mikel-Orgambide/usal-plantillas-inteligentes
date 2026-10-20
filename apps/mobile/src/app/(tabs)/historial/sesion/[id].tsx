@@ -7,6 +7,7 @@ import { Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, Status
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../../../presentation/theme/tokens";
 import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
+import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = { heel: ["L_HEEL", "R_HEEL"], medial: ["L_MEDIAL", "R_MEDIAL"], lateral: ["L_LATERAL", "R_LATERAL"] };
@@ -51,6 +52,11 @@ export default function SessionDetailScreen() {
   const [zone, setZone] = useState<Zone>("heel");
   const [showEvents, setShowEvents] = useState(false);
   const [captureIndex, setCaptureIndex] = useState(0);
+  const [exportError, setExportError] = useState<string | undefined>();
+  const exportSession = async (sessionId: string) => {
+    setExportError(undefined);
+    try { await shareSessionBundle(sessionId); } catch (e) { setExportError(e instanceof Error ? e.message : String(e)); }
+  };
 
   if (error) {
     return (
@@ -85,7 +91,11 @@ export default function SessionDetailScreen() {
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
         onBack={() => router.back()}
+        action="export"
+        actionLabel="Exportar sesión"
+        onAction={() => void exportSession(session.id)}
       />
+      {exportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[3] }}>No se pudo exportar: {exportError}</Text> : null}
       <View style={styles.metaRow}>
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
         <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · 6 posiciones · cuentas ADC 0–4095</Text>

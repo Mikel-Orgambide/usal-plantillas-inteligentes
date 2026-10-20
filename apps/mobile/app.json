@@ -2,7 +2,7 @@
   "expo": {
     "name": "Plantillas Inteligentes",
     "slug": "plantillas-inteligentes",
-    "version": "1.0.0",
+    "version": "0.10.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -39,6 +39,14 @@
           "isBleRequired": false,
           "neverForLocation": true,
           "companionDeviceEnabled": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0c0d10",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
         }
       ]
     ],

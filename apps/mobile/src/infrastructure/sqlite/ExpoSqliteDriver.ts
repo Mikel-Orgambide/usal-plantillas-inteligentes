@@ -44,6 +44,11 @@ export class ExpoSqliteDriver implements SqlDriver {
     return new ExpoSqliteDriver(await SQLite.openDatabaseAsync(name));
   }
 
+  /** Imagen binaria consistente de la base (para la copia completa). */
+  serialize(): Promise<Uint8Array> {
+    return this.withLock(() => this.db.serializeAsync());
+  }
+
   /** Encadena `fn` detrás de todo lo pendiente; nunca hay dos operaciones a la vez. */
   private withLock<T>(fn: () => Promise<T>): Promise<T> {
     const result = this.lock.then(fn);
