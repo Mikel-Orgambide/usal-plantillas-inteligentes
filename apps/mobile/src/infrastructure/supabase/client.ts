@@ -23,10 +23,13 @@ export function getSupabase(): SupabaseClient {
   if (!client) {
     const c = createClient(URL, KEY, {
       auth: {
+        // Versión síncrona del almacén clave-valor, envuelta en promesas: la
+        // versión asíncrona de expo-sqlite falló con NullPointerException cuando
+        // auth-js la llamaba en paralelo (lectura de sesión + renovación del token).
         storage: {
-          getItem: (key: string) => Storage.getItem(key),
-          setItem: (key: string, value: string) => Storage.setItem(key, value),
-          removeItem: (key: string) => Storage.removeItem(key),
+          getItem: async (key: string) => Storage.getItemSync(key),
+          setItem: async (key: string, value: string) => { Storage.setItemSync(key, value); },
+          removeItem: async (key: string) => { Storage.removeItemSync(key); },
         },
         autoRefreshToken: true,
         persistSession: true,

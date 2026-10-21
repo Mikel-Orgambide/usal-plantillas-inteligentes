@@ -91,7 +91,17 @@ export default function SettingsScreen() {
       <ListRow title="Plantillas" subtitle="Estado del dispositivo y búsqueda Bluetooth" onPress={() => router.navigate("/plantillas")} />
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Cuenta</Text>
-      <ListRow title={auth.status === "signed_in" ? "Cuenta" : "Iniciar sesión o crear cuenta"} subtitle={accountSubtitle} chevron={auth.status === "signed_out"} onPress={auth.status === "signed_out" ? () => { setAccountError(undefined); setAccount(true); } : undefined} />
+      {auth.status === "signed_out" ? (
+        <View style={styles.accountCard}>
+          <View style={{ flex: 1, gap: space[1] }}>
+            <Text variant="body" color={colors.accent}>Iniciar sesión o crear cuenta</Text>
+            <Text variant="caption" color={colors.textSecondary}>{accountSubtitle}</Text>
+          </View>
+          <Button variant="primary" icon="user" style={{ alignSelf: "center" }} onPress={() => { setAccountError(undefined); setAccount(true); }}>Entrar</Button>
+        </View>
+      ) : (
+        <ListRow title="Cuenta" subtitle={accountSubtitle} chevron={false} chip={auth.status === "signed_in" ? <Chip variant="selected" icon="user">Conectada</Chip> : undefined} />
+      )}
       {auth.status === "signed_in" ? (
         <>
           <ListRow title="Sincronizar ahora" subtitle={syncSubtitle} chevron={false} onPress={busy || sync.running ? undefined : () => void run("Sincronizar", async () => {
@@ -175,5 +185,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   toggleRow: { flexDirection: "row", alignItems: "center", gap: space[3], minHeight: size.rowHeight, paddingVertical: space[3], borderBottomWidth: size.hairline, borderBottomColor: colors.line },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space[2] },
+  accountCard: { flexDirection: "row", alignItems: "center", gap: space[3], padding: space[4], borderRadius: radius.md, backgroundColor: colors.accentSoft, borderWidth: size.hairline, borderColor: colors.accent },
   input: { height: size.controlHeight, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], fontFamily: fonts.regular, fontSize: 16 },
 });
