@@ -8,6 +8,8 @@ import { colors, formatDate, formatDuration, formatNumber, space } from "../../.
 import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
+import { useAuth } from "../../../../application/authStore";
+import { describeOutcome, syncOne, useSessionSyncState, useSync } from "../../../../application/syncStore";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = { heel: ["L_HEEL", "R_HEEL"], medial: ["L_MEDIAL", "R_MEDIAL"], lateral: ["L_LATERAL", "R_LATERAL"] };
@@ -53,6 +55,14 @@ export default function SessionDetailScreen() {
   const [showEvents, setShowEvents] = useState(false);
   const [captureIndex, setCaptureIndex] = useState(0);
   const [exportError, setExportError] = useState<string | undefined>();
+  const auth = useAuth();
+  const sync = useSync();
+  const syncRow = useSessionSyncState(id);
+  const [syncMessage, setSyncMessage] = useState<string | undefined>();
+  const syncNow = async (sessionId: string) => {
+    setSyncMessage(undefined);
+    try { setSyncMessage(describeOutcome(await syncOne(sessionId))); } catch (e) { setSyncMessage(e instanceof Error ? e.message : String(e)); }
+  };
   const exportSession = async (sessionId: string) => {
     setExportError(undefined);
     try { await shareSessionBundle(sessionId); } catch (e) { setExportError(e instanceof Error ? e.message : String(e)); }
@@ -84,6 +94,12 @@ export default function SessionDetailScreen() {
   const duration = session.duration_ms ?? 0;
   const received = quality.expected > 0 ? (quality.records / quality.expected) * 100 : 0;
   const sorted = [...events].sort((a, b) => a.id - b.id);
+  const closed = session.state === "completed" || session.state === "incomplete";
+  const syncChip = syncRow?.status === "confirmed"
+    ? <Chip icon="cloud">Sincronizada</Chip>
+    : auth.status === "signed_in" && closed && captures.length > 0
+      ? <Chip icon="cloud" variant={syncRow?.status === "failed" || syncRow?.status === "pending" ? "alert" : "neutral"} onPress={sync.running ? undefined : () => void syncNow(session.id)}>{sync.running ? "Sincronizando…" : syncRow ? "Reintentar sincronización" : "Sincronizar"}</Chip>
+      : <Chip>Sólo en este teléfono</Chip>;
 
   return (
     <Screen tabbed footer={<Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>}>
@@ -100,6 +116,11 @@ export default function SessionDetailScreen() {
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
         <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · 6 posiciones · cuentas ADC 0–4095</Text>
       </View>
+      <View style={[styles.metaRow, { marginTop: space[2] }]}>
+        {syncChip}
+        {syncRow && syncRow.status !== "confirmed" && syncRow.last_error ? <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }} numberOfLines={2}>{syncRow.last_error}</Text> : null}
+      </View>
+      {syncMessage ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>{syncMessage}</Text> : null}
       {session.context ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Contexto: {session.context}</Text> : null}
       {session.state === "incomplete" ? (
         <View style={{ marginTop: space[4] }}>

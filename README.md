@@ -4,7 +4,7 @@ Proyecto Final de Ingeniería en Informática (USAL) · Mikel Orgambide Rueda.
 
 Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visualiza señales plantares de seis sensores FSR (tres por pie) mediante un ESP32 y una aplicación Android, con historial de sesiones y comparación entre sesiones compatibles.
 
-> Estado: **etapas 0–8 cerradas** (contrato, simulador, persistencia, sesiones, pantallas, métricas, comparación, fuente física por BLE con lecturas sintéticas del ESP32); etapa 10 en curso. Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/). Los sensores FSR y la calibración (H2–H4, etapa 9) quedan pendientes.
+> Estado: **etapas 0–8 y 10 cerradas** (contrato, simulador, persistencia, sesiones, pantallas, métricas, comparación, fuente física por BLE con lecturas sintéticas del ESP32, respaldo y paquete de demostración); etapa 11 (cuenta y sincronización con Supabase) implementada, en verificación. Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/). Los sensores FSR y la calibración (H2–H4, etapa 9) quedan pendientes.
 
 ## Estructura
 
@@ -17,6 +17,8 @@ Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visuali
 | `packages/session` | Coordinador de sesiones (máquina de estados, recuperación) |
 | `packages/metrics` | Métricas descriptivas por canal con versión de algoritmo |
 | `packages/ble` | Protocolo BLE de la plantilla y fuente de datos física |
+| `packages/sync` | Sincronización de sesiones con el servicio remoto: identificadores estables, confirmación por cantidades, reintentos |
+| `supabase` | Esquema remoto (tablas con titular, RLS, funciones de sincronización) y su prueba en PostgreSQL local |
 | `firmware` | Firmware del ESP32 (PlatformIO, Arduino Core) |
 | `test-data` | Fixtures y datos simulados identificados como tales |
 | `scripts` | Utilidades de desarrollo |
@@ -48,7 +50,7 @@ La app usa módulos nativos (SQLite, Bluetooth, archivos), así que no corre en 
 
 ```bash
 cd apps/mobile
-cp .env.example .env                                   # completar con la URL y la publishable key de Supabase
+cp .env.example .env                                   # URL y publishable key de Supabase (opcional: sin ellas la app funciona sólo en local)
 npx expo-doctor
 eas build --profile development --platform android     # build de desarrollo (una vez, y cada vez que cambian módulos nativos)
 adb install -r <apk descargado>

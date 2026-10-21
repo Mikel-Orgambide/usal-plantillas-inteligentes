@@ -1,0 +1,110 @@
+# Verificación del esquema remoto en PostgreSQL 16 local (supabase/tests/check-rls.sql) — 2026-10-21
+# Base recién creada con auth-shim.sql + migrations/0001_remote_schema.sql; luego este guion. Los ERROR de los pasos 1 y 4 son los rechazos esperados.
+--- 1. anónimo: sin acceso
+psql:/var/lib/pgtest/sql/check.sql:12: ERROR:  permission denied for table session
+psql:/var/lib/pgtest/sql/check.sql:13: ERROR:  permission denied for function sync_session_begin
+--- 2. cuenta A: transferencia completa
+              set_config              
+--------------------------------------
+ 11111111-1111-1111-1111-111111111111
+(1 row)
+
+          begin_a          
+---------------------------
+ {"captures": {"C1": "1"}}
+(1 row)
+
+ inserted_first 
+----------------
+              0
+(1 row)
+
+                       counts_first                       
+----------------------------------------------------------
+ {"events": 2, "records": 2, "results": 1, "captures": 1}
+(1 row)
+
+--- 3. cuenta A: transferencia repetida (no duplica)
+        begin_again        
+---------------------------
+ {"captures": {"C1": "1"}}
+(1 row)
+
+ inserted_again 
+----------------
+              0
+(1 row)
+
+                       counts_again                       
+----------------------------------------------------------
+ {"events": 2, "records": 2, "results": 1, "captures": 1}
+(1 row)
+
+ id |               owner_id               | record_count | event_count 
+----+--------------------------------------+--------------+-------------
+ S1 | 11111111-1111-1111-1111-111111111111 |            2 |           2
+(1 row)
+
+--- 4. cuenta B: no ve nada de A y no puede reutilizar S1
+              set_config              
+--------------------------------------
+ 22222222-2222-2222-2222-222222222222
+(1 row)
+
+ visible_to_b 
+--------------
+            1
+(1 row)
+
+ records_visible_to_b 
+----------------------
+                    2
+(1 row)
+
+psql:/var/lib/pgtest/sql/check.sql:33: ERROR:  new row violates row-level security policy (USING expression) for table "session"
+CONTEXT:  SQL statement "insert into session (id, activity, context, source, state, started_at, ended_at, duration_ms, created_at, updated_at,
+                       device_id, configuration_id, configuration, schema_version)
+  values (v_id, p_session->>'activity', p_session->>'context', p_session->>'source', p_session->>'state',
+          (p_session->>'started_at')::timestamptz, (p_session->>'ended_at')::timestamptz, (p_session->>'duration_ms')::integer,
+          (p_session->>'created_at')::timestamptz, (p_session->>'updated_at')::timestamptz,
+          p_session->>'device_id', p_session->>'configuration_id', p_session->'configuration', (p_session->>'schema_version')::integer)
+  on conflict (id) do update set
+    state = excluded.state, ended_at = excluded.ended_at, duration_ms = excluded.duration_ms, updated_at = excluded.updated_at,
+    context = excluded.context, configuration = excluded.configuration, schema_version = excluded.schema_version"
+PL/pgSQL function sync_session_begin(jsonb,jsonb) line 15 at SQL statement
+ sync_records 
+--------------
+            0
+(1 row)
+
+psql:/var/lib/pgtest/sql/check.sql:35: ERROR:  captura 1 inexistente o de otra cuenta
+CONTEXT:  PL/pgSQL function sync_records(bigint,jsonb) line 6 at RAISE
+psql:/var/lib/pgtest/sql/check.sql:36: ERROR:  sesión S1 inexistente o de otra cuenta
+CONTEXT:  PL/pgSQL function sync_session_finish(text,jsonb,jsonb) line 6 at RAISE
+--- 5. cuenta B: su propia sesión
+          begin_b          
+---------------------------
+ {"captures": {"C1": "3"}}
+(1 row)
+
+                         counts_b                         
+----------------------------------------------------------
+ {"events": 0, "records": 2, "results": 0, "captures": 1}
+(1 row)
+
+ id |               owner_id               
+----+--------------------------------------
+ S2 | 22222222-2222-2222-2222-222222222222
+(1 row)
+
+--- 6. A sigue viendo sólo lo suyo
+              set_config              
+--------------------------------------
+ 11111111-1111-1111-1111-111111111111
+(1 row)
+
+ id 
+----
+ S1
+(1 row)
+

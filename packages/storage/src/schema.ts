@@ -167,6 +167,26 @@ CREATE TABLE result (
 CREATE INDEX result_capture_idx ON result(capture_id);
 `,
   },
+  {
+    version: 3,
+    description: "Complemento remoto: correo del usuario vinculado y estado de sincronización por sesión",
+    sql: `
+ALTER TABLE user ADD COLUMN email TEXT;
+CREATE UNIQUE INDEX user_remote_idx ON user(remote_id) WHERE remote_id IS NOT NULL;
+
+CREATE TABLE sync_state (
+  session_id       TEXT PRIMARY KEY REFERENCES session(id),
+  owner_remote_id  TEXT NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('pending','confirmed','failed')),
+  attempts         INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  remote_counts    TEXT,
+  last_error       TEXT,
+  confirmed_at     TEXT,
+  updated_at       TEXT NOT NULL,
+  CHECK (status <> 'confirmed' OR (confirmed_at IS NOT NULL AND remote_counts IS NOT NULL))
+);
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

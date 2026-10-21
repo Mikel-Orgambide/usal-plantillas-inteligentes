@@ -162,6 +162,26 @@ eas build --profile preview --platform android
 - **Respaldo**: Detalle → ícono de exportar (arriba a la derecha) comparte un `.plantillas.json`; Ajustes → Respaldo → Importar una sesión lo restaura (si ya existe, lo dice). Copia completa: comparte un `.db`; Restaurar una copia completa lo reemplaza todo (guarda la actual en caché antes).
 - **Desconexión (H06)**: con una sesión física grabando, desenchufar la placa 5 s y volver a enchufarla: la app muestra «Conexión interrumpida», reconecta y el Detalle registra Desconectado / Reconectado / Reinicio de captura.
 
+- **Cuenta y sincronización (etapa 11)**: Ajustes → Cuenta → Iniciar sesión o crear cuenta. Con cuenta, cada sesión que se cierra se sube sola; «Sincronizar ahora» sube todas las pendientes y el Detalle muestra «Sincronizada» sólo cuando el servidor confirmó las mismas cantidades. En modo avión la sesión queda pendiente con el error y se reintenta desde el Detalle o desde Ajustes.
+
+---
+
+## 5b. Complemento remoto (Supabase) — configuración una sola vez
+
+1. **Esquema**: panel de Supabase → *SQL Editor* → pegar `supabase/migrations/0001_remote_schema.sql` → *Run*. Debe terminar sin errores (crea 5 tablas, políticas, 3 funciones y 1 vista). Se aplica una sola vez; si hiciera falta rehacerlo, borrar antes las tablas en *Table Editor*.
+2. **Correo y contraseña**: *Authentication → Sign In / Providers → Email*: dejar **Enable Email provider** activo y **desactivar «Confirm email»** (así la cuenta queda usable al crearla; la tesis lo documenta como configuración del prototipo).
+3. **Variables en la app**: `apps/mobile/.env` con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ya cargadas). Para las builds de EAS, las mismas dos variables en *expo.dev → proyecto → Environment variables* (ya cargadas). Nunca la *secret key*.
+4. **Verificación con dos cuentas de prueba** (no usar la cuenta personal): completar `REMOTE_CHECK_*` en `.env` con dos correos inventados (por ejemplo `prueba-a@plantillas.test`) y contraseñas, y correr
+
+```powershell
+cd "C:\Proyecto Final Tesis\repo"
+node scripts\remote-check.mjs
+```
+
+   Debe imprimir `10/10 comprobaciones correctas`. Guardar la salida en `test-data/remote/` como evidencia.
+5. **Panel**: *Table Editor → session_summary* muestra las sesiones por cuenta con sus cantidades; sirve como comprobación independiente de lo que dice la app.
+6. **Plan gratuito**: el proyecto se pausa tras 7 días sin actividad; antes de una demostración, abrir el panel y reanudarlo.
+
 ---
 
 ## 6. Problemas frecuentes
@@ -176,6 +196,10 @@ eas build --profile preview --platform android
 | La app no encuentra la placa | placa sin alimentación o ya conectada a otro cliente | enchufarla, apretar EN, buscar de nuevo |
 | Engranaje flotante sobre la app | «Tools button» del cliente de desarrollo de Expo | sacudir el teléfono → apagar *Tools button*; no existe en la build final |
 | Botones lentos durante la grabación | development build con Metro | normal en desarrollo; la build *preview* es más fluida |
+| Ajustes → Cuenta dice «no tiene configurado el servicio remoto» | faltan las variables `EXPO_PUBLIC_*` al bundlear | revisar `apps/mobile/.env` (Metro) o las variables de EAS (build) y reiniciar `npx expo start --clear` |
+| «Iniciar sesión» responde `Email not confirmed` | confirmación por correo activa en Supabase | desactivarla (§5b.2) o confirmar la cuenta desde *Authentication → Users* |
+| Sincronizar devuelve `function ... does not exist` | la migración no se aplicó en el proyecto | §5b.1 |
+| Sincronizar devuelve `row-level security` | la sesión ya existe en el servidor bajo otra cuenta | esperado: cada sesión tiene un solo titular |
 
 ---
 

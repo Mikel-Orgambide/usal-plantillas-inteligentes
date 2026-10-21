@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { StyleSheet, Switch, View } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, Switch, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useDevice } from "../infrastructure/ble/deviceStore";
 import { resolveSource } from "../application/activeSource";
 import Constants from "expo-constants";
 import { SCENARIOS, type ScenarioName } from "@plantillas/simulator";
 import { Button, Chip, Header, ListRow, Screen, Sheet, Text } from "../presentation/components";
-import { colors, formatNumber, size, space } from "../presentation/theme/tokens";
+import { colors, fonts, formatDate, formatNumber, radius, size, space } from "../presentation/theme/tokens";
 import { loadSettings, saveSettings, type Settings } from "../infrastructure/settings/settings";
 import { importSessionBundle, restoreDatabaseCopy, shareDatabaseCopy } from "../infrastructure/backup/backup";
+import { signIn, signOut, signUp, useAuth } from "../application/authStore";
+import { refreshPending, syncAll, useSync } from "../application/syncStore";
 
 const SCENARIO_NAMES = Object.keys(SCENARIOS) as ScenarioName[];
 
@@ -35,6 +37,37 @@ export default function SettingsScreen() {
   const [notice, setNotice] = useState<{ title: string; body: string } | null>(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [busy, setBusy] = useState(false);
+  const auth = useAuth();
+  const sync = useSync();
+  const [account, setAccount] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accountError, setAccountError] = useState<string | undefined>();
+  useEffect(() => { void refreshPending(); }, [auth.status]);
+
+  const credentials = async (action: "in" | "up") => {
+    setAccountError(undefined);
+    if (!email.trim() || !password) { setAccountError("Completá correo y contraseña."); return; }
+    setBusy(true);
+    try {
+      const notice = action === "in" ? (await signIn(email, password), null) : await signUp(email, password);
+      setAccount(false);
+      setPassword("");
+      if (notice) setNotice({ title: "Crear cuenta", body: notice });
+    } catch (e) {
+      setAccountError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const accountSubtitle = auth.status === "unconfigured" ? "Este paquete no tiene configurado el servicio remoto"
+    : auth.status === "loading" ? "Comprobando la sesión guardada…"
+    : auth.status === "signed_out" ? "Sin cuenta: las sesiones quedan sólo en este teléfono"
+    : auth.email ?? auth.remoteId ?? "";
+  const syncSubtitle = sync.running
+    ? (sync.progress ? `Enviando ${sync.progress.recordsSent} de ${sync.progress.recordsTotal} registros…` : "Sincronizando…")
+    : `${sync.pendingCount === 0 ? "Nada pendiente" : `${sync.pendingCount} sesión(es) pendiente(s)`}${sync.lastRun ? ` · última: ${formatDate(sync.lastRun.at)} (${sync.lastRun.report.confirmed} confirmada(s), ${sync.lastRun.report.pending + sync.lastRun.report.failed} sin confirmar)` : ""}`;
 
   const run = async (label: string, fn: () => Promise<string | null>) => {
     setBusy(true);
@@ -56,6 +89,22 @@ export default function SettingsScreen() {
       <Text variant="label" color={colors.textSecondary}>Dispositivo</Text>
       <ListRow title="Fuente de las sesiones nuevas" subtitle={`${source.title} · ${source.detail}`} chevron={false} />
       <ListRow title="Plantillas" subtitle="Estado del dispositivo y búsqueda Bluetooth" onPress={() => router.navigate("/plantillas")} />
+
+      <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Cuenta</Text>
+      <ListRow title={auth.status === "signed_in" ? "Cuenta" : "Iniciar sesión o crear cuenta"} subtitle={accountSubtitle} chevron={auth.status === "signed_out"} onPress={auth.status === "signed_out" ? () => { setAccountError(undefined); setAccount(true); } : undefined} />
+      {auth.status === "signed_in" ? (
+        <>
+          <ListRow title="Sincronizar ahora" subtitle={syncSubtitle} chevron={false} onPress={busy || sync.running ? undefined : () => void run("Sincronizar", async () => {
+            const r = await syncAll();
+            const total = r.confirmed + r.pending + r.failed;
+            if (total === 0) return "No había sesiones pendientes.";
+            const detail = Object.values(r.outcomes).filter((o) => o.status !== "confirmed").map((o) => o.status === "skipped" ? o.reason : o.error).slice(0, 3);
+            return `${r.confirmed} de ${total} sesión(es) confirmada(s) por el servidor.${detail.length ? `\n${detail.join("\n")}` : ""}`;
+          })} />
+          <ListRow title="Cerrar sesión" subtitle="Las sesiones siguen en el teléfono; lo pendiente se sincroniza al volver a entrar con esta cuenta." chevron={false} onPress={busy ? undefined : () => void run("Cerrar sesión", async () => { await signOut(); return null; })} />
+        </>
+      ) : null}
+      <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>La copia local es la fuente primaria. Una sesión se marca sincronizada sólo cuando el servidor confirma las mismas cantidades de registros, eventos y resultados.</Text>
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6] }}>Datos</Text>
       <ListRow title="Unidad" subtitle="cuentas ADC (0–4095) · sin calibración" value="cuentas" chevron={false} />
@@ -102,6 +151,18 @@ export default function SettingsScreen() {
         <Button onPress={() => setConfirmRestore(false)}>Cancelar</Button>
       </View>
     </Sheet>
+    <Sheet visible={account} onDismiss={() => setAccount(false)}>
+      <Text variant="heading">Cuenta</Text>
+      <Text variant="body" color={colors.textSecondary}>Con una cuenta, las sesiones cerradas se guardan también en el servicio remoto y sólo esa cuenta puede verlas.</Text>
+      <TextInput value={email} onChangeText={setEmail} placeholder="Correo" placeholderTextColor={colors.textSecondary} style={styles.input} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
+      <TextInput value={password} onChangeText={setPassword} placeholder="Contraseña (mínimo 6 caracteres)" placeholderTextColor={colors.textSecondary} style={styles.input} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" />
+      {accountError ? <Text variant="caption" color={colors.alert}>{accountError}</Text> : null}
+      <View style={{ gap: space[3], marginTop: space[3] }}>
+        <Button variant="primary" icon="user" disabled={busy} onPress={() => void credentials("in")}>Iniciar sesión</Button>
+        <Button disabled={busy} onPress={() => void credentials("up")}>Crear cuenta</Button>
+        <Button disabled={busy} onPress={() => setAccount(false)}>Cancelar</Button>
+      </View>
+    </Sheet>
     <Sheet visible={!!notice} onDismiss={() => setNotice(null)}>
       <Text variant="heading">{notice?.title ?? ""}</Text>
       <Text variant="body" color={colors.textSecondary}>{notice?.body ?? ""}</Text>
@@ -114,4 +175,5 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   toggleRow: { flexDirection: "row", alignItems: "center", gap: space[3], minHeight: size.rowHeight, paddingVertical: space[3], borderBottomWidth: size.hairline, borderBottomColor: colors.line },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space[2] },
+  input: { height: size.controlHeight, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], fontFamily: fonts.regular, fontSize: 16 },
 });

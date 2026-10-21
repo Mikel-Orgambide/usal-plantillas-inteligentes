@@ -5,6 +5,7 @@ import {
   type DataSourceKind,
   type NormalizedRecord,
   type Sample,
+  type SensorModel,
 } from "@plantillas/contract";
 import { withSavepoint, type SqlDriver, type SqlExecutor } from "./driver";
 
@@ -14,6 +15,28 @@ import { withSavepoint, type SqlDriver, type SqlExecutor } from "./driver";
  */
 
 export type SessionState = "prepared" | "recording" | "interrupted" | "finalizing" | "completed" | "incomplete";
+
+export interface UserRow {
+  readonly id: string;
+  /** Identificador de la cuenta remota (Supabase Auth) a la que está vinculado, si lo está. */
+  readonly remote_id: string | null;
+  readonly email: string | null;
+  readonly created_at: string;
+}
+
+export type SyncStatus = "pending" | "confirmed" | "failed";
+
+export interface SyncStateRow {
+  readonly session_id: string;
+  readonly owner_remote_id: string;
+  readonly status: SyncStatus;
+  readonly attempts: number;
+  /** JSON con las cantidades aceptadas por el servidor en la confirmación. */
+  readonly remote_counts: string | null;
+  readonly last_error: string | null;
+  readonly confirmed_at: string | null;
+  readonly updated_at: string;
+}
 
 export interface SessionRow {
   readonly id: string;
@@ -134,6 +157,93 @@ export class SessionRepository {
   async ensureLocalUser(id = "local"): Promise<string> {
     await this.db.run("INSERT OR IGNORE INTO user (id, created_at) VALUES (?, ?)", [id, now()]);
     return id;
+  }
+
+  async getUser(id: string): Promise<UserRow | undefined> {
+    return this.db.get<UserRow>("SELECT id, remote_id, email, created_at FROM user WHERE id = ?", [id]);
+  }
+
+  async getUserByRemoteId(remoteId: string): Promise<UserRow | undefined> {
+    return this.db.get<UserRow>("SELECT id, remote_id, email, created_at FROM user WHERE remote_id = ?", [remoteId]);
+  }
+
+  /**
+   * Usuario local que corresponde a una cuenta remota (etapa 11). La primera
+   * cuenta que inicia sesión en el teléfono adopta al usuario `local` y, con
+   * él, las sesiones grabadas antes de tener cuenta. Las cuentas siguientes
+   * obtienen un usuario propio: la titularidad de una sesión no cambia al
+   * cambiar de cuenta (03 §14).
+   */
+  async linkRemoteUser(remoteId: string, email: string | null, localId = "local"): Promise<UserRow> {
+    return this.db.transaction(async (tx) => {
+      const existing = await tx.get<UserRow>("SELECT id, remote_id, email, created_at FROM user WHERE remote_id = ?", [remoteId]);
+      if (existing) {
+        if (existing.email !== email) await tx.run("UPDATE user SET email = ? WHERE id = ?", [email, existing.id]);
+        return { ...existing, email };
+      }
+      const local = await tx.get<UserRow>("SELECT id, remote_id, email, created_at FROM user WHERE id = ?", [localId]);
+      if (local && local.remote_id === null) {
+        await tx.run("UPDATE user SET remote_id = ?, email = ? WHERE id = ?", [remoteId, email, localId]);
+        return { ...local, remote_id: remoteId, email };
+      }
+      const ts = now();
+      await tx.run("INSERT INTO user (id, remote_id, email, created_at) VALUES (?, ?, ?, ?)", [remoteId, remoteId, email, ts]);
+      return { id: remoteId, remote_id: remoteId, email, created_at: ts };
+    });
+  }
+
+  /** Configuración con sus canales, en la forma del contrato. */
+  async getConfiguration(id: string): Promise<AcquisitionConfiguration | undefined> {
+    const c = await this.db.get<{ id: string; device_id: string; source: DataSourceKind; raw_min: number; raw_max: number; resolution_bits: number; description: string | null }>(
+      "SELECT id, device_id, source, raw_min, raw_max, resolution_bits, description FROM configuration WHERE id = ?", [id]);
+    if (!c) return undefined;
+    const channels = await this.db.all<{ installation_id: string; code: ChannelCode; model: SensorModel; unit: string }>(
+      "SELECT installation_id, code, model, unit FROM channel WHERE configuration_id = ? ORDER BY code", [id]);
+    return {
+      configuration_id: c.id, device_id: c.device_id, source: c.source,
+      raw_range: { min: c.raw_min, max: c.raw_max, resolution_bits: c.resolution_bits },
+      channels: channels.map((ch) => ({ code: ch.code, installation_id: ch.installation_id, model: ch.model, unit: ch.unit as "adc_count" })),
+      ...(c.description ? { description: c.description } : {}),
+    };
+  }
+
+  // ---- sincronización (etapa 11) ----------------------------------------
+
+  async getSyncState(sessionId: string): Promise<SyncStateRow | undefined> {
+    return this.db.get<SyncStateRow>("SELECT * FROM sync_state WHERE session_id = ?", [sessionId]);
+  }
+
+  async listSyncStates(): Promise<SyncStateRow[]> {
+    return this.db.all<SyncStateRow>("SELECT * FROM sync_state ORDER BY updated_at DESC");
+  }
+
+  /** Registra el resultado de un intento. `confirmed` exige las cantidades aceptadas por el servidor. */
+  async recordSyncAttempt(sessionId: string, ownerRemoteId: string, outcome: { status: "confirmed"; remoteCounts: Record<string, number> } | { status: "pending" | "failed"; error?: string }): Promise<SyncStateRow> {
+    const ts = now();
+    const counts = outcome.status === "confirmed" ? JSON.stringify(outcome.remoteCounts) : null;
+    const error = outcome.status === "confirmed" ? null : outcome.error ?? null;
+    const confirmedAt = outcome.status === "confirmed" ? ts : null;
+    await this.db.run(
+      `INSERT INTO sync_state (session_id, owner_remote_id, status, attempts, remote_counts, last_error, confirmed_at, updated_at)
+       VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+       ON CONFLICT(session_id) DO UPDATE SET
+         owner_remote_id = excluded.owner_remote_id, status = excluded.status, attempts = sync_state.attempts + 1,
+         remote_counts = excluded.remote_counts, last_error = excluded.last_error, confirmed_at = excluded.confirmed_at, updated_at = excluded.updated_at`,
+      [sessionId, ownerRemoteId, outcome.status, counts, error, confirmedAt, ts],
+    );
+    return (await this.getSyncState(sessionId))!;
+  }
+
+  /**
+   * Sesiones cerradas con capturas cuyo usuario local está vinculado a la
+   * cuenta dada y que todavía no tienen confirmación remota.
+   */
+  async listSessionsPendingSync(ownerRemoteId: string): Promise<SessionSummary[]> {
+    const all = await this.listSessions();
+    const states = new Map((await this.listSyncStates()).map((s) => [s.session_id, s]));
+    const users = await this.db.all<UserRow>("SELECT id, remote_id, email, created_at FROM user WHERE remote_id = ?", [ownerRemoteId]);
+    const owned = new Set(users.map((u) => u.id));
+    return all.filter((s) => owned.has(s.user_id) && (s.state === "completed" || s.state === "incomplete") && s.capture_count > 0 && states.get(s.id)?.status !== "confirmed");
   }
 
   /**

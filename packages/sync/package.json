@@ -1,0 +1,21 @@
+{
+  "name": "@plantillas/sync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sincronización de sesiones con el complemento remoto (etapa 11): mismos identificadores, confirmación por cantidades aceptadas y reintentos idempotentes",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": {
+    "@plantillas/contract": "1.0.0",
+    "@plantillas/storage": "0.1.0"
+  },
+  "devDependencies": {
+    "@plantillas/simulator": "0.1.0",
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

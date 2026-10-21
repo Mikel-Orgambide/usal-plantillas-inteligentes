@@ -7,6 +7,7 @@ import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold } 
 import { Button, Chip, Sheet, Text, ValueCard } from "../presentation/components";
 import { colors, formatDate, formatDuration, space } from "../presentation/theme/tokens";
 import { getDatabase } from "../infrastructure/sqlite/database";
+import { initAuth } from "../application/authStore";
 import type { SessionRow } from "@plantillas/storage";
 
 /**
@@ -27,6 +28,7 @@ export default function RootLayout() {
         const rows = (await Promise.all(recoveredSessions.map((id) => repository.getSession(id)))).filter((r): r is SessionRow => !!r);
         setRecovered(rows);
         setReady(true);
+        initAuth();
       })
       .catch((e: unknown) => { setDbError(e instanceof Error ? e.message : String(e)); setReady(true); });
   }, []);

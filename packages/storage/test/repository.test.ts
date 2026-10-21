@@ -20,7 +20,7 @@ describe("migraciones", () => {
   it("aplica el esquema inicial y fija user_version", async () => {
     const db = new NodeSqliteDriver();
     const report = await migrate(db);
-    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2] });
+    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2, 3] });
     expect(await getSchemaVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
     const again = await migrate(db);
     expect(again.applied).toEqual([]);
@@ -46,7 +46,7 @@ describe("migraciones", () => {
     await db1.close();
 
     const db2 = new NodeSqliteDriver(path);
-    expect(await migrate(db2)).toEqual({ from: 1, to: 2, applied: [2] });
+    expect(await migrate(db2)).toEqual({ from: 1, to: 3, applied: [2, 3] });
     const repo2 = new SessionRepository(db2);
     expect(await repo2.countRecords(capture.id)).toBe(5);
     expect(await repo2.getResults(capture.id)).toEqual([]);
@@ -60,10 +60,10 @@ describe("migraciones", () => {
     await repo.insertRecords(capture.id, simulatedRecords(5, "S1"));
     await db.close();
 
-    const v3: Migration = { version: 3, description: "prueba", sql: "ALTER TABLE session ADD COLUMN notes TEXT" };
+    const v4: Migration = { version: 4, description: "prueba", sql: "ALTER TABLE session ADD COLUMN notes TEXT" };
     const db2 = new NodeSqliteDriver(path);
-    const report = await migrate(db2, [...MIGRATIONS, v3]);
-    expect(report).toEqual({ from: 2, to: 3, applied: [3] });
+    const report = await migrate(db2, [...MIGRATIONS, v4]);
+    expect(report).toEqual({ from: 3, to: 4, applied: [4] });
     const repo2 = new SessionRepository(db2);
     expect(await repo2.countRecords(capture.id)).toBe(5);
     expect(await db2.get("SELECT notes FROM session WHERE id = 'S1'")).toEqual({ notes: null });

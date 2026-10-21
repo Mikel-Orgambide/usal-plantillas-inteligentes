@@ -4,7 +4,7 @@ import { colors, size } from "../theme/tokens";
 /** Los 14 iconos del sistema: retícula 24, trazo 1.5, extremos redondeados, sin relleno (salvo play). */
 export type IconName =
   | "bluetooth" | "bluetooth-off" | "play" | "stop" | "history" | "compare" | "settings"
-  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import";
+  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user";
 
 const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]; rect?: boolean; fill?: boolean }> = {
   bluetooth: { d: "M6.5 6.5l11 11-5.5 5.5V1l5.5 5.5-11 11" },
@@ -20,6 +20,8 @@ const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]
   export: { d: "M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   import: { d: "M12 4v12M7 11l5 5 5-5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   "chevron-down": { d: "M6 9l6 6 6-6" },
+  cloud: { d: "M7 18.5a4.5 4.5 0 01-.6-8.96A6 6 0 0117.7 9.5 4.25 4.25 0 0117 18.5H7z" },
+  user: { d: "M4.5 20a7.5 7.5 0 0115 0", circles: [[12, 8, 4]] },
   plus: { d: "M12 5v14M5 12h14" },
   search: { d: "M20 20l-3.6-3.6", circles: [[11, 11, 7]] },
   foot: { d: "M14.5 2.5c3.2 0 5 2.8 4.5 6.5-.4 3-1.6 5.5-1.6 9 0 2.3-1.3 3.5-3.2 3.5s-3.4-1.2-3.4-3.6c0-3.6-2.3-6.4-2.3-9.7 0-3.5 2.6-5.7 6-5.7z" },

@@ -9,6 +9,8 @@ import { ensureSessionMetrics } from "./sessionMetrics";
 import { loadSettings } from "../infrastructure/settings/settings";
 import { getDevice, reconnectLink } from "../infrastructure/ble/deviceStore";
 import { resolveSource } from "./activeSource";
+import { resolveLocalUserId } from "./authStore";
+import { syncAfterClose } from "./syncStore";
 
 /**
  * Sesión activa de la aplicación. Vive fuera de React para que sobreviva a la
@@ -83,6 +85,8 @@ export async function startSession(activity: Activity, context: string | undefin
   const resolved = resolveSource(getDevice(), settings);
   if (resolved.kind === "none" || !resolved.configuration) throw new Error(resolved.detail);
   const { repository } = await getDatabase();
+  // Titular de la sesión: el usuario local vinculado a la cuenta activa, o `local` sin cuenta (etapa 11).
+  const userId = await resolveLocalUserId();
   let source: DataSource;
   if (resolved.kind === "physical") {
     // Tras recargar la app o reiniciar la placa, el estado puede decir «conectadas» sin enlace real.
@@ -102,7 +106,7 @@ export async function startSession(activity: Activity, context: string | undefin
     repository,
     source,
     configuration: resolved.configuration,
-    userId: "local",
+    userId,
     activity,
     ...(context ? { context } : {}),
     sessionId: Crypto.randomUUID(),
@@ -140,6 +144,8 @@ export async function stopSession(): Promise<SessionResult | undefined> {
     // Las métricas se recalculan al abrir el detalle; la sesión ya quedó cerrada.
     console.warn("no se pudieron calcular las métricas al cerrar", e);
   }
+  // Con cuenta, la sesión cerrada se transfiere en segundo plano; si falla queda pendiente.
+  syncAfterClose(result.sessionId);
   return result;
 }
 
