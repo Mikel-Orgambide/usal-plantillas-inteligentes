@@ -22,6 +22,11 @@ describe("usuarios vinculados a una cuenta (etapa 11)", () => {
     expect((await repo.getSession("S1"))?.user_id).toBe("local");
     // Volver a iniciar sesión con A devuelve el mismo usuario local.
     expect((await repo.linkRemoteUser("uuid-A", "a@ejemplo.com")).id).toBe("local");
+    // Cada cuenta lista sólo sus sesiones; sin filtro se ven todas (respaldo, diagnóstico).
+    await repo.createSession({ id: "S2", user_id: "uuid-B", activity: "prueba", source: "simulated", started_at: RECEIVED_AT });
+    expect((await repo.listSessions({ userId: "local" })).map((s) => s.id)).toEqual(["S1"]);
+    expect((await repo.listSessions({ userId: "uuid-B" })).map((s) => s.id)).toEqual(["S2"]);
+    expect((await repo.listSessions()).map((s) => s.id).sort()).toEqual(["S1", "S2"]);
     await db.close();
   });
 

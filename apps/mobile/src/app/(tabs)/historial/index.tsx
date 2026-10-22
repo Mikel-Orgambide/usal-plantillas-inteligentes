@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Button, Chip, Header, Icon, ListRow, Screen, StatusBanner, Text } from "../../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../../presentation/theme/tokens";
 import { useSessionList } from "../../../application/useSessions";
+import { useAuth } from "../../../application/authStore";
 import { ACTIVITY_LABEL, type Activity } from "../../../application/sessionStore";
 
 type Filter = "all" | Activity | "simulated";
@@ -11,7 +12,8 @@ type Filter = "all" | Activity | "simulated";
 /** Historial: lista de sesiones, filtros y selección de dos para comparar. */
 export default function HistoryScreen() {
   const router = useRouter();
-  const { sessions, error, reload } = useSessionList();
+  const { sessions, hiddenCount, error, reload } = useSessionList();
+  const auth = useAuth();
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<string[]>([]);
   const { select } = useLocalSearchParams<{ select?: string }>();
@@ -40,6 +42,12 @@ export default function HistoryScreen() {
       }
     >
       <Header title="Historial" context={sessions ? `${sessions.length} sesiones · ${physical} físicas · ${simulated} simuladas` : "Cargando…"} />
+      {auth.status === "signed_in" || hiddenCount > 0 ? (
+        <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>
+          {auth.status === "signed_in" ? `Sesiones de ${auth.email ?? "la cuenta activa"}` : "Sesiones de este teléfono, sin cuenta"}
+          {hiddenCount > 0 ? ` · ${hiddenCount} de otra(s) cuenta(s) no se muestran` : ""}
+        </Text>
+      ) : null}
 
       <View style={styles.chips}>
         <Chip variant={filter === "all" ? "selected" : "neutral"} icon={filter === "all" ? "check" : undefined} onPress={() => setFilter("all")}>Todas</Chip>
@@ -60,7 +68,7 @@ export default function HistoryScreen() {
           <Icon name="history" size={32} />
           <Text variant="heading">{sessions.length === 0 ? "Todavía no hay sesiones" : "Nada con este filtro"}</Text>
           <Text variant="body" color={colors.textSecondary} style={{ textAlign: "center" }}>
-            {sessions.length === 0 ? "Grabá la primera desde Inicio." : "Probá con otro filtro."}
+            {sessions.length === 0 ? (hiddenCount > 0 ? "Esta cuenta todavía no tiene sesiones en este teléfono. Grabá la primera desde Inicio." : "Grabá la primera desde Inicio.") : "Probá con otro filtro."}
           </Text>
         </View>
       ) : (

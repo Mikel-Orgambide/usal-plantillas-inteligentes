@@ -111,7 +111,7 @@ export default function SettingsScreen() {
             const detail = Object.values(r.outcomes).filter((o) => o.status !== "confirmed").map((o) => o.status === "skipped" ? o.reason : o.error).slice(0, 3);
             return `${r.confirmed} de ${total} sesión(es) confirmada(s) por el servidor.${detail.length ? `\n${detail.join("\n")}` : ""}`;
           })} />
-          <ListRow title="Cerrar sesión" subtitle="Las sesiones siguen en el teléfono; lo pendiente se sincroniza al volver a entrar con esta cuenta." chevron={false} onPress={busy ? undefined : () => void run("Cerrar sesión", async () => { await signOut(); return null; })} />
+          <ListRow title="Cerrar sesión" subtitle="El Historial vuelve a mostrar las sesiones sin cuenta de este teléfono; lo pendiente se sincroniza al volver a entrar con esta cuenta." chevron={false} onPress={busy ? undefined : () => void run("Cerrar sesión", async () => { await signOut(); return null; })} />
         </>
       ) : null}
       <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>La copia local es la fuente primaria. Una sesión se marca sincronizada sólo cuando el servidor confirma las mismas cantidades de registros, eventos y resultados.</Text>
@@ -163,7 +163,7 @@ export default function SettingsScreen() {
     </Sheet>
     <Sheet visible={account} onDismiss={() => setAccount(false)}>
       <Text variant="heading">Cuenta</Text>
-      <Text variant="body" color={colors.textSecondary}>Con una cuenta, las sesiones cerradas se guardan también en el servicio remoto y sólo esa cuenta puede verlas.</Text>
+      <Text variant="body" color={colors.textSecondary}>Con una cuenta, el Historial muestra sólo sus sesiones y las cerradas se guardan también en el servicio remoto, donde sólo esa cuenta puede verlas. Las sesiones de otras cuentas quedan guardadas en el teléfono.</Text>
       <TextInput value={email} onChangeText={setEmail} placeholder="Correo" placeholderTextColor={colors.textSecondary} style={styles.input} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
       <TextInput value={password} onChangeText={setPassword} placeholder="Contraseña (mínimo 6 caracteres)" placeholderTextColor={colors.textSecondary} style={styles.input} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" />
       {accountError ? <Text variant="caption" color={colors.alert}>{accountError}</Text> : null}

@@ -318,7 +318,10 @@ export class SessionRepository {
     return this.db.get<SessionRow>("SELECT * FROM session WHERE id = ?", [id]);
   }
 
-  async listSessions(): Promise<SessionSummary[]> {
+  /** Sesiones más recientes primero; con `userId`, sólo las de ese usuario local (etapa 11: una cuenta por vez). */
+  async listSessions(filter: { userId?: string } = {}): Promise<SessionSummary[]> {
+    const where = filter.userId === undefined ? "" : "WHERE s.user_id = ?";
+    const params = filter.userId === undefined ? [] : [filter.userId];
     return this.db.all<SessionSummary>(`
       SELECT s.*,
         (SELECT COUNT(*) FROM capture c WHERE c.session_id = s.id) AS capture_count,
@@ -328,7 +331,8 @@ export class SessionRepository {
         (SELECT COUNT(*) FROM event e WHERE e.session_id = s.id AND e.type = 'sequence_gap') AS gap_count,
         (SELECT c.configuration_id FROM capture c WHERE c.session_id = s.id ORDER BY c.id LIMIT 1) AS configuration_id
       FROM session s
-      ORDER BY s.started_at DESC`);
+      ${where}
+      ORDER BY s.started_at DESC`, params);
   }
 
   /** Última recepción registrada en la sesión (registro o evento), o `undefined` si no hay ninguna. */

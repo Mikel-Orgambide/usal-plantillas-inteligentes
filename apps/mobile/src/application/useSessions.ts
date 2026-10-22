@@ -3,22 +3,31 @@ import type { ChannelCode } from "@plantillas/contract";
 import type { CaptureRow, EventRow, SessionRow, SessionSummary } from "@plantillas/storage";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { ensureSessionMetrics, type CaptureWithMetrics } from "./sessionMetrics";
+import { useAuth } from "./authStore";
 
-/** Lista de sesiones del historial, con recarga. */
+/**
+ * Lista de sesiones del historial, con recarga. Muestra sólo las del usuario
+ * local activo (la cuenta con sesión iniciada, o `local` sin cuenta); las de
+ * otras cuentas siguen en el teléfono y se cuentan aparte (etapa 11).
+ */
 export function useSessionList() {
+  const { localUserId } = useAuth();
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
+  const [hiddenCount, setHiddenCount] = useState(0);
   const [error, setError] = useState<string | undefined>();
   const reload = useCallback(async () => {
     try {
       const { repository } = await getDatabase();
-      setSessions(await repository.listSessions());
+      const all = await repository.listSessions();
+      setSessions(all.filter((s) => s.user_id === localUserId));
+      setHiddenCount(all.filter((s) => s.user_id !== localUserId).length);
       setError(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, []);
+  }, [localUserId]);
   useEffect(() => { void reload(); }, [reload]);
-  return { sessions, error, reload };
+  return { sessions, hiddenCount, error, reload };
 }
 
 export interface SessionDetail {

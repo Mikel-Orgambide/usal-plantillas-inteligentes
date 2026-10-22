@@ -11,6 +11,7 @@
 - **Base local, migración 3**: `user.email`, índice único por `remote_id`, tabla `sync_state` (estado, intentos, cantidades confirmadas, último error).
 - **`@plantillas/sync`**: `syncSession` / `syncPendingSessions` sobre una interfaz `RemoteGateway`; lotes de 250 registros; reintentos (3, espera creciente) sólo ante fallas transitorias; confirmación únicamente si las cantidades del servidor coinciden con las locales.
 - **App**: cliente de Supabase con sesión persistida; `authStore` (correo y contraseña: iniciar sesión, crear cuenta, cerrar sesión; vinculación del usuario local); `syncStore` (pendientes, progreso, última corrida); Ajustes → **Cuenta** (iniciar sesión / crear cuenta, sincronizar ahora, cerrar sesión); chip de sincronización en el detalle de la sesión («Sincronizada», «Sincronizar», «Reintentar sincronización», «Sólo en este teléfono»); sincronización automática al cerrar una sesión cuando hay cuenta.
+- **Una cuenta por vez** (2026-10-21, a pedido del autor): Inicio e Historial muestran sólo las sesiones del usuario local activo; el Historial indica la cuenta y cuántas sesiones de otras cuentas no se muestran; el Detalle de una sesión ajena marca «De otra cuenta» y no ofrece sincronizar.
 - **Titularidad**: las sesiones nuevas se atribuyen al usuario local vinculado a la cuenta activa; sin cuenta, a `local`. La primera cuenta adopta `local`; una segunda obtiene usuario propio; cambiar de cuenta no reasigna pendientes.
 - **Verificación reproducible**: `supabase/tests/check-rls.sql` (PostgreSQL local) y `scripts/remote-check.mjs` (proyecto real, dos cuentas).
 
@@ -24,7 +25,7 @@ Typecheck sin errores; `npx expo export --platform android` sin errores con `@su
 
 ## Verificación en dispositivo
 
-Pendiente. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
+En curso (build de desarrollo, Metro, confirmación por correo desactivada en Supabase). 2026-10-21: creación de cuenta e inicio de sesión correctos tras corregir el almacén de sesión (NullPointerException del clave-valor asíncrono) y la hoja tapada por el teclado. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
 
 1. Aplicar la migración en el proyecto de Supabase y desactivar la confirmación por correo.
 2. `npm install`; iniciar Metro con el `.env`; en Ajustes → Cuenta crear la cuenta A.
@@ -38,6 +39,6 @@ Pendiente. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
 
 - Inicio de sesión con Google no implementado (segunda fase, requiere cliente OAuth y build nueva).
 - No hay recuperación de contraseña en la app.
-- Sin consulta del historial remoto desde la app: la copia remota sirve para respaldo consultable y para un panel futuro.
+- Sin consulta del historial remoto ni descarga inversa desde la app: al entrar con una cuenta en un teléfono nuevo no se traen sus sesiones del servidor (evolución futura, ADR 0008); la copia remota sirve para respaldo consultable y para un panel futuro.
 - Sin detección de conectividad: se intenta y, si falla, queda registrado y pendiente.
 - Plan gratuito de Supabase: el proyecto se pausa tras una semana sin uso; reactivarlo desde el panel antes de la demostración.

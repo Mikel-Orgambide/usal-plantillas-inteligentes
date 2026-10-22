@@ -95,7 +95,10 @@ export default function SessionDetailScreen() {
   const received = quality.expected > 0 ? (quality.records / quality.expected) * 100 : 0;
   const sorted = [...events].sort((a, b) => a.id - b.id);
   const closed = session.state === "completed" || session.state === "incomplete";
-  const syncChip = syncRow?.status === "confirmed"
+  const otherAccount = session.user_id !== auth.localUserId;
+  const syncChip = otherAccount
+    ? <Chip variant="alert" icon="user">De otra cuenta</Chip>
+    : syncRow?.status === "confirmed"
     ? <Chip icon="cloud">Sincronizada</Chip>
     : auth.status === "signed_in" && closed && captures.length > 0
       ? <Chip icon="cloud" variant={syncRow?.status === "failed" || syncRow?.status === "pending" ? "alert" : "neutral"} onPress={sync.running ? undefined : () => void syncNow(session.id)}>{sync.running ? "Sincronizando…" : syncRow ? "Reintentar sincronización" : "Sincronizar"}</Chip>
@@ -120,6 +123,7 @@ export default function SessionDetailScreen() {
         {syncChip}
         {syncRow && syncRow.status !== "confirmed" && syncRow.last_error ? <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }} numberOfLines={2}>{syncRow.last_error}</Text> : null}
       </View>
+      {otherAccount ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Grabada con otra cuenta en este teléfono: se conserva, pero no se sincroniza con la cuenta activa ni aparece en su historial.</Text> : null}
       {syncMessage ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>{syncMessage}</Text> : null}
       {session.context ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Contexto: {session.context}</Text> : null}
       {session.state === "incomplete" ? (
