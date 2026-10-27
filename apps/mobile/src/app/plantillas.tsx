@@ -1,20 +1,22 @@
 import { useEffect } from "react";
 import { View } from "react-native";
-import { Button, Card, Header, ListRow, Screen, StatusBanner, Text, ValueCard } from "../../presentation/components";
-import { colors, formatNumber, space } from "../../presentation/theme/tokens";
-import { connect, connectLast, disconnect, scan, useDevice } from "../../infrastructure/ble/deviceStore";
-import { loadSettings } from "../../infrastructure/settings/settings";
-import { useActiveSession } from "../../application/sessionStore";
+import { useRouter } from "expo-router";
+import { Button, Card, Header, ListRow, Screen, StatusBanner, Text, ValueCard } from "../presentation/components";
+import { colors, formatNumber, space } from "../presentation/theme/tokens";
+import { connect, connectLast, disconnect, scan, useDevice } from "../infrastructure/ble/deviceStore";
+import { loadSettings } from "../infrastructure/settings/settings";
+import { useActiveSession } from "../application/sessionStore";
 
 /** Plantillas: buscar, conectar y ver la configuración que publica la placa. */
 export default function DeviceScreen() {
+  const router = useRouter();
   const device = useDevice();
   const session = useActiveSession();
   const recording = !!session && !session.result && session.sourceKind === "physical";
   const last = loadSettings().lastDevice;
   const c = device.connected;
 
-  // Al abrir la pestaña, reconectar con la última placa usada (sin buscar de nuevo).
+  // Al abrir la pantalla, reconectar con la última placa usada (sin buscar de nuevo).
   useEffect(() => { void connectLast(); }, []);
 
   const status = c ? (device.linkLost ? "searching" : "connected") : device.connecting || device.scanning ? "searching" : "off";
@@ -29,8 +31,8 @@ export default function DeviceScreen() {
   );
 
   return (
-    <Screen tabbed footer={footer}>
-      <Header title="Plantillas" status={status} context={context} />
+    <Screen footer={footer}>
+      <Header title="Plantillas" status={status} context={context} onBack={() => router.back()} />
 
       {device.error ? (
         <View style={{ marginBottom: space[4] }}>

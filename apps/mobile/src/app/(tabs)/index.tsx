@@ -20,8 +20,6 @@ import { availableDays, dayLabel, describeDistribution, todayKey, useDaySummary,
 
 type Panel = "balance" | "zones" | "quality";
 
-/** Segundo color de los repartos (pie derecho, talón): distinguible del acento y del fondo. */
-const SECOND = "#4f8fd6";
 
 const DAYS_LONG = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MONTHS_LONG = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -92,16 +90,12 @@ export default function HomeScreen() {
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Indicadores del día</Text>
       <Card style={{ paddingVertical: space[6] }}>
         <View style={styles.rings}>
-          <Ring value={ready ? d?.left_share ?? null : null} text={ready ? pct(d?.left_share ?? null) : "…"} inner="izquierdo" label="Izq / der" legend={ready && d?.left_share !== null && d ? `${Math.round(d.left_share * 100)} izq · ${Math.round((d.right_share ?? 0) * 100)} der` : "sin datos"} secondColor={SECOND} onPress={() => setPanel("balance")} />
-          <Ring value={ready ? d?.forefoot_share ?? null : null} text={ready ? pct(d?.forefoot_share ?? null) : "…"} inner="antepié" label="Antepié / talón" legend={ready && d?.forefoot_share !== null && d ? `${Math.round(d.forefoot_share * 100)} ante · ${Math.round((d.rearfoot_share ?? 0) * 100)} talón` : "sin datos"} secondColor={SECOND} onPress={() => setPanel("zones")} />
-          <Ring value={ready ? summary.quality : null} text={ready ? pct(summary.quality) : "…"} inner="recibido" label="Calidad" legend={ready && summary.quality !== null ? `${formatNumber(summary.records)} de ${formatNumber(summary.expected)} reg.` : "sin datos"} color={ready && summary.quality !== null && summary.quality < 0.98 ? colors.alert : colors.accent} onPress={() => setPanel("quality")} />
-        </View>
-        <View style={styles.legendRow}>
-          <View style={[styles.swatch, { backgroundColor: colors.accent }]} /><Text variant="caption" color={colors.textSecondary}>izquierdo · antepié · recibido</Text>
-          <View style={[styles.swatch, { backgroundColor: SECOND, marginLeft: space[3] }]} /><Text variant="caption" color={colors.textSecondary}>derecho · talón</Text>
+          <Ring layout="sides" value={ready ? d?.left_share ?? null : null} text={ready ? pct(d?.left_share ?? null) : "…"} inner="pie izq." label="Izq / der" legend={ready && d && d.left_share !== null ? [`${Math.round(d.left_share * 100)} izq`, `${Math.round((d.right_share ?? 0) * 100)} der`] : ["izq", "der"]} onPress={() => setPanel("balance")} />
+          <Ring layout="top" value={ready ? d?.forefoot_share ?? null : null} text={ready ? pct(d?.forefoot_share ?? null) : "…"} inner="antepié" label="Antepié / talón" legend={ready && d && d.forefoot_share !== null ? [`${Math.round(d.forefoot_share * 100)} ante`, `${Math.round((d.rearfoot_share ?? 0) * 100)} talón`] : ["antepié", "talón"]} onPress={() => setPanel("zones")} />
+          <Ring layout="progress" value={ready ? summary.quality : null} text={ready ? pct(summary.quality) : "…"} inner="recibido" label="Calidad" legend={ready && summary.quality !== null ? [`${formatNumber(summary.records)} reg.`, `${formatNumber(Math.max(0, summary.expected - summary.records))} falt.`] : ["recibido", "faltante"]} color={ready && summary.quality !== null && summary.quality < 0.98 ? colors.alert : colors.accent} onPress={() => setPanel("quality")} />
         </View>
         <Text variant="caption" color={colors.textSecondary} style={{ textAlign: "center", marginTop: space[3] }}>
-          Reparto de la lectura entre posiciones, en cuentas ADC. Tocá un indicador para ver el desglose.
+          El anillo sigue al cuerpo: lado izquierdo = pie izquierdo; arriba = antepié, abajo = talón. Reparto de la lectura en cuentas ADC; tocá un indicador para ver el desglose.
         </Text>
       </Card>
 
@@ -195,7 +189,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
       <>
         <Text variant="body" color={colors.textSecondary}>{describeDistribution(d)}</Text>
         <MeterRow label="Pie izquierdo" fraction={d.left_share} value={pct(d.left_share)} />
-        <MeterRow label="Pie derecho" fraction={d.right_share} value={pct(d.right_share)} color={SECOND} />
+        <MeterRow label="Pie derecho" fraction={d.right_share} value={pct(d.right_share)} color={colors.accentDeep} />
         <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[3] }}>Diferencia por zona (izq − der)</Text>
         <MeterRow label="Talón" fraction={d.asymmetry.heel} value={signedPct(d.asymmetry.heel)} centered />
         <MeterRow label="Medial" fraction={d.asymmetry.medial} value={signedPct(d.asymmetry.medial)} centered />
@@ -209,7 +203,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
     <>
       <Text variant="body" color={colors.textSecondary}>{describeDistribution(d)}</Text>
       <MeterRow label="Antepié (medial + lateral)" fraction={d.forefoot_share} value={pct(d.forefoot_share)} />
-      <MeterRow label="Talón" fraction={d.rearfoot_share} value={pct(d.rearfoot_share)} color={SECOND} />
+      <MeterRow label="Talón" fraction={d.rearfoot_share} value={pct(d.rearfoot_share)} color={colors.accentDeep} />
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[3] }}>Media por posición (cuentas ADC)</Text>
       {POSITION_ORDER.map((code) => (
         <MeterRow key={code} label={POSITION_LABEL[code]} fraction={ch[code].sample_mean === null || d.total_mean === null ? null : ch[code].sample_mean / d.total_mean} value={ch[code].sample_mean === null ? "—" : formatNumber(ch[code].sample_mean)} />
@@ -226,8 +220,6 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: space[1] },
   sourceRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2], marginTop: space[2], marginBottom: space[6] },
   sectionLabel: { marginBottom: space[3] },
-  legendRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2], marginTop: space[4] },
-  swatch: { width: 10, height: 10, borderRadius: 5 },
   navBtn: { width: size.controlHeight, height: size.controlHeight, alignItems: "center", justifyContent: "center", borderRadius: radius.pill },
   dot: { width: 8, height: 8, borderRadius: 4 },
   rings: { flexDirection: "row", justifyContent: "space-between", gap: space[2] },

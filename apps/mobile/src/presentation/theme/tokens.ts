@@ -13,6 +13,8 @@ export const palette = {
     textPrimary: "#f2f4f7",
     textSecondary: "#98a2ad",
     accent: "#b48cff",
+    /** Violeta profundo: segundo tono de los repartos (pie derecho, talón) junto al acento claro. */
+    accentDeep: "#6a44c4",
     accentSoft: "#b48cff24",
     onAccent: "#0c0d10",
     alert: "#e3a856",
@@ -28,6 +30,7 @@ export const palette = {
     textPrimary: "#121417",
     textSecondary: "#5a636e",
     accent: "#5b3fb8",
+    accentDeep: "#2f1f73",
     accentSoft: "#5b3fb81a",
     onAccent: "#ffffff",
     alert: "#9c5a0a",

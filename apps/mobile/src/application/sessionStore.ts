@@ -94,7 +94,7 @@ export async function startSession(activity: Activity, context: string | undefin
       try {
         await reconnectLink();
       } catch (e) {
-        throw new Error(`Las plantillas no responden (${e instanceof Error ? e.message : String(e)}). Reconectalas desde la pestaña Plantillas.`);
+        throw new Error(`Las plantillas no responden (${e instanceof Error ? e.message : String(e)}). Reconectalas desde Más → Plantillas.`);
       }
     }
     const device = getDevice().connected!;
