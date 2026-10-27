@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Switch, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useDevice } from "../infrastructure/ble/deviceStore";
-import { resolveSource } from "../application/activeSource";
+import { useDevice } from "../../infrastructure/ble/deviceStore";
+import { resolveSource } from "../../application/activeSource";
 import Constants from "expo-constants";
 import { SCENARIOS, type ScenarioName } from "@plantillas/simulator";
-import { Button, Chip, Header, ListRow, Screen, Sheet, Text } from "../presentation/components";
-import { colors, fonts, formatDate, formatNumber, radius, size, space } from "../presentation/theme/tokens";
-import { loadSettings, saveSettings, type Settings } from "../infrastructure/settings/settings";
-import { importSessionBundle, restoreDatabaseCopy, shareDatabaseCopy } from "../infrastructure/backup/backup";
-import { signIn, signOut, signUp, useAuth } from "../application/authStore";
-import { refreshPending, syncAll, useSync } from "../application/syncStore";
+import { Button, Chip, Header, ListRow, Screen, Sheet, Text } from "../../presentation/components";
+import { colors, fonts, formatDate, formatNumber, radius, size, space } from "../../presentation/theme/tokens";
+import { loadSettings, saveSettings, type Settings } from "../../infrastructure/settings/settings";
+import { importSessionBundle, restoreDatabaseCopy, shareDatabaseCopy } from "../../infrastructure/backup/backup";
+import { signIn, signOut, signUp, useAuth } from "../../application/authStore";
+import { refreshPending, syncAll, useSync } from "../../application/syncStore";
 
 const SCENARIO_NAMES = Object.keys(SCENARIOS) as ScenarioName[];
 
@@ -26,7 +26,7 @@ function Toggle({ label, detail, value, onChange, disabled }: { label: string; d
   );
 }
 
-/** Ajustes: dispositivo, datos, demostración (simulador y escenario) y acerca de. */
+/** Ajustes (pestaña): dispositivo, cuenta, datos, respaldo, demostración y acerca de. */
 export default function SettingsScreen() {
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>(loadSettings);
@@ -83,8 +83,8 @@ export default function SettingsScreen() {
 
   return (
     <>
-    <Screen>
-      <Header title="Ajustes" context={`Plantillas Inteligentes · versión ${version}`} onBack={() => router.back()} />
+    <Screen tabbed>
+      <Header title="Ajustes" context={`Plantillas Inteligentes · versión ${version}`} />
 
       <Text variant="label" color={colors.textSecondary}>Dispositivo</Text>
       <ListRow title="Fuente de las sesiones nuevas" subtitle={`${source.title} · ${source.detail}`} chevron={false} />

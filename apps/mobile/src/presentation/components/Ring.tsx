@@ -13,6 +13,8 @@ export interface RingProps {
   /** Texto pequeño debajo del número, dentro del anillo («izq»). */
   inner?: string;
   label: string;
+  /** Leyenda bajo la etiqueta: qué es cada color («izq 51 · der 49»). */
+  legend?: string;
   /** Color del arco principal; el resto del anillo va en `line` (o en `secondColor` si se indica, para repartos). */
   color?: string;
   secondColor?: string;
@@ -25,7 +27,7 @@ export interface RingProps {
  * Para repartos (izquierda/derecha) el resto se pinta de un segundo color,
  * así el anillo completo representa el 100 %.
  */
-function RingImpl({ value, text, inner, label, color = colors.accent, secondColor, size = 104, onPress }: RingProps) {
+function RingImpl({ value, text, inner, label, legend, color = colors.accent, secondColor, size = 104, onPress }: RingProps) {
   const stroke = 9;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -44,9 +46,10 @@ function RingImpl({ value, text, inner, label, color = colors.accent, secondColo
         {inner ? <Text variant="caption" color={colors.textSecondary} style={{ marginTop: -2 }}>{inner}</Text> : null}
       </View>
       <View style={styles.labelRow}>
-        <Text variant="label" color={colors.textSecondary} numberOfLines={1}>{label}</Text>
+        <Text variant="label" color={colors.textPrimary} numberOfLines={1}>{label}</Text>
         {onPress ? <Icon name="chevron-right" size={14} color={colors.textSecondary} /> : null}
       </View>
+      {legend ? <Text variant="caption" color={colors.textSecondary} numberOfLines={1} style={{ marginTop: -4 }}>{legend}</Text> : null}
     </Pressable>
   );
 }

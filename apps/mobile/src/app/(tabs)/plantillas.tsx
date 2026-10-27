@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
 import { Button, Card, Header, ListRow, Screen, StatusBanner, Text, ValueCard } from "../../presentation/components";
 import { colors, formatNumber, space } from "../../presentation/theme/tokens";
 import { connect, connectLast, disconnect, scan, useDevice } from "../../infrastructure/ble/deviceStore";
@@ -9,7 +8,6 @@ import { useActiveSession } from "../../application/sessionStore";
 
 /** Plantillas: buscar, conectar y ver la configuración que publica la placa. */
 export default function DeviceScreen() {
-  const router = useRouter();
   const device = useDevice();
   const session = useActiveSession();
   const recording = !!session && !session.result && session.sourceKind === "physical";
@@ -32,7 +30,7 @@ export default function DeviceScreen() {
 
   return (
     <Screen tabbed footer={footer}>
-      <Header title="Plantillas" status={status} context={context} action="settings" actionLabel="Ajustes" onAction={() => router.push("/ajustes")} />
+      <Header title="Plantillas" status={status} context={context} />
 
       {device.error ? (
         <View style={{ marginBottom: space[4] }}>

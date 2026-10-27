@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "../../presentation/components";
 import { colors, fonts, size } from "../../presentation/theme/tokens";
 
-/** Barra inferior: Historial · Hoy (centro) · Plantillas. Respeta el área de gestos de Android. Las pantallas de flujo van por encima. */
+/** Barra inferior: Historial · Hoy · Plantillas · Ajustes. Respeta el área de gestos de Android. Las pantallas de flujo van por encima. */
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   type TabOptions = ComponentProps<typeof Tabs.Screen>["options"];
@@ -33,6 +33,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="historial" options={{ ...tab("Historial", "history"), popToTopOnBlur: true }} />
       <Tabs.Screen name="index" options={tab("Hoy", "foot")} />
       <Tabs.Screen name="plantillas" options={tab("Plantillas", "bluetooth")} />
+      <Tabs.Screen name="ajustes" options={tab("Ajustes", "settings")} />
     </Tabs>
   );
 }
