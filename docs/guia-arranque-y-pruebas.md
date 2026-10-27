@@ -162,13 +162,13 @@ eas build --profile preview --platform android
 - **Respaldo**: Detalle → ícono de exportar (arriba a la derecha) comparte un `.plantillas.json`; Ajustes → Respaldo → Importar una sesión lo restaura (si ya existe, lo dice). Copia completa: comparte un `.db`; Restaurar una copia completa lo reemplaza todo (guarda la actual en caché antes).
 - **Desconexión (H06)**: con una sesión física grabando, desenchufar la placa 5 s y volver a enchufarla: la app muestra «Conexión interrumpida», reconecta y el Detalle registra Desconectado / Reconectado / Reinicio de captura.
 
-- **Cuenta y sincronización (etapa 11)**: Ajustes → Cuenta → Iniciar sesión o crear cuenta. Con cuenta, cada sesión que se cierra se sube sola; «Sincronizar ahora» sube todas las pendientes y el Detalle muestra «Sincronizada» sólo cuando el servidor confirmó las mismas cantidades. En modo avión la sesión queda pendiente con el error y se reintenta desde el Detalle o desde Ajustes.
+- **Cuenta y sincronización (etapa 11)**: Ajustes → Cuenta → Iniciar sesión o crear cuenta. Con cuenta, cada sesión que se cierra se sube sola, y lo pendiente se reintenta al iniciar sesión, al abrir la app y al volver a primer plano (como mucho cada 5 minutos; con la app cerrada no hay sincronización); «Sincronizar ahora» sube todas las pendientes y el Detalle muestra «Sincronizada» sólo cuando el servidor confirmó las mismas cantidades. En modo avión la sesión queda pendiente con el error y se reintenta desde el Detalle o desde Ajustes.
 
 ---
 
 ## 5b. Complemento remoto (Supabase) — configuración una sola vez
 
-1. **Esquema**: panel de Supabase → *SQL Editor* → pegar `supabase/migrations/0001_remote_schema.sql` → *Run*. Debe terminar sin errores (crea 5 tablas, políticas, 3 funciones y 1 vista). Se aplica una sola vez; si hiciera falta rehacerlo, borrar antes las tablas en *Table Editor*.
+1. **Esquema**: panel de Supabase → *SQL Editor* → pegar `supabase/migrations/0001_remote_schema.sql` → *Run* (crea 5 tablas, políticas, 3 funciones y 1 vista); después, en una consulta nueva, `supabase/migrations/0002_grants_authenticated.sql` → *Run* (privilegios del rol `authenticated`; sin esto la app recibe `permission denied for table session`). Cada una se aplica una sola vez, en orden; si hiciera falta rehacerlo, borrar antes las tablas en *Table Editor*.
 2. **Correo y contraseña**: *Authentication → Sign In / Providers → Email*: dejar **Enable Email provider** activo y **desactivar «Confirm email»** (así la cuenta queda usable al crearla; la tesis lo documenta como configuración del prototipo).
 3. **Variables en la app**: `apps/mobile/.env` con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ya cargadas). Para las builds de EAS, las mismas dos variables en *expo.dev → proyecto → Environment variables* (ya cargadas). Nunca la *secret key*.
 4. **Verificación con dos cuentas de prueba** (no usar la cuenta personal): completar `REMOTE_CHECK_*` en `.env` con dos correos inventados (por ejemplo `prueba-a@plantillas.test`) y contraseñas, y correr

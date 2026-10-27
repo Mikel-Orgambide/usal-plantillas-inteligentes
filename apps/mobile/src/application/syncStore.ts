@@ -1,10 +1,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { AppState } from "react-native";
 import type { SyncStateRow } from "@plantillas/storage";
 import { syncPendingSessions, syncSession, type SyncOutcome, type SyncProgress, type SyncRunReport } from "@plantillas/sync";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { getSupabase } from "../infrastructure/supabase/client";
 import { SupabaseGateway } from "../infrastructure/supabase/SupabaseGateway";
-import { getAuth } from "./authStore";
+import { getAuth, subscribeAuth } from "./authStore";
 
 /**
  * Estado de la sincronización para las pantallas: cuántas sesiones esperan,
@@ -118,4 +119,37 @@ export function describeOutcome(o: SyncOutcome): string {
     case "failed": return `No se pudo: ${o.error}.`;
     case "skipped": return `No se transfiere: ${o.reason}.`;
   }
+}
+
+/** Intervalo mínimo entre corridas automáticas. */
+const AUTO_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
+let lastAutoRun = 0;
+let autoStarted = false;
+
+async function autoRun(reason: string): Promise<void> {
+  const auth = getAuth();
+  if (auth.status !== "signed_in" || state.running) return;
+  if (Date.now() - lastAutoRun < AUTO_SYNC_MIN_INTERVAL_MS) return;
+  if ((await refreshPending()) === 0) return;
+  lastAutoRun = Date.now();
+  try {
+    const r = await syncAll();
+    console.log(`sincronización automática (${reason}): ${r.confirmed} confirmada(s), ${r.pending + r.failed} sin confirmar`);
+  } catch (e) {
+    console.warn(`sincronización automática (${reason})`, e);
+  }
+}
+
+/**
+ * Sincronización automática de lo pendiente, además de la que ocurre al cerrar
+ * cada sesión: al iniciar sesión con una cuenta (y al abrir la app con una
+ * cuenta ya iniciada) y cada vez que la app vuelve a primer plano, como mucho
+ * una vez cada cinco minutos. Android no permite trabajo en segundo plano
+ * sin módulos nativos adicionales, así que con la app cerrada no se sincroniza.
+ */
+export function startAutoSync(): void {
+  if (autoStarted) return;
+  autoStarted = true;
+  subscribeAuth(() => { if (getAuth().status === "signed_in") { lastAutoRun = 0; void autoRun("cuenta iniciada"); } else void refreshPending(); });
+  AppState.addEventListener("change", (s) => { if (s === "active") void autoRun("primer plano"); });
 }

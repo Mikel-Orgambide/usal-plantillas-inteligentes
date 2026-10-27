@@ -13,6 +13,8 @@
 - **App**: cliente de Supabase con sesión persistida; `authStore` (correo y contraseña: iniciar sesión, crear cuenta, cerrar sesión; vinculación del usuario local); `syncStore` (pendientes, progreso, última corrida); Ajustes → **Cuenta** (iniciar sesión / crear cuenta, sincronizar ahora, cerrar sesión); chip de sincronización en el detalle de la sesión («Sincronizada», «Sincronizar», «Reintentar sincronización», «Sólo en este teléfono»); sincronización automática al cerrar una sesión cuando hay cuenta.
 - **Una cuenta por vez** (2026-10-21, a pedido del autor): Inicio e Historial muestran sólo las sesiones del usuario local activo; el Historial indica la cuenta y cuántas sesiones de otras cuentas no se muestran; el Detalle de una sesión ajena marca «De otra cuenta» y no ofrece sincronizar.
 - **Titularidad**: las sesiones nuevas se atribuyen al usuario local vinculado a la cuenta activa; sin cuenta, a `local`. La primera cuenta adopta `local`; una segunda obtiene usuario propio; cambiar de cuenta no reasigna pendientes.
+- **Permisos del rol `authenticated`** (migración `0002`, 2026-10-27): la primera sincronización real falló con `permission denied for table session`; las tablas creadas por `0001` no recibían privilegios de tabla para `authenticated` en el proyecto real. Reproducido en PostgreSQL local sin privilegios por defecto y corregido con `grant` explícitos (`test-data/remote/check-rls-2026-10-27-postgres16-local.txt`).
+- **Sincronización automática**: además de al cerrar una sesión, al iniciar sesión, al abrir la app con cuenta y al volver a primer plano (mínimo 5 minutos entre corridas). Sin la app abierta no se sincroniza (sin módulos nativos de segundo plano).
 - **Verificación reproducible**: `supabase/tests/check-rls.sql` (PostgreSQL local) y `scripts/remote-check.mjs` (proyecto real, dos cuentas).
 
 ## Pruebas
@@ -25,7 +27,7 @@ Typecheck sin errores; `npx expo export --platform android` sin errores con `@su
 
 ## Verificación en dispositivo
 
-En curso (build de desarrollo, Metro, confirmación por correo desactivada en Supabase). 2026-10-21: creación de cuenta e inicio de sesión correctos tras corregir el almacén de sesión (NullPointerException del clave-valor asíncrono) y la hoja tapada por el teclado. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
+En curso (build de desarrollo, Metro, confirmación por correo desactivada en Supabase). 2026-10-21: creación de cuenta e inicio de sesión correctos tras corregir el almacén de sesión (NullPointerException del clave-valor asíncrono) y la hoja tapada por el teclado. 2026-10-27: proyecto reanudado tras la pausa del plan gratuito; segunda cuenta ve el Historial vacío con «28 de otra(s) cuenta(s) no se muestran» y «No había sesiones pendientes» ✔; la cuenta principal mostró 25 pendientes y 0 confirmadas por `permission denied` → migración 0002. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
 
 1. Aplicar la migración en el proyecto de Supabase y desactivar la confirmación por correo.
 2. `npm install`; iniciar Metro con el `.env`; en Ajustes → Cuenta crear la cuenta A.

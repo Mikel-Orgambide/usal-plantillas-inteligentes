@@ -36,6 +36,11 @@ function subscribe(l: () => void): () => void {
   return () => listeners.delete(l);
 }
 
+/** Suscripción fuera de React (sincronización automática). */
+export function subscribeAuth(l: () => void): () => void {
+  return subscribe(l);
+}
+
 export function useAuth(): AuthState {
   return useSyncExternalStore(subscribe, () => state, () => state);
 }
