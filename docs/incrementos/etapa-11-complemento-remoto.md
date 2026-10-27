@@ -27,7 +27,9 @@ Typecheck sin errores; `npx expo export --platform android` sin errores con `@su
 
 ## Verificación en dispositivo
 
-En curso (build de desarrollo, Metro, confirmación por correo desactivada en Supabase). 2026-10-21: creación de cuenta e inicio de sesión correctos tras corregir el almacén de sesión (NullPointerException del clave-valor asíncrono) y la hoja tapada por el teclado. 2026-10-27: proyecto reanudado tras la pausa del plan gratuito; segunda cuenta ve el Historial vacío con «28 de otra(s) cuenta(s) no se muestran» y «No había sesiones pendientes» ✔; la cuenta principal mostró 25 pendientes y 0 confirmadas por `permission denied` → migración 0002. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
+En curso (build de desarrollo, Metro, confirmación por correo desactivada en Supabase). 2026-10-21: creación de cuenta e inicio de sesión correctos tras corregir el almacén de sesión (NullPointerException del clave-valor asíncrono) y la hoja tapada por el teclado. 2026-10-27: proyecto reanudado tras la pausa del plan gratuito; segunda cuenta ve el Historial vacío con «28 de otra(s) cuenta(s) no se muestran» y «No había sesiones pendientes» ✔; la cuenta principal mostró 25 pendientes y 0 confirmadas por `permission denied` → migración 0002. Tras aplicarla: «Sincronizar ahora» → «25 confirmada(s), 0 sin confirmar», «Nada pendiente»; en Supabase, `session_summary` muestra 25 filas, todas con el mismo `owner_id` (8 físicas, 17 simuladas, 1 incompleta). Capturas en `test-data/remote/2026-10-27-*.png`. ✔
+
+Pendiente para el cierre: modo avión (sesión cerrada sin red queda pendiente y se confirma al volver la red) y `scripts/remote-check.mjs` contra el proyecto real. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
 
 1. Aplicar la migración en el proyecto de Supabase y desactivar la confirmación por correo.
 2. `npm install`; iniciar Metro con el `.env`; en Ajustes → Cuenta crear la cuenta A.
