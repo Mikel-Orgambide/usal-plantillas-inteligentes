@@ -4,7 +4,7 @@ import { colors, size } from "../theme/tokens";
 /** Los 14 iconos del sistema: retícula 24, trazo 1.5, extremos redondeados, sin relleno (salvo play). */
 export type IconName =
   | "bluetooth" | "bluetooth-off" | "play" | "stop" | "history" | "compare" | "settings"
-  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user";
+  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user" | "chevron-left";
 
 const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]; rect?: boolean; fill?: boolean }> = {
   bluetooth: { d: "M6.5 6.5l11 11-5.5 5.5V1l5.5 5.5-11 11" },
@@ -17,6 +17,7 @@ const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]
   check: { d: "M5 12.5l4.5 4.5L19 7" },
   alert: { d: "M12 3.5l9.5 17h-19zM12 10v4M12 17.3v.4" },
   "chevron-right": { d: "M9 6l6 6-6 6" },
+  "chevron-left": { d: "M15 6l-6 6 6 6" },
   export: { d: "M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   import: { d: "M12 4v12M7 11l5 5 5-5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   "chevron-down": { d: "M6 9l6 6 6-6" },
