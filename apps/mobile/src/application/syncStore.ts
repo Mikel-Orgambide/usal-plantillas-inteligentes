@@ -125,19 +125,24 @@ export function describeOutcome(o: SyncOutcome): string {
 const AUTO_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
 let lastAutoRun = 0;
 let autoStarted = false;
+let autoChain: Promise<void> = Promise.resolve();
+let lastAuthStatus: string | undefined;
 
-async function autoRun(reason: string): Promise<void> {
-  const auth = getAuth();
-  if (auth.status !== "signed_in" || state.running) return;
-  if (Date.now() - lastAutoRun < AUTO_SYNC_MIN_INTERVAL_MS) return;
-  if ((await refreshPending()) === 0) return;
-  lastAutoRun = Date.now();
-  try {
-    const r = await syncAll();
-    console.log(`sincronización automática (${reason}): ${r.confirmed} confirmada(s), ${r.pending + r.failed} sin confirmar`);
-  } catch (e) {
-    console.warn(`sincronización automática (${reason})`, e);
-  }
+/** Las corridas automáticas se encadenan: varios disparadores seguidos (eventos de cuenta al recargar) producen una sola. */
+function autoRun(reason: string): void {
+  autoChain = autoChain.then(async () => {
+    const auth = getAuth();
+    if (auth.status !== "signed_in" || state.running) return;
+    if (Date.now() - lastAutoRun < AUTO_SYNC_MIN_INTERVAL_MS) return;
+    if ((await refreshPending()) === 0) return;
+    lastAutoRun = Date.now();
+    try {
+      const r = await syncAll();
+      console.log(`sincronización automática (${reason}): ${r.confirmed} confirmada(s), ${r.pending + r.failed} sin confirmar`);
+    } catch (e) {
+      console.warn(`sincronización automática (${reason})`, e);
+    }
+  });
 }
 
 /**
@@ -150,6 +155,11 @@ async function autoRun(reason: string): Promise<void> {
 export function startAutoSync(): void {
   if (autoStarted) return;
   autoStarted = true;
-  subscribeAuth(() => { if (getAuth().status === "signed_in") { lastAutoRun = 0; void autoRun("cuenta iniciada"); } else void refreshPending(); });
-  AppState.addEventListener("change", (s) => { if (s === "active") void autoRun("primer plano"); });
+  subscribeAuth(() => {
+    const status = getAuth().status;
+    if (status === lastAuthStatus) return;
+    lastAuthStatus = status;
+    if (status === "signed_in") { lastAutoRun = 0; autoRun("cuenta iniciada"); } else void refreshPending();
+  });
+  AppState.addEventListener("change", (s) => { if (s === "active") autoRun("primer plano"); });
 }

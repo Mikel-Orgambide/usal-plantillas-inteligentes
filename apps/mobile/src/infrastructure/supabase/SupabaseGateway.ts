@@ -22,10 +22,17 @@ const REJECTED_CODES = new Set(["42501", "22023", "23502", "23503", "23514", "22
 
 interface RpcError { readonly code?: string | null; readonly message: string; readonly details?: string | null }
 
+/** Mensaje para la pantalla; el detalle técnico va sólo a la consola. Nunca se incluyen tokens ni claves. */
 function toError(e: RpcError, step: string): Error {
+  if (/fetch failed|network request failed|unknownhost|timed out|failed to connect/i.test(e.message)) {
+    console.warn(`sincronización (${step}): ${e.message}`);
+    return new Error("Sin conexión con el servicio remoto");
+  }
+  const rejected = Boolean(e.code && REJECTED_CODES.has(e.code));
+  if (/permission denied/i.test(e.message)) return new SyncRejectedError("El servicio remoto rechazó el acceso (permisos de la base; ver supabase/migrations)");
+  if (/row-level security/i.test(e.message)) return new SyncRejectedError("La sesión ya existe en el servidor bajo otra cuenta");
   const text = `${step}: ${e.message}${e.details ? ` (${e.details})` : ""}`;
-  // Nunca se incluyen tokens ni claves en los mensajes: sólo lo que devuelve PostgREST.
-  return e.code && REJECTED_CODES.has(e.code) ? new SyncRejectedError(text) : new Error(text);
+  return rejected ? new SyncRejectedError(text) : new Error(text);
 }
 
 export class SupabaseGateway implements RemoteGateway {
