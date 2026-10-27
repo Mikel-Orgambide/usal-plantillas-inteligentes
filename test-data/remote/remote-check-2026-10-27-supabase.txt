@@ -1,0 +1,14 @@
+# scripts/remote-check.mjs contra el proyecto real de Supabase (plantillas-inteligentes) — 2026-10-27 11:01
+# Clave publicable + dos cuentas de prueba (prueba-a / prueba-b @plantillas.test). Migraciones 0001 y 0002 aplicadas.
+OK  anónimo: sin lectura de sesiones — permission denied for table session
+OK  anónimo: RPC rechazada — permission denied for function sync_session_begin
+OK  cuenta A: transferencia confirmada por cantidades — {"events":1,"records":50,"results":1,"captures":1}
+OK  cuenta A: transferencia repetida no duplica — insertados 0, {"events":1,"records":50,"results":1,"captures":1}
+OK  cuenta A: ve su sesión — [{"id":"REMOTE-CHECK-A","record_count":50}]
+OK  cuenta B: no ve sesiones de A — []
+OK  cuenta B: no puede reutilizar el id de A — new row violates row-level security policy (USING expression) for table "session"
+OK  cuenta B: no lee registros de A — count=0
+OK  cuenta B: transfiere su propia sesión — {"events":1,"records":50,"results":1,"captures":1}
+OK  cuenta A: sigue sin ver la sesión de B — [{"id":"REMOTE-CHECK-A"}]
+
+10/10 comprobaciones correctas

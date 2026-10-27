@@ -1,8 +1,8 @@
 # Etapa 11 - Complemento remoto (autenticación y sincronización)
 
 - Fecha de implementación: 2026-10-21
-- Fecha de cierre: pendiente (falta la verificación en el teléfono y contra el proyecto real)
-- Tag: -
+- Fecha de cierre: 2026-10-27
+- Tag: v0.11-etapa11
 - Especificación: `docs/especificacion/03` §14, `02` §12, `05` §5. Decisión: ADR 0008 (y ADR 0003).
 
 ## Qué se implementó
@@ -31,7 +31,9 @@ En curso (build de desarrollo, Metro, confirmación por correo desactivada en Su
 
 **Modo avión** (2026-10-27): sesión simulada de 13 s (173/173 registros) cerrada sin red → Detalle con «Reintentar sincronización» y el error de red, Ajustes «1 sesión pendiente», el historial y el detalle siguen accesibles; al volver la red, la sincronización automática la confirmó sola («1 confirmada(s), 0 sin confirmar»). Capturas `2026-10-27-06…08`. ✔ Se tradujeron los errores de red a «Sin conexión con el servicio remoto» y se serializaron las corridas automáticas (varios eventos de cuenta seguidos producían «Ya hay una sincronización en curso»).
 
-Pendiente para el cierre: `scripts/remote-check.mjs` contra el proyecto real (dos cuentas de prueba). Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
+**Proyecto real, dos cuentas de prueba** (`scripts/remote-check.mjs`, 2026-10-27): 10/10 — anónimo sin lectura ni RPC; cuenta A confirma 50 registros, 1 evento, 1 resultado y la repetición inserta 0 con las mismas cantidades; cuenta B no ve sesiones ni registros de A, no puede reutilizar su id (violación de RLS) y transfiere la propia; A sigue sin ver la de B. Salida en `test-data/remote/remote-check-2026-10-27-supabase.txt`. ✔
+
+Cierre (03 §14): una transferencia repetida no duplica datos y la caída de Internet no elimina el acceso local; separación entre dos cuentas comprobada en el teléfono y contra el servidor. Mecanismos realmente configurados (05 §5): autenticación por correo y contraseña de Supabase Auth con JWT; confirmación por correo desactivada para el prototipo; transporte HTTPS; RLS por `owner_id = auth.uid()` en todas las tablas; funciones `security invoker`; `anon` sin privilegios. Guion (ver `docs/guia-arranque-y-pruebas.md` § Complemento remoto):
 
 1. Aplicar la migración en el proyecto de Supabase y desactivar la confirmación por correo.
 2. `npm install`; iniciar Metro con el `.env`; en Ajustes → Cuenta crear la cuenta A.
