@@ -15,6 +15,7 @@
  * Deja en el servidor las sesiones REMOTE-CHECK-A y REMOTE-CHECK-B, una por cuenta.
  */
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 function loadDotEnv(path) {
@@ -25,7 +26,7 @@ function loadDotEnv(path) {
     }
   } catch { /* sin .env */ }
 }
-loadDotEnv(new URL("../apps/mobile/.env", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+loadDotEnv(fileURLToPath(new URL("../apps/mobile/.env", import.meta.url)));
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
