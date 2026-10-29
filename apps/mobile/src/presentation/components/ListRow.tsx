@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 
 export interface ListRowProps {
   title: string;
+  /** Texto destacado en num-md antes del título, en la misma línea («17:26 Caminata»). */
+  lead?: string;
   subtitle?: string;
   /** Valor a la derecha en num-md, ya formateado. */
   value?: string;
@@ -15,16 +17,23 @@ export interface ListRowProps {
   /** Si está presente, la fila muestra un selector a la derecha (zona táctil de 48 px) independiente del toque sobre la fila. */
   onSelect?: () => void;
   chevron?: boolean;
+  /** Sin línea inferior (última fila de una tarjeta). */
+  last?: boolean;
+  /** Relleno horizontal propio (filas dentro de una tarjeta sin relleno). */
+  inset?: boolean;
   onPress?: () => void;
 }
 
-export function ListRow({ title, subtitle, value, chip, selected, onSelect, chevron = true, onPress }: ListRowProps) {
+export function ListRow({ title, lead, subtitle, value, chip, selected, onSelect, chevron = true, last, inset, onPress }: ListRowProps) {
   const titleColor = selected ? colors.accent : colors.textPrimary;
   return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} style={({ pressed }) => [styles.row, inset && { paddingHorizontal: space[4] }, last && { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}>
       {selected && !onSelect ? <Icon name="check" size={20} color={colors.accent} /> : null}
       <View style={styles.texts}>
-        <Text variant="body" color={titleColor} numberOfLines={1}>{title}</Text>
+        <View style={styles.titleRow}>
+          {lead ? <Text variant="numMd" color={titleColor}>{lead}</Text> : null}
+          <Text variant="body" color={titleColor} numberOfLines={1} style={{ flexShrink: 1 }}>{title}</Text>
+        </View>
         {subtitle ? <Text variant="caption" color={colors.textSecondary} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
       {chip}
@@ -51,6 +60,7 @@ export function ListRow({ title, subtitle, value, chip, selected, onSelect, chev
 const styles = StyleSheet.create({
   row: { minHeight: size.rowHeight, flexDirection: "row", alignItems: "center", gap: space[3], paddingVertical: space[3], borderBottomWidth: size.hairline, borderBottomColor: colors.line },
   texts: { flex: 1, minWidth: 0, gap: 2 },
+  titleRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
   selectHit: { width: 48, height: 48, alignItems: "center", justifyContent: "center", marginRight: -space[2] },
   selectRing: { width: 24, height: 24, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, alignItems: "center", justifyContent: "center" },
   selectRingOn: { backgroundColor: colors.accent, borderColor: colors.accent },

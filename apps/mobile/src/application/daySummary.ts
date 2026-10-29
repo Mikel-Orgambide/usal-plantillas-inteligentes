@@ -102,6 +102,35 @@ export function useDaySummary(day: string, sessions: readonly SessionSummary[] |
   return { summary, error };
 }
 
+export interface DayGroup {
+  readonly day: string;
+  readonly sessions: readonly SessionSummary[];
+  readonly durationMs: number;
+}
+
+/** Sesiones agrupadas por día local, del más reciente al más antiguo (Historial). */
+export function groupByDay(sessions: readonly SessionSummary[]): DayGroup[] {
+  const map = new Map<string, SessionSummary[]>();
+  for (const s of sessions) {
+    const k = dayKeyOf(s.started_at);
+    const list = map.get(k) ?? [];
+    list.push(s);
+    map.set(k, list);
+  }
+  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([day, list]) => ({
+    day, sessions: list, durationMs: list.reduce((n, s) => n + (s.duration_ms ?? 0), 0),
+  }));
+}
+
+/** «mar 27 oct» para encabezados de día. */
+export function dayShort(day: string): string {
+  const [y, m, dd] = day.split("-").map(Number);
+  const d = new Date(y!, m! - 1, dd!);
+  return `${SHORT_DAYS[d.getDay()]} ${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
+}
+const SHORT_DAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const SHORT_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
 const DAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 

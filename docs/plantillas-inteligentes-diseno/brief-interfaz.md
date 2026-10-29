@@ -64,3 +64,14 @@ Conexión/emparejamiento Bluetooth (buscar, elegir dispositivo, permisos), ajust
 - Las siete vistas en modo oscuro (clara si da el tiempo), a tamaño de teléfono.
 - Estados: vacío, cargando, error/desconexión en Inicio, Grabación e Historial.
 - Exportar como ZIP.
+
+## 7. Enmienda 2026-10-27 — dirección visual «B» (Figma)
+
+Sobre las propuestas trabajadas en Figma (https://www.figma.com/design/0Hb0wBxywX9LlM0NOzJbNo, página «Pantallas», sección «Editables (app 0.11.0)») el autor eligió la dirección **B**, que habilita exactamente dos usos de degradado, ambos decorativos:
+
+1. Un **halo** radial de `accent` (12 % → 0 %) detrás de la cabecera de las pestañas Hoy e Historial.
+2. Un degradado vertical sutil en tarjetas, de `surface-elevated` (arriba) a `surface` (abajo), con borde `line` al 60 %.
+
+Sigue prohibido el degradado sobre texto, botones e iconos, y como portador de significado. `accent-deep` (#6a44c4) es el segundo tono de los anillos de reparto.
+
+Decisiones de la misma fecha: la pestaña «Más» pasa a llamarse **Ajustes** (sin reestructurar su contenido); Historial se agrupa por día en tarjetas con un resumen arriba; en Hoy se retira el texto explicativo largo del anillo (pasa a la hoja de desglose); tocar la pestaña «Hoy» estando en Hoy vuelve al día de hoy. Guía para leer estos diseños desde otro chat: `docs/diseno/figma.md`.

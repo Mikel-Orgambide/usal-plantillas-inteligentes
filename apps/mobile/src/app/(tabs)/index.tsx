@@ -1,8 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
-import { Button, Card, Chip, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
+import { Button, Card, Chip, Halo, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
 import { colors, formatDuration, formatNumber, radius, size, space } from "../../presentation/theme/tokens";
 import { useSessionList } from "../../application/useSessions";
 import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
@@ -46,6 +46,9 @@ export default function HomeScreen() {
   const [day, setDay] = useState(todayKey());
   const [panel, setPanel] = useState<Panel | null>(null);
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
+  // Tocar la pestaña «Hoy» estando en Hoy vuelve al día de hoy (brief, enmienda 27/10).
+  const navigation = useNavigation();
+  useEffect(() => navigation.addListener("tabPress" as never, () => { if (navigation.isFocused()) setDay(todayKey()); }), [navigation]);
   const { summary, error: dayError } = useDaySummary(day, sessions);
 
   const days = availableDays(sessions ?? []);
@@ -68,6 +71,7 @@ export default function HomeScreen() {
         )
       }
     >
+      <Halo />
       {/* Cabecera: día navegable, centrada; Ajustes vive en la barra inferior. */}
       <View style={styles.headerRow}>
         <Pressable onPress={older ? () => setDay(older) : undefined} disabled={!older} hitSlop={8} accessibilityRole="button" accessibilityLabel="Día anterior" style={[styles.navBtn, !older && { opacity: 0.3 }]}>
@@ -94,9 +98,6 @@ export default function HomeScreen() {
           <Ring layout="top" value={ready ? d?.forefoot_share ?? null : null} text={ready ? pct(d?.forefoot_share ?? null) : "…"} inner="antepié" label="Antepié / talón" legend={ready && d && d.forefoot_share !== null ? [`${Math.round(d.forefoot_share * 100)} ante`, `${Math.round((d.rearfoot_share ?? 0) * 100)} talón`] : ["antepié", "talón"]} onPress={() => setPanel("zones")} />
           <Ring layout="progress" value={ready ? summary.quality : null} text={ready ? pct(summary.quality) : "…"} inner="recibido" label="Calidad" legend={ready && summary.quality !== null ? [`${formatNumber(summary.records)} reg.`, `${formatNumber(Math.max(0, summary.expected - summary.records))} falt.`] : ["recibido", "faltante"]} color={ready && summary.quality !== null && summary.quality < 0.98 ? colors.alert : colors.accent} onPress={() => setPanel("quality")} />
         </View>
-        <Text variant="caption" color={colors.textSecondary} style={{ textAlign: "center", marginTop: space[3] }}>
-          El anillo sigue al cuerpo: lado izquierdo = pie izquierdo; arriba = antepié, abajo = talón. Reparto de la lectura en cuentas ADC; tocá un indicador para ver el desglose.
-        </Text>
       </Card>
 
       {error ? (
@@ -194,7 +195,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
         <MeterRow label="Talón" fraction={d.asymmetry.heel} value={signedPct(d.asymmetry.heel)} centered />
         <MeterRow label="Medial" fraction={d.asymmetry.medial} value={signedPct(d.asymmetry.medial)} centered />
         <MeterRow label="Lateral" fraction={d.asymmetry.lateral} value={signedPct(d.asymmetry.lateral)} centered />
-        {note(`Proporción entre las medias de las posiciones de cada pie (${formatNumber(d.total_mean)} cuentas en total). Positivo = más lectura a la izquierda. Es un descriptor de la lectura en cuentas ADC; sin calibración no equivale a fuerza ni a peso.`)}
+        {note(`El anillo sigue al cuerpo: lado izquierdo = pie izquierdo. Proporción entre las medias de las posiciones de cada pie (${formatNumber(d.total_mean)} cuentas en total). Positivo = más lectura a la izquierda. Es un descriptor de la lectura en cuentas ADC; sin calibración no equivale a fuerza ni a peso.`)}
       </>
     );
   }
@@ -209,7 +210,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
         <MeterRow key={code} label={POSITION_LABEL[code]} fraction={ch[code].sample_mean === null || d.total_mean === null ? null : ch[code].sample_mean / d.total_mean} value={ch[code].sample_mean === null ? "—" : formatNumber(ch[code].sample_mean)} />
       ))}
       <MeterRow label="Variabilidad (σ / media)" fraction={d.variability} value={d.variability === null ? "—" : formatNumber(d.variability, 2)} />
-      {note("Medias ponderadas por lecturas válidas de todas las capturas del día. La variabilidad indica cuánto cambian las lecturas alrededor de su media; no se interpreta como estabilidad del usuario sin evidencia experimental.")}
+      {note("El anillo sigue al cuerpo: arriba = antepié, abajo = talón. Medias ponderadas por lecturas válidas de todas las capturas del día. La variabilidad indica cuánto cambian las lecturas alrededor de su media; no se interpreta como estabilidad del usuario sin evidencia experimental.")}
     </>
   );
 }

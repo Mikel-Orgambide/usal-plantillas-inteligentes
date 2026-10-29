@@ -30,6 +30,7 @@ Tema `dark` primero (fallback); `light` opcional. Grises fríos en tres niveles,
 - `stale` es gris acero opaco, sin tinte: atenúa valores desactualizados. Solo sobre números de 20px o más; un texto pequeño atenuado lleva la palabra «desactualizado» al lado.
 - `accent-soft` y `alert-soft` son fondos tenues detrás de texto del mismo color (chips, banner). Nada más se tiñe.
 - Un frío saturado (accent) y un cálido apagado (alert) sobre una escala gris: cada uno significa una sola cosa. Sin verdes, sin segundo acento, sin puntajes circulares, sin anillos de porcentaje, sin mapas de calor ni gradientes.
+- Enmienda 27/10: se permiten exactamente dos degradados, ambos decorativos: el halo radial de `accent` (12 % → 0 %) detrás de la cabecera de las pestañas y el degradado vertical `surface-elevated` → `surface` en tarjetas (con borde `line` al 60 %). Nunca sobre texto, botones o iconos, ni como significado. `accent-deep` (#6a44c4) es el segundo tono de los anillos de reparto (`Ring`).
 
 ## Tipografía
 

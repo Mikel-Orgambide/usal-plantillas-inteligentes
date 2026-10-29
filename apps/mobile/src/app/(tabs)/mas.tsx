@@ -68,7 +68,7 @@ export default function MoreScreen() {
   return (
     <>
     <Screen tabbed>
-      <Text variant="title" style={{ marginBottom: space[4] }}>Más</Text>
+      <Text variant="title" style={{ marginBottom: space[4] }}>Ajustes</Text>
 
       {/* Perfil / cuenta. */}
       <View style={styles.profile}>

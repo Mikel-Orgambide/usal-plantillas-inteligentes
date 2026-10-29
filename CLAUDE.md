@@ -31,3 +31,4 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 - Instalar dependencias de la app con `npx expo install` (versiones compatibles con el SDK).
 - Al cerrar una etapa: entrada en `docs/incrementos/`, tag y actualización del estado (propuesto / implementado / validado).
 - Distinguir siempre lo implementado de lo validado; la evidencia alimenta los capítulos 7 y 8 de la tesis.
+- Diseño en Figma: antes de tocar una pantalla, leer `docs/diseno/figma.md` (archivo, páginas, regla captura → propuesta B → código). Degradados sólo según la enmienda del 27/10 en `docs/diseno/brief-interfaz.md`.

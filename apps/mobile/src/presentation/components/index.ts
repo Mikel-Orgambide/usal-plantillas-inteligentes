@@ -17,3 +17,5 @@ export { ValueCard } from "./ValueCard";
 export { TextButton } from "./TextButton";
 export { Ring } from "./Ring";
 export { MeterRow } from "./MeterRow";
+export { Halo } from "./Halo";
+export { DayCard } from "./DayCard";
