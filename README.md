@@ -1,10 +1,12 @@
-# Plataforma wearable de plantillas inteligentes
+<img src="docs/diseno/marca/logo-nsl-dark.png" alt=".NSL" width="160">
 
-Proyecto Final de Ingeniería en Informática (USAL) · Mikel Orgambide Rueda.
+# NSL · Plantillas inteligentes
 
-Prototipo de una plataforma que adquiere, transmite, procesa, almacena y visualiza señales plantares de seis sensores FSR (tres por pie) mediante un ESP32 y una aplicación Android, con historial de sesiones y comparación entre sesiones compatibles.
+**NSL** · Plantillas inteligentes — plataforma wearable que adquiere, transmite, procesa, almacena y visualiza señales plantares. Proyecto Final de Ingeniería en Informática (USAL) · Mikel Orgambide Rueda.
 
-> Estado: **etapas 0–8 y 10 cerradas** (contrato, simulador, persistencia, sesiones, pantallas, métricas, comparación, fuente física por BLE con lecturas sintéticas del ESP32, respaldo y paquete de demostración); **etapa 11 cerrada** (cuenta con correo y contraseña y sincronización confirmada con Supabase). Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/). Los sensores FSR y la calibración (H2–H4, etapa 9) quedan pendientes.
+Prototipo que lee sensores FSR (contrato de seis posiciones, tres por pie; módulo físico unilateral de tres canales) mediante un ESP32 y una aplicación Android, con historial de sesiones y comparación entre sesiones compatibles.
+
+> Estado: **etapas 0–8 y 10 cerradas** (contrato, simulador, persistencia, sesiones, pantallas, métricas, comparación, fuente física por BLE con lecturas sintéticas del ESP32, respaldo y paquete de demostración); **etapa 11 cerrada** (cuenta con correo y contraseña y sincronización confirmada con Supabase). Ninguna función se considera implementada hasta que su etapa esté cerrada en [`docs/incrementos`](docs/incrementos/). **Etapa 9 en curso:** módulo unilateral de tres FSR validado en banco por USB y BLE (3/11/2026); calibración de fuerza fuera de alcance.
 
 ## Estructura
 

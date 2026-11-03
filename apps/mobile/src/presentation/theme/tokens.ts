@@ -53,6 +53,8 @@ export const fonts = {
   regular: "Manrope_400Regular",
   medium: "Manrope_500Medium",
   semibold: "Manrope_600SemiBold",
+  /** Sólo para la marca «.NSL» (ADR 0009). */
+  extrabold: "Manrope_800ExtraBold",
 } as const;
 
 import type { TextStyle } from "react-native";

@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useDevice } from "../../infrastructure/ble/deviceStore";
 import { resolveSource } from "../../application/activeSource";
-import { Button, Chip, Icon, ListRow, Screen, Sheet, Text } from "../../presentation/components";
+import { Brand, Button, Chip, Icon, ListRow, Screen, Sheet, Text } from "../../presentation/components";
 import { colors, fonts, formatDate, radius, size, space } from "../../presentation/theme/tokens";
 import { loadSettings } from "../../infrastructure/settings/settings";
 import { signIn, signOut, signUp, useAuth } from "../../application/authStore";
@@ -114,13 +114,20 @@ export default function MoreScreen() {
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Aplicación</Text>
       <View style={styles.group}>
         <ListRow title="Demostración" subtitle="Simulador, escenarios de falla y pantalla encendida" onPress={() => router.push("/ajustes/demostracion")} />
-        <ListRow title="Acerca de" subtitle={`Plantillas Inteligentes · versión ${version} · proyecto final de tesis`} chevron={false} />
+      </View>
+
+      <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Acerca de</Text>
+      <View style={[styles.group, styles.about]}>
+        <Brand size={40} />
+        <Text variant="bodyMedium">NSL · Plantillas inteligentes</Text>
+        <Text variant="caption" color={colors.textSecondary}>Versión {version}</Text>
+        <Text variant="caption" color={colors.textSecondary}>Proyecto Final · Ingeniería en Informática · USAL</Text>
       </View>
       <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[3] }}>La copia local es la fuente primaria. Una sesión se marca sincronizada sólo cuando el servidor confirma las mismas cantidades de registros, eventos y resultados.</Text>
     </Screen>
 
     <Sheet visible={account} onDismiss={() => setAccount(false)}>
-      <Text variant="heading">Cuenta</Text>
+      <Brand size={32} />
       <Text variant="body" color={colors.textSecondary}>Con una cuenta, el Historial muestra sólo sus sesiones y las cerradas se guardan también en el servicio remoto, donde sólo esa cuenta puede verlas. Las sesiones de otras cuentas quedan guardadas en el teléfono.</Text>
       <TextInput value={email} onChangeText={setEmail} placeholder="Correo" placeholderTextColor={colors.textSecondary} style={styles.input} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
       <TextInput value={password} onChangeText={setPassword} placeholder="Contraseña (mínimo 6 caracteres)" placeholderTextColor={colors.textSecondary} style={styles.input} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" />
@@ -143,5 +150,6 @@ const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceElevated, alignItems: "center", justifyContent: "center" },
   group: { backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: space[4], marginTop: space[3] },
   sectionLabel: { marginTop: space[6] },
+  about: { paddingVertical: space[4], gap: space[2] },
   input: { height: size.controlHeight, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], fontFamily: fonts.regular, fontSize: 16 },
 });

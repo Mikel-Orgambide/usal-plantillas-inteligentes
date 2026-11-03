@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold } from "@expo-google-fonts/manrope";
+import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Button, Chip, Sheet, Text, ValueCard } from "../presentation/components";
 import { colors, formatDate, formatDuration, space } from "../presentation/theme/tokens";
 import { getDatabase } from "../infrastructure/sqlite/database";
@@ -17,7 +17,7 @@ import type { SessionRow } from "@plantillas/storage";
  * como incompleta» cuando corresponde.
  */
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold });
+  const [fontsLoaded] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_800ExtraBold });
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState<string | undefined>();
   const [recovered, setRecovered] = useState<SessionRow[]>([]);

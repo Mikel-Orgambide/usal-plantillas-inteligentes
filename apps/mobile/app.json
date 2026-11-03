@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Plantillas Inteligentes",
+    "name": "NSL",
     "slug": "plantillas-inteligentes",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -46,7 +46,8 @@
         {
           "backgroundColor": "#0c0d10",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 160
+          "resizeMode": "contain",
+          "imageWidth": 200
         }
       ],
       "expo-sharing"

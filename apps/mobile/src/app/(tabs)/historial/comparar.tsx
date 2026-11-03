@@ -7,6 +7,7 @@ import { Button, Card, Chip, Header, Icon, LineChart, Screen, StatusBanner, Text
 import { colors, formatDate, formatDuration, formatNumber, radius, space } from "../../../presentation/theme/tokens";
 import { loadSessionDetail, type SessionDetail } from "../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../application/sessionStore";
+import { shareComparisonReport } from "../../../infrastructure/report/report";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = { heel: ["L_HEEL", "R_HEEL"], medial: ["L_MEDIAL", "R_MEDIAL"], lateral: ["L_LATERAL", "R_LATERAL"] };
@@ -80,6 +81,8 @@ export default function CompareScreen() {
   const [data, setData] = useState<[SessionDetail, SessionDetail] | null | undefined>(undefined);
   const [error, setError] = useState<string | undefined>();
   const [zone, setZone] = useState<Zone>("heel");
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState<string | undefined>();
 
   useEffect(() => {
     if (!a || !b) return;
@@ -96,13 +99,19 @@ export default function CompareScreen() {
 
   const [da, db] = data;
   const policy = assess(da, db);
+  const exportReport = async () => {
+    setReportError(undefined);
+    setReportBusy(true);
+    try { await shareComparisonReport(da.session.id, db.session.id); } catch (e) { setReportError(e instanceof Error ? e.message : String(e)); } finally { setReportBusy(false); }
+  };
   const compatible = policy.compatible;
   const failed = policy.requirements.filter((r) => !r.ok);
   const differences = compatible && da.metrics[0] && db.metrics[0] ? compareMetrics(da.metrics[0].metrics, db.metrics[0].metrics) : null;
   const [lc, rc] = ZONE_CHANNELS[zone];
 
   return (
-    <Screen tabbed footer={<Button onPress={() => router.back()}>Cambiar sesiones</Button>}>
+    <Screen tabbed footer={<View style={{ gap: space[2] }}>{compatible ? <Button icon="export" disabled={reportBusy} onPress={() => void exportReport()}>{reportBusy ? "Generando informe…" : "Exportar informe (PDF)"}</Button> : null}<Button onPress={() => router.back()}>Cambiar sesiones</Button></View>}>
+      {reportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[2] }}>No se pudo generar el informe: {reportError}</Text> : null}
       <Header title="Comparar" context={compatible ? "Compatibles · misma configuración · cuentas ADC · misma procedencia · misma métrica" : "Estas dos sesiones no se pueden comparar por posición"} onBack={() => router.back()} />
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <SessionCard letter="A" d={da} color={colors.accent} />

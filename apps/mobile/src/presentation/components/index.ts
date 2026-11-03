@@ -20,3 +20,4 @@ export { Ring } from "./Ring";
 export { MeterRow } from "./MeterRow";
 export { Halo } from "./Halo";
 export { DayCard } from "./DayCard";
+export { Brand } from "./Brand";
