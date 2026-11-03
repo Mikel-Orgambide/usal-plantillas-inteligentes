@@ -1,8 +1,10 @@
 import {
   CHANNEL_CODES,
   FORMAT_VERSION,
+  configuredChannels,
   isChannelCode,
   type AcquisitionConfiguration,
+  type ChannelCode,
   type ChannelDefinition,
   type SensorModel,
 } from "@plantillas/contract";
@@ -22,8 +24,16 @@ export const MEASUREMENT_UUID = "7a0e0005-5d3f-4b1a-9f4c-2e6b8c1d0001";
 export const COMMAND_START = 0x01;
 export const COMMAND_STOP = 0x02;
 
-/** Tamaño del registro binario y MTU mínimo para recibirlo en una sola notificación (3 bytes de cabecera ATT). */
-export const MEASUREMENT_BYTES = 45;
+/** Cabecera del registro binario (u8 versión · u16 boot · u16 captura · u32 sequence) y bytes por canal (u32 time_us · u16 valor). */
+export const MEASUREMENT_HEADER_BYTES = 9;
+export const MEASUREMENT_BYTES_PER_CHANNEL = 6;
+/** Tamaño del registro binario para `n` canales. Seis canales: 45 bytes (ADR 0006). */
+export function measurementBytes(channelCount: number): number {
+  return MEASUREMENT_HEADER_BYTES + MEASUREMENT_BYTES_PER_CHANNEL * channelCount;
+}
+/** Tamaño del registro de seis canales; se conserva como referencia histórica. */
+export const MEASUREMENT_BYTES = measurementBytes(CHANNEL_CODES.length);
+/** MTU mínimo para recibir el registro más grande en una sola notificación (3 bytes de cabecera ATT). */
 export const MIN_MTU = MEASUREMENT_BYTES + 3;
 export const REQUESTED_MTU = 185;
 const BINARY_VERSION = 1;
@@ -44,16 +54,20 @@ export interface DeviceInfo {
   readonly raw_max: number;
   readonly period_us: number;
   readonly channels: readonly { code: string; installation_id: string; model: string }[];
+  /** Códigos declarados por la placa, en el orden del contrato; fija el tamaño del registro binario. */
+  readonly channel_codes: readonly ChannelCode[];
 }
 
 /**
  * Forma compacta que publica la placa (una característica no puede superar 512 bytes):
- * `model` único y `channels` como lista de códigos; `installation_id` se deriva como
- * `<configuration_id>-<code>`. También se acepta la forma extendida por canal.
+ * `channels` como lista de códigos (un subconjunto del contrato, en su orden) y el
+ * modelo como `models` (lista paralela, firmware ≥ 0.3.0) o `model` único (anterior);
+ * `installation_id` se deriva como `<configuration_id>-<code>`. También se acepta la
+ * forma extendida por canal.
  */
 interface RawInfo {
   format_version?: unknown; device_id?: unknown; configuration_id?: unknown; firmware?: unknown;
-  raw_max?: unknown; period_us?: unknown; model?: unknown;
+  raw_max?: unknown; period_us?: unknown; model?: unknown; models?: unknown;
   channels?: unknown;
 }
 
@@ -80,18 +94,23 @@ export function parseDeviceInfo(raw: Uint8Array | readonly number[]): { info: De
   if (o.format_version !== FORMAT_VERSION) throw new ProtocolError(`versión de formato no soportada: ${String(o.format_version)}`);
   if (typeof o.raw_max !== "number" || o.raw_max <= 0) throw new ProtocolError("info sin raw_max");
   if (!Array.isArray(o.channels)) throw new ProtocolError("info sin canales");
-  const rawChannels = o.channels.map((c: unknown) => {
-    if (typeof c === "string") return { code: c, installation_id: `${o.configuration_id as string}-${c}`, model: typeof o.model === "string" ? o.model : "" };
+  const models = Array.isArray(o.models) ? o.models : [];
+  const rawChannels = o.channels.map((c: unknown, i: number) => {
+    const sharedModel = typeof models[i] === "string" ? (models[i] as string) : typeof o.model === "string" ? o.model : "";
+    if (typeof c === "string") return { code: c, installation_id: `${o.configuration_id as string}-${c}`, model: sharedModel };
     const x = c as { code?: unknown; installation_id?: unknown; model?: unknown };
     return {
       code: String(x.code ?? ""),
       installation_id: typeof x.installation_id === "string" ? x.installation_id : `${o.configuration_id as string}-${String(x.code ?? "")}`,
-      model: typeof x.model === "string" ? x.model : typeof o.model === "string" ? o.model : "",
+      model: typeof x.model === "string" ? x.model : sharedModel,
     };
   });
+  // Subconjunto del contrato, en su orden, sin repetir ni vacío (módulo unilateral: tres canales).
   const codes = rawChannels.map((c) => c.code);
-  if (codes.length !== CHANNEL_CODES.length || CHANNEL_CODES.some((c, i) => codes[i] !== c)) {
-    throw new ProtocolError(`canales inesperados: ${codes.join(", ")} (se esperan ${CHANNEL_CODES.join(", ")} en ese orden)`);
+  if (codes.length === 0) throw new ProtocolError("info sin canales");
+  const expected = CHANNEL_CODES.filter((c) => codes.includes(c));
+  if (codes.length !== expected.length || expected.some((c, i) => codes[i] !== c)) {
+    throw new ProtocolError(`canales inesperados: ${codes.join(", ")} (se espera un subconjunto de ${CHANNEL_CODES.join(", ")} en ese orden)`);
   }
   const channels: ChannelDefinition[] = rawChannels.map((c) => {
     if (!isChannelCode(c.code)) throw new ProtocolError(`canal desconocido: ${c.code}`);
@@ -106,6 +125,7 @@ export function parseDeviceInfo(raw: Uint8Array | readonly number[]): { info: De
     raw_max: o.raw_max,
     period_us: typeof o.period_us === "number" ? o.period_us : 0,
     channels: rawChannels,
+    channel_codes: channels.map((c) => c.code),
   };
   const configuration: AcquisitionConfiguration = {
     configuration_id: info.configuration_id,
@@ -122,12 +142,22 @@ export function captureIdOf(deviceId: string, boot: number, capture: number): st
   return `${deviceId}-B${boot}-C${capture}`;
 }
 
+/** Identidad y canales que el decodificador necesita de `info`. */
+export type MeasurementContext = Pick<DeviceInfo, "device_id" | "configuration_id"> & { readonly channel_codes: readonly ChannelCode[] };
+
+/** Contexto de decodificación a partir de la configuración (los canales en el orden del contrato). */
+export function measurementContextOf(configuration: AcquisitionConfiguration): MeasurementContext {
+  return { device_id: configuration.device_id, configuration_id: configuration.configuration_id, channel_codes: configuredChannels(configuration) };
+}
+
 /**
- * Registro binario little-endian de 45 bytes → registro del contrato (sin validar).
- * u8 versión · u16 boot · u16 captura · u32 sequence · 6 × (u32 time_us, u16 valor); 0xFFFF = read_error.
+ * Registro binario little-endian → registro del contrato (sin validar).
+ * u8 versión · u16 boot · u16 captura · u32 sequence · n × (u32 time_us, u16 valor); 0xFFFF = read_error.
+ * `n` es la cantidad de canales que la placa declaró en `info` (45 bytes con seis, 27 con tres).
  */
-export function decodeMeasurement(bytes: Uint8Array | readonly number[], info: Pick<DeviceInfo, "device_id" | "configuration_id">): Record<string, unknown> {
-  if (bytes.length !== MEASUREMENT_BYTES) throw new ProtocolError(`registro de ${bytes.length} bytes (se esperan ${MEASUREMENT_BYTES})`);
+export function decodeMeasurement(bytes: Uint8Array | readonly number[], info: MeasurementContext): Record<string, unknown> {
+  const expectedBytes = measurementBytes(info.channel_codes.length);
+  if (bytes.length !== expectedBytes) throw new ProtocolError(`registro de ${bytes.length} bytes (se esperan ${expectedBytes} para ${info.channel_codes.length} canales)`);
   const b = bytes;
   const u16 = (i: number) => (b[i]! | (b[i + 1]! << 8)) >>> 0;
   const u32 = (i: number) => (b[i]! | (b[i + 1]! << 8) | (b[i + 2]! << 16) | (b[i + 3]! << 24)) >>> 0;
@@ -135,8 +165,8 @@ export function decodeMeasurement(bytes: Uint8Array | readonly number[], info: P
   const boot = u16(1);
   const capture = u16(3);
   const sequence = u32(5);
-  const samples = CHANNEL_CODES.map((code, i) => {
-    const off = 9 + i * 6;
+  const samples = info.channel_codes.map((code, i) => {
+    const off = MEASUREMENT_HEADER_BYTES + i * MEASUREMENT_BYTES_PER_CHANNEL;
     const value = u16(off + 4);
     const error = value === READ_ERROR_VALUE;
     return { channel_id: code, time_us: u32(off), raw_value: error ? null : value, unit: "adc_count", status: error ? "read_error" : "ok" };
@@ -153,7 +183,7 @@ export function decodeMeasurement(bytes: Uint8Array | readonly number[], info: P
 
 /** Codifica un registro con el mismo formato que la placa (para pruebas y para el simulador de enlace). */
 export function encodeMeasurement(r: { boot: number; capture: number; sequence: number; samples: readonly { time_us: number; value: number | null }[] }): Uint8Array {
-  const out = new Uint8Array(MEASUREMENT_BYTES);
+  const out = new Uint8Array(measurementBytes(r.samples.length));
   let p = 0;
   const put16 = (v: number) => { out[p++] = v & 0xff; out[p++] = (v >>> 8) & 0xff; };
   const put32 = (v: number) => { for (let i = 0; i < 4; i++) out[p++] = (v >>> (8 * i)) & 0xff; };

@@ -9,7 +9,7 @@ import { useActiveSource } from "../application/activeSource";
 
 const ZONE_LABEL = { heel: "Talón", forefoot_medial: "Medial", forefoot_lateral: "Lateral" } as const;
 
-/** Preparación: actividad, contexto y las seis posiciones reconocidas. */
+/** Preparación: actividad, contexto y las posiciones reconocidas de la configuración (las no instrumentadas se muestran como n/d). */
 export default function PrepareScreen() {
   const router = useRouter();
   const [activity, setActivity] = useState<Activity>("caminata");
@@ -20,7 +20,9 @@ export default function PrepareScreen() {
   const source = useActiveSource();
   const channels = source.configuration?.channels ?? [];
   const recognized = CHANNEL_CODES.filter((c) => channels.some((ch) => ch.code === c));
-  const allOk = recognized.length === 6;
+  // Una configuración válida declara entre 1 y 6 posiciones en el orden del contrato; las demás quedan «no instrumentadas».
+  const allOk = recognized.length > 0 && recognized.length === channels.length;
+  const notInstrumented = CHANNEL_CODES.length - recognized.length;
 
   const start = async () => {
     setStarting(true);
@@ -66,15 +68,15 @@ export default function PrepareScreen() {
               const ok = recognized.includes(code);
               return (
                 <View key={code} style={styles.posRow}>
-                  <Icon name={ok ? "check" : "alert"} size={20} color={ok ? colors.accent : colors.alert} />
-                  <Text variant="body" color={ok ? colors.textPrimary : colors.alert}>{ZONE_LABEL[pos.zone]} {pos.foot === "left" ? "izq." : "der."}</Text>
-                  <Text variant="caption" color={colors.textSecondary} style={{ marginLeft: "auto" }}>{code}</Text>
+                  <Icon name={ok ? "check" : "alert"} size={20} color={ok ? colors.accent : colors.stale} />
+                  <Text variant="body" color={ok ? colors.textPrimary : colors.stale}>{ZONE_LABEL[pos.zone]} {pos.foot === "left" ? "izq." : "der."}</Text>
+                  <Text variant="caption" color={colors.textSecondary} style={{ marginLeft: "auto" }}>{ok ? code : "n/d"}</Text>
                 </View>
               );
             })}
           </View>
           <Text variant="caption" color={allOk ? colors.textSecondary : colors.alert} style={{ marginTop: space[3] }}>
-            {recognized.length} de 6 posiciones reconocidas{allOk ? "" : " · no se puede iniciar"}
+            {channels.length === 0 ? "Sin configuración · no se puede iniciar" : `${recognized.length} de ${channels.length} posiciones de la configuración reconocidas${allOk ? "" : " · no se puede iniciar"}${notInstrumented > 0 && allOk ? ` · ${notInstrumented} no instrumentada${notInstrumented === 1 ? "" : "s"}` : ""}`}
           </Text>
         </Card>
       </View>

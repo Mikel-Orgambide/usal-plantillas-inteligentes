@@ -2,7 +2,7 @@ import type { AcquisitionConfiguration, DataSource, SourceEvent, SourceListener 
 import type { BleLink } from "./link";
 import {
   COMMAND_START, COMMAND_STOP, CONTROL_UUID, MEASUREMENT_UUID, MIN_MTU, ProtocolError, STATUS_UUID,
-  decodeMeasurement, parseStatus, type DeviceInfo,
+  decodeMeasurement, measurementContextOf, parseStatus, type DeviceInfo, type MeasurementContext,
 } from "./protocol";
 
 export interface BleSourceOptions {
@@ -23,7 +23,7 @@ export interface BleSourceOptions {
 export class BleDataSource implements DataSource {
   readonly configuration: AcquisitionConfiguration;
   private link: BleLink;
-  private readonly info: Pick<DeviceInfo, "device_id" | "configuration_id">;
+  private readonly info: MeasurementContext;
   private readonly opts: Required<Omit<BleSourceOptions, "reconnect">> & Pick<BleSourceOptions, "reconnect">;
   private listeners = new Set<SourceListener>();
   private stopMonitors: Array<() => Promise<void>> = [];
@@ -41,7 +41,8 @@ export class BleDataSource implements DataSource {
   constructor(link: BleLink, configuration: AcquisitionConfiguration, info: Pick<DeviceInfo, "device_id" | "configuration_id">, options: BleSourceOptions = {}) {
     this.link = link;
     this.configuration = configuration;
-    this.info = info;
+    // Los canales (y con ellos el tamaño del registro binario) salen de la configuración, no de un número fijo.
+    this.info = { device_id: info.device_id, configuration_id: info.configuration_id, channel_codes: measurementContextOf(configuration).channel_codes };
     this.opts = {
       ackTimeoutMs: options.ackTimeoutMs ?? 3000,
       reconnectAttempts: options.reconnectAttempts ?? 5,

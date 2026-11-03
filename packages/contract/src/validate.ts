@@ -1,5 +1,5 @@
 import {
-  CHANNEL_CODES,
+  configuredChannels,
   isChannelCode,
   type AcquisitionConfiguration,
   type ChannelCode,
@@ -11,7 +11,8 @@ import { SUPPORTED_FORMAT_VERSIONS, type Sample, type SourceRecord } from "./typ
  *
  * Independiente de los tipos de TypeScript: recibe `unknown` y devuelve un
  * resultado válido o una lista de errores con código, ruta y mensaje. Nunca
- * corrige silenciosamente la entrada ni rellena canales ausentes.
+ * corrige silenciosamente la entrada ni rellena canales ausentes. Un registro
+ * debe traer exactamente los canales de su configuración.
  */
 
 export type ValidationCode =
@@ -27,6 +28,7 @@ export type ValidationCode =
   | "unsafe_integer"
   | "samples_not_array"
   | "unknown_channel"
+  | "channel_not_in_configuration"
   | "duplicate_channel"
   | "missing_channel"
   | "invalid_unit"
@@ -128,7 +130,7 @@ function validateSample(
     c.error("unknown_channel", `${path}.channel_id`, `canal desconocido: ${String(channelId)}`);
     valid = false;
   } else if (!config.channels.some((ch) => ch.code === channelId)) {
-    c.error("unknown_channel", `${path}.channel_id`, `canal ${channelId} no declarado en la configuración`);
+    c.error("channel_not_in_configuration", `${path}.channel_id`, `canal ${channelId} no declarado en la configuración`);
     valid = false;
   } else {
     channel = channelId;
@@ -248,9 +250,10 @@ export function validateSourceRecord(input: unknown, config: AcquisitionConfigur
       seen.add(sample.channel_id);
       samples.push(sample);
     });
-    for (const code of CHANNEL_CODES) {
+    // Exactamente los canales de la configuración: ni más (error arriba) ni menos.
+    for (const code of configuredChannels(config)) {
       if (!seen.has(code)) {
-        c.error("missing_channel", "samples", `falta la posición ${code}`);
+        c.error("missing_channel", "samples", `falta la posición ${code} declarada en la configuración`);
       }
     }
   }

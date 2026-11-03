@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHANNEL_CODES, SIMULATED_CONFIGURATION, normalizeRecord, validateSourceRecord, type NormalizedRecord } from "@plantillas/contract";
+import { CHANNEL_CODES, LEFT_MODULE_CONFIGURATION, SIMULATED_CONFIGURATION, configuredChannels, normalizeRecord, validateSourceRecord, type NormalizedRecord } from "@plantillas/contract";
 import { SCENARIOS, SimulatedGenerator, take, type Scenario } from "@plantillas/simulator";
 import { SessionRepository, migrate } from "@plantillas/storage";
 import { NodeSqliteDriver } from "@plantillas/storage/node";
@@ -27,6 +27,39 @@ async function seeded(count: number, scenario: Scenario = SCENARIOS.normal) {
   if (outcomes.some((o) => o.outcome !== "inserted")) throw new Error("fixture inválido: " + JSON.stringify(outcomes.find((o) => o.outcome !== "inserted")));
   return { db, repo, capture, records };
 }
+
+describe("computeCaptureMetrics con módulo unilateral", () => {
+  it("guarda sólo las tres posiciones instrumentadas; el pie derecho queda «no instrumentado» y nunca en cero", async () => {
+    const cfg = LEFT_MODULE_CONFIGURATION;
+    const db = new NodeSqliteDriver();
+    await migrate(db);
+    const repo = new SessionRepository(db);
+    await repo.ensureLocalUser();
+    await repo.ensureConfiguration(cfg);
+    const session = await repo.createSession({ id: "S-L", user_id: "local", activity: "banco", source: "physical", started_at: AT });
+    const capture = await repo.openCapture(session.id, cfg, "ESP32-000000-B1-C1", AT);
+    const records: NormalizedRecord[] = [];
+    for (let seq = 0; seq < 20; seq++) {
+      const payload = {
+        format_version: "1.0", device_id: cfg.device_id, capture_id: "ESP32-000000-B1-C1", configuration_id: cfg.configuration_id, sequence: seq,
+        samples: [3501, 3583, 3846].map((v, i) => ({ channel_id: cfg.channels[i]!.code, time_us: seq * 50_000 + i, raw_value: v, unit: "adc_count", status: "ok" })),
+      };
+      const r = validateSourceRecord(payload, cfg);
+      if (!r.ok) throw new Error(JSON.stringify(r.errors));
+      records.push(normalizeRecord(r.record, { source: "physical", session_id: "S-L", received_at: AT }));
+    }
+    await repo.insertRecords(capture.id, records);
+    const channels = configuredChannels(cfg);
+    const metrics = await computeCaptureMetrics(repo, capture.id, () => AT, channels);
+    expect(metrics.L_HEEL).toMatchObject({ n_received: 20, n_valid: 20, sample_mean: 3501 });
+    expect(metrics.L_LATERAL.sample_max).toBe(3846);
+    expect(metrics.R_HEEL).toMatchObject({ n_received: 0, sample_mean: null, unavailable_reason: "no instrumentado" });
+    expect((await repo.getResults(capture.id, METRIC_VERSION)).map((r) => r.channel_code).sort()).toEqual([...channels].sort());
+    // Segunda lectura: viene de las filas guardadas, con la misma forma.
+    const again = await computeCaptureMetrics(repo, capture.id, () => AT, channels);
+    expect(again).toEqual(metrics);
+  });
+});
 
 describe("computeCaptureMetrics", () => {
   it("calcula las seis posiciones desde SQLite y coincide con el cálculo directo sobre las muestras", async () => {

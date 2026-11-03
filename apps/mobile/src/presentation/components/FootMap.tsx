@@ -8,10 +8,17 @@ import { colors, fonts, formatNumber, space } from "../theme/tokens";
  * Dos siluetas de pie con tres puntos cada una (talón, medial, lateral).
  * El anillo crece y el punto gana opacidad con valor/4095; el número va
  * siempre junto al punto. Sin interpolación ni mapa de calor (restricción
- * de la tesis). `null` = sin datos; `stale` atenúa todo.
+ * de la tesis). `null` = sin datos; `"unavailable"` = posición no
+ * instrumentada por la configuración (se dibuja gris, discontinua y con «n/d»,
+ * nunca como cero); `stale` atenúa todo.
  */
 
-export interface FootValues { heel: number | null; medial: number | null; lateral: number | null }
+/** `number` lectura · `null` instrumentada sin dato · `"unavailable"` no instrumentada. */
+export type FootValue = number | null | "unavailable";
+export interface FootValues { heel: FootValue; medial: FootValue; lateral: FootValue }
+
+/** Valores de un pie que la configuración no instrumenta. */
+export const FOOT_UNAVAILABLE: FootValues = { heel: "unavailable", medial: "unavailable", lateral: "unavailable" };
 
 export interface FootMapProps {
   left: FootValues;
@@ -34,23 +41,25 @@ function Foot({ side, values, stale, max, width }: { side: "left" | "right"; val
   const ink = stale ? colors.stale : colors.textPrimary;
   const accent = stale ? colors.stale : colors.accent;
   const height = (width * 260) / 150;
+  const wholeFootUnavailable = values.heel === "unavailable" && values.medial === "unavailable" && values.lateral === "unavailable";
   return (
     <View style={{ width, alignItems: "center", gap: space[1] }}>
-      <Text variant="caption" color={colors.textSecondary}>{right ? "Derecho" : "Izquierdo"}</Text>
+      <Text variant="caption" color={colors.textSecondary}>{right ? "Derecho" : "Izquierdo"}{wholeFootUnavailable ? " · no instrumentado" : ""}</Text>
       <Svg width={width} height={height} viewBox="0 0 150 260">
         <Path d={FOOT_D} fill="none" stroke={colors.line} strokeWidth={1.5} transform={right ? "translate(150 0) scale(-1 1)" : undefined} />
         {(Object.keys(POINTS) as (keyof FootValues)[]).map((k) => {
           const p = POINTS[k];
           const v = values[k];
-          const none = v === null || v === undefined;
-          const t = none ? 0 : Math.max(0, Math.min(1, v / max));
+          const unavailable = v === "unavailable";
+          const none = unavailable || v === null || v === undefined;
+          const t = none ? 0 : Math.max(0, Math.min(1, (v as number) / max));
           return (
             <G key={k}>
-              <SvgText x={mx(p.x)} y={p.ly} textAnchor="middle" fontFamily={fonts.medium} fontSize={11} fill={colors.textSecondary}>{p.label}</SvgText>
-              <Circle cx={mx(p.x)} cy={p.y} r={6 + 10 * t} fill="none" stroke={accent} strokeWidth={1.5} strokeDasharray={none ? "3 3" : undefined} opacity={none ? 0.5 : 0.35 + 0.65 * t} />
+              <SvgText x={mx(p.x)} y={p.ly} textAnchor="middle" fontFamily={fonts.medium} fontSize={11} fill={unavailable ? colors.stale : colors.textSecondary}>{p.label}</SvgText>
+              <Circle cx={mx(p.x)} cy={p.y} r={6 + 10 * t} fill="none" stroke={unavailable ? colors.stale : accent} strokeWidth={1.5} strokeDasharray={none ? "3 3" : undefined} opacity={unavailable ? 0.35 : none ? 0.5 : 0.35 + 0.65 * t} />
               <Circle cx={mx(p.x)} cy={p.y} r={5} fill={accent} opacity={none ? 0 : 0.25 + 0.75 * t} />
-              <SvgText x={mx(p.x)} y={p.vy} textAnchor="middle" fontFamily={fonts.semibold} fontSize={18} fill={none ? colors.textSecondary : ink}>
-                {none ? "—" : formatNumber(v)}
+              <SvgText x={mx(p.x)} y={p.vy} textAnchor="middle" fontFamily={fonts.semibold} fontSize={unavailable ? 13 : 18} fill={unavailable ? colors.stale : none ? colors.textSecondary : ink}>
+                {unavailable ? "n/d" : none ? "—" : formatNumber(v as number)}
               </SvgText>
             </G>
           );
@@ -63,8 +72,10 @@ function Foot({ side, values, stale, max, width }: { side: "left" | "right"; val
 function FootMapImpl({ left, right, stale = false, caption, max = 4095 }: FootMapProps) {
   const { width: screen } = useWindowDimensions();
   const footWidth = Math.min(150, (screen - space[4] * 2 - space[4]) / 2);
-  const missing = [left.heel, left.medial, left.lateral, right.heel, right.medial, right.lateral].filter((v) => v === null).length;
-  const auto = `cuentas ADC · 0–${formatNumber(max)}${stale ? " · desactualizado" : ""}${missing ? ` · ${missing} ${missing === 1 ? "posición sin datos" : "posiciones sin datos"}` : ""}`;
+  const all = [left.heel, left.medial, left.lateral, right.heel, right.medial, right.lateral];
+  const missing = all.filter((v) => v === null).length;
+  const unavailable = all.filter((v) => v === "unavailable").length;
+  const auto = `cuentas ADC · 0–${formatNumber(max)}${stale ? " · desactualizado" : ""}${missing ? ` · ${missing} ${missing === 1 ? "posición sin datos" : "posiciones sin datos"}` : ""}${unavailable ? ` · ${unavailable} no instrumentada${unavailable === 1 ? "" : "s"}` : ""}`;
   return (
     <View style={styles.wrap}>
       <View style={styles.feet}>

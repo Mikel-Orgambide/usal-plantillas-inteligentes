@@ -13,6 +13,18 @@ export const FIRMWARE_INFO = {
   channels: ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"],
 };
 
+/** Info del módulo unilateral izquierdo tal como la publica el firmware 0.3.0 (`models` paralelo a `channels`). */
+export const LEFT_FIRMWARE_INFO = {
+  format_version: "1.0",
+  device_id: "ESP32-9E7EE4",
+  configuration_id: "ESP32-FSR-L-001",
+  firmware: "0.3.0",
+  raw_max: 4095,
+  period_us: 50000,
+  channels: ["L_HEEL", "L_MEDIAL", "L_LATERAL"],
+  models: ["FSR406", "FSR402", "FSR402"],
+};
+
 const text = (s: string) => Array.from(new TextEncoder().encode(s));
 
 /** Placa falsa: responde a start/stop por la característica status y emite registros binarios a pedido. */

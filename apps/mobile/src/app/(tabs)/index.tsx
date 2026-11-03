@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
+import { isInstrumented } from "@plantillas/metrics";
 import { Button, Card, Chip, Halo, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
 import { colors, formatDuration, formatNumber, radius, size, space } from "../../presentation/theme/tokens";
 import { useSessionList } from "../../application/useSessions";
@@ -94,7 +95,7 @@ export default function HomeScreen() {
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Indicadores del día</Text>
       <Card style={{ paddingVertical: space[6] }}>
         <View style={styles.rings}>
-          <Ring layout="sides" value={ready ? d?.left_share ?? null : null} text={ready ? pct(d?.left_share ?? null) : "…"} inner="pie izq." label="Izq / der" legend={ready && d && d.left_share !== null ? [`${Math.round(d.left_share * 100)} izq`, `${Math.round((d.right_share ?? 0) * 100)} der`] : ["izq", "der"]} onPress={() => setPanel("balance")} />
+          <Ring layout="sides" value={ready ? d?.left_share ?? null : null} text={ready ? (d && !d.bilateral && !d.unavailable_reason ? "n/d" : pct(d?.left_share ?? null)) : "…"} inner={d && !d.bilateral && !d.unavailable_reason ? "ambos pies" : "pie izq."} label="Izq / der" legend={ready && d && d.left_share !== null ? [`${Math.round(d.left_share * 100)} izq`, `${Math.round((d.right_share ?? 0) * 100)} der`] : ["izq", "der"]} onPress={() => setPanel("balance")} />
           <Ring layout="top" value={ready ? d?.forefoot_share ?? null : null} text={ready ? pct(d?.forefoot_share ?? null) : "…"} inner="antepié" label="Antepié / talón" legend={ready && d && d.forefoot_share !== null ? [`${Math.round(d.forefoot_share * 100)} ante`, `${Math.round((d.rearfoot_share ?? 0) * 100)} talón`] : ["antepié", "talón"]} onPress={() => setPanel("zones")} />
           <Ring layout="progress" value={ready ? summary.quality : null} text={ready ? pct(summary.quality) : "…"} inner="recibido" label="Calidad" legend={ready && summary.quality !== null ? [`${formatNumber(summary.records)} reg.`, `${formatNumber(Math.max(0, summary.expected - summary.records))} falt.`] : ["recibido", "faltante"]} color={ready && summary.quality !== null && summary.quality < 0.98 ? colors.alert : colors.accent} onPress={() => setPanel("quality")} />
         </View>
@@ -172,12 +173,12 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
         <MeterRow label="Esperados" fraction={null} value={formatNumber(summary.expected)} />
         <MeterRow label="Huecos de secuencia" fraction={summary.expected ? Math.min(1, (summary.expected - summary.records) / summary.expected) : null} value={formatNumber(summary.gaps)} color={colors.alert} />
         <MeterRow label="Lecturas fallidas" fraction={summary.records ? Math.min(1, summary.readErrors / (summary.records * 6)) : null} value={formatNumber(summary.readErrors)} color={colors.alert} />
-        {note(`${summary.measured} sesión(es) con capturas aportan a este día. Un registro trae seis lecturas; una lectura fallida (read_error) se guarda como tal y no se interpola.`)}
+        {note(`${summary.measured} sesión(es) con capturas aportan a este día. Un registro trae una lectura por posición instrumentada (seis con ambos pies, tres con el módulo unilateral); una lectura fallida (read_error) se guarda como tal y no se interpola.`)}
       </>
     );
   }
 
-  if (!d || !ch || d.left_share === null) {
+  if (!d || !ch || d.unavailable_reason) {
     return (
       <>
         <Text variant="body" color={colors.textSecondary}>{d ? describeDistribution(d) : "Sin sesiones con capturas en este día."}</Text>
@@ -186,6 +187,17 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
   }
 
   if (panel === "balance") {
+    if (!d.bilateral) {
+      // Módulo unilateral: el reparto entre pies y la asimetría requieren ambos pies instrumentados.
+      return (
+        <>
+          <Text variant="body" color={colors.textSecondary}>{describeDistribution(d)}</Text>
+          <MeterRow label="Pie izquierdo" fraction={null} value="n/d" />
+          <MeterRow label="Pie derecho" fraction={null} value="n/d" color={colors.accentDeep} />
+          {note("Requiere ambos pies: la configuración actual instrumenta un solo pie (módulo unilateral). El reparto izquierda/derecha y la diferencia por zona quedan como no disponibles, no como cero.")}
+        </>
+      );
+    }
     return (
       <>
         <Text variant="body" color={colors.textSecondary}>{describeDistribution(d)}</Text>
@@ -207,7 +219,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
       <MeterRow label="Talón" fraction={d.rearfoot_share} value={pct(d.rearfoot_share)} color={colors.accentDeep} />
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[3] }}>Media por posición (cuentas ADC)</Text>
       {POSITION_ORDER.map((code) => (
-        <MeterRow key={code} label={POSITION_LABEL[code]} fraction={ch[code].sample_mean === null || d.total_mean === null ? null : ch[code].sample_mean / d.total_mean} value={ch[code].sample_mean === null ? "—" : formatNumber(ch[code].sample_mean)} />
+        <MeterRow key={code} label={POSITION_LABEL[code]} fraction={ch[code].sample_mean === null || d.total_mean === null ? null : ch[code].sample_mean / d.total_mean} value={!isInstrumented(ch[code]) ? "n/d" : ch[code].sample_mean === null ? "—" : formatNumber(ch[code].sample_mean)} />
       ))}
       <MeterRow label="Variabilidad (σ / media)" fraction={d.variability} value={d.variability === null ? "—" : formatNumber(d.variability, 2)} />
       {note("El anillo sigue al cuerpo: arriba = antepié, abajo = talón. Medias ponderadas por lecturas válidas de todas las capturas del día. La variabilidad indica cuánto cambian las lecturas alrededor de su media; no se interpreta como estabilidad del usuario sin evidencia experimental.")}

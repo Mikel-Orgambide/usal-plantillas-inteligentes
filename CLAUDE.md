@@ -4,7 +4,7 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 
 ## Límites que todo el código respeta
 
-- Seis canales: `L_HEEL`, `L_MEDIAL`, `L_LATERAL`, `R_HEEL`, `R_MEDIAL`, `R_LATERAL` (2 FSR406 en talones, 4 FSR402 en antepié).
+- Seis posiciones del contrato: `L_HEEL`, `L_MEDIAL`, `L_LATERAL`, `R_HEEL`, `R_MEDIAL`, `R_LATERAL` (FSR406 en talones, FSR402 en antepié). Una configuración declara un subconjunto en ese orden; el prototipo físico (3/11/2026) es un módulo unilateral izquierdo de tres canales (`ESP32-FSR-L-001`) y las posiciones no declaradas son «no disponibles» (nunca ceros; métricas bilaterales → n/d).
 - Valores originales en `adc_count`. Ausencia o error nunca se convierten en cero (`raw_value = null` + `status = read_error`).
 - Procedencia `simulated` o `physical`, asignada por el adaptador, nunca mezclada en una sesión.
 - Sin conversión a fuerza o presión sin calibración comprobada. Sin diagnóstico ni "detección de fatiga".

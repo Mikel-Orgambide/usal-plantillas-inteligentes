@@ -24,6 +24,24 @@ export interface ChannelMetrics {
   readonly unavailable_reason?: string;
 }
 
+/**
+ * Motivo reservado para las posiciones que la configuración no instrumenta
+ * (p. ej. el pie derecho en el módulo unilateral). Se distingue de «sin
+ * lecturas»: la posición no existía, no es que no midió.
+ */
+export const NOT_INSTRUMENTED = "no instrumentado";
+
+export function notInstrumented(unit: RawUnit = "adc_count"): ChannelMetrics {
+  return {
+    metric_version: METRIC_VERSION, unit, n_received: 0, n_valid: 0, n_invalid: 0,
+    sample_mean: null, sample_max: null, sample_sd_population: null, unavailable_reason: NOT_INSTRUMENTED,
+  };
+}
+
+export function isInstrumented(m: Pick<ChannelMetrics, "unavailable_reason"> | undefined): boolean {
+  return m !== undefined && m.unavailable_reason !== NOT_INSTRUMENTED;
+}
+
 export interface ReadingLike {
   readonly raw_value: number | null;
   readonly status: SampleStatus;

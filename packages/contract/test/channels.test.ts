@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   CHANNEL_CODES,
   CHANNEL_POSITIONS,
+  LEFT_MODULE_CONFIGURATION,
   SIMULATED_CONFIGURATION,
+  configuredChannels,
+  footAvailability,
   isChannelCode,
   validateConfiguration,
 } from "../src/index";
@@ -29,9 +32,21 @@ describe("configuración de canales", () => {
     expect(new Set(SIMULATED_CONFIGURATION.channels.map((c) => c.installation_id)).size).toBe(6);
   });
 
-  it("detecta configuraciones incompletas o con duplicados", () => {
-    const incompleta = { ...SIMULATED_CONFIGURATION, channels: SIMULATED_CONFIGURATION.channels.slice(0, 5) };
-    expect(validateConfiguration(incompleta)).toContain("falta el canal R_LATERAL");
+  it("admite subconjuntos en el orden del contrato: el módulo unilateral izquierdo es válido", () => {
+    expect(validateConfiguration(LEFT_MODULE_CONFIGURATION)).toEqual([]);
+    expect(configuredChannels(LEFT_MODULE_CONFIGURATION)).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(footAvailability(LEFT_MODULE_CONFIGURATION)).toEqual({ left: true, right: false, bilateral: false });
+    expect(footAvailability(SIMULATED_CONFIGURATION)).toEqual({ left: true, right: true, bilateral: true });
+    const cincoCanales = { ...SIMULATED_CONFIGURATION, channels: SIMULATED_CONFIGURATION.channels.slice(0, 5) };
+    expect(validateConfiguration(cincoCanales)).toEqual([]);
+  });
+
+  it("rechaza configuraciones vacías, desordenadas o con duplicados", () => {
+    const vacia = { ...SIMULATED_CONFIGURATION, channels: [] };
+    expect(validateConfiguration(vacia)).toContain("la configuración no declara ningún canal");
+
+    const desordenada = { ...SIMULATED_CONFIGURATION, channels: [...SIMULATED_CONFIGURATION.channels].reverse() };
+    expect(validateConfiguration(desordenada).some((e) => e.includes("fuera del orden"))).toBe(true);
 
     const duplicada = {
       ...SIMULATED_CONFIGURATION,

@@ -13,7 +13,9 @@ Estado: especificación para implementar. El formato binario, los UUID GATT y la
 
 Una sesión puede incluir varias capturas. Un reinicio no debe conservar silenciosamente el identificador de una captura anterior. La secuencia se incrementa al generar un registro, aunque luego no se transmita.
 
-## 2. Configuración de seis canales
+## 2. Posiciones del contrato y subconjunto configurado
+
+El contrato define seis posiciones lógicas. Una configuración concreta declara un **subconjunto** de ellas (de 1 a 6, en el orden de la tabla, sin repetir). Actualización del 3/11/2026: el prototipo físico es un **módulo unilateral izquierdo** (un ESP32, tres divisores FSR, configuración `ESP32-FSR-L-001`), por lo que declara `L_HEEL`, `L_MEDIAL` y `L_LATERAL`. Las posiciones no declaradas quedan «no disponibles» en todo el sistema: nunca se rellenan con ceros ni con valores copiados, las métricas que las requieren (reparto izquierda/derecha, asimetría por zona) se informan como no disponibles, y la interfaz las muestra como «n/d». La configuración simulada sigue declarando las seis.
 
 | Código de posición | Pie | Zona | Modelo anunciado |
 |---|---|---|---|
@@ -95,7 +97,7 @@ Implementar una función de validación en ejecución independiente de los tipos
 
 Comprobar versión, tipos, identificadores, configuración, canales, unidades, estados, números finitos y límites representacionales.
 
-Para la primera versión se esperan las seis posiciones, una vez cada una. Si falta una posición, rechazar el registro del conjunto válido, conservar evidencia en diagnóstico y generar un evento; no rellenarla con cero. Una política posterior de aceptación parcial requiere otra especificación versionada y sus pruebas. Un registro completo con una muestra read_error conserva las otras cinco lecturas válidas.
+Cada registro debe traer **exactamente las posiciones declaradas por su configuración**, una vez cada una (seis con la configuración simulada, tres con el módulo unilateral). Si falta una posición declarada, rechazar el registro del conjunto válido, conservar evidencia en diagnóstico y generar un evento; no rellenarla con cero. Una posición que la configuración no declara se rechaza con `channel_not_in_configuration`. No existe aceptación parcial dentro de una configuración. Un registro completo con una muestra read_error conserva las demás lecturas válidas.
 
 En la primera implementación, una sesión utiliza una única procedencia: physical o simulated. No mezclar ambas dentro de la misma sesión. Vincular las capturas con el dispositivo y la configuración autorizados al iniciar o reanudar la sesión; rechazar cambios inesperados. Un cambio físico deliberado de configuración exige cerrar la sesión e iniciar otra. Un reinicio con la misma configuración puede crear otra captura dentro de la sesión, dejando constancia de la discontinuidad.
 

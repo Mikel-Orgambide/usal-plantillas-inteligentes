@@ -44,9 +44,10 @@ static std::string info_json() {
   doc["firmware"] = cfg::FIRMWARE_VERSION;
   doc["raw_max"] = cfg::RAW_MAX;
   doc["period_us"] = cfg::SAMPLE_PERIOD_US;
-  doc["model"] = cfg::MODEL;
+  // `models`: lista paralela a `channels` (desde 0.3.0; antes había un `model` único).
   JsonArray ch = doc["channels"].to<JsonArray>();
-  for (uint8_t i = 0; i < cfg::CHANNEL_COUNT; i++) ch.add(cfg::CHANNEL_CODES[i]);
+  JsonArray models = doc["models"].to<JsonArray>();
+  for (uint8_t i = 0; i < cfg::CHANNEL_COUNT; i++) { ch.add(cfg::CHANNEL_CODES[i]); models.add(cfg::CHANNEL_MODELS[i]); }
   std::string out;
   serializeJson(doc, out);
   return out;
@@ -99,10 +100,11 @@ void notify_status(const char* event, const char* detail) {
   status_chr->notify();
 }
 
-// Registro binario little-endian (ADR 0006): u8 version, u16 boot, u16 n, u32 sequence, 6 × (u32 time_us, u16 value).
+// Registro binario little-endian (ADR 0006): u8 version, u16 boot, u16 n, u32 sequence,
+// CHANNEL_COUNT × (u32 time_us, u16 value). La app deduce la cantidad de canales de `info`.
 bool notify_record(const Record& r) {
   if (!measurement_chr || !is_connected) return false;
-  uint8_t buf[45];
+  uint8_t buf[9 + 6 * cfg::CHANNEL_COUNT];
   size_t p = 0;
   auto put16 = [&](uint16_t v) { buf[p++] = v & 0xFF; buf[p++] = v >> 8; };
   auto put32 = [&](uint32_t v) { for (int i = 0; i < 4; i++) buf[p++] = (v >> (8 * i)) & 0xFF; };

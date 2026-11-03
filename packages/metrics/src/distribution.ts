@@ -1,5 +1,5 @@
 import { CHANNEL_CODES, CHANNEL_POSITIONS, type ChannelCode } from "@plantillas/contract";
-import type { ChannelMetrics } from "./describe";
+import { isInstrumented, notInstrumented, type ChannelMetrics } from "./describe";
 
 /**
  * Distribución de la carga a partir de las métricas descriptivas por canal
@@ -7,8 +7,11 @@ import type { ChannelMetrics } from "./describe";
  * zona y variabilidad. Son proporciones entre medias de la señal original en
  * cuentas ADC, sin calibración: describen cómo se reparte la lectura entre
  * posiciones, no fuerza ni presión, y no constituyen un puntaje ni un
- * diagnóstico. Requieren las seis posiciones con lecturas válidas; si falta
- * alguna, el resultado es «no disponible» (nunca un porcentaje parcial).
+ * diagnóstico. Se calculan sobre las posiciones instrumentadas por la
+ * configuración: todas ellas deben tener lecturas válidas; si alguna falta,
+ * el resultado es «no disponible» (nunca un porcentaje parcial). Las
+ * proporciones bilaterales (izquierda/derecha, asimetría por zona) requieren
+ * ambos pies y quedan en `null` con un módulo unilateral.
  */
 
 export const DISTRIBUTION_VERSION = "dist-1.0";
@@ -27,8 +30,12 @@ export interface LoadDistribution {
   readonly asymmetry: Readonly<Record<Zone, number | null>>;
   /** Coeficiente de variación promedio (σ/media) de las seis posiciones; mayor = lecturas más cambiantes. */
   readonly variability: number | null;
-  /** Suma de las seis medias, en cuentas: base de las proporciones. */
+  /** Suma de las medias instrumentadas, en cuentas: base de las proporciones. */
   readonly total_mean: number | null;
+  /** Posiciones sobre las que se calculó (las instrumentadas por la configuración). */
+  readonly instrumented: readonly ChannelCode[];
+  /** `true` si ambos pies están instrumentados; si no, las proporciones bilaterales son `null`. */
+  readonly bilateral: boolean;
   readonly unavailable_reason?: string;
 }
 
@@ -36,44 +43,59 @@ const ZONE_OF: Record<ChannelCode, Zone> = {
   L_HEEL: "heel", R_HEEL: "heel", L_MEDIAL: "medial", R_MEDIAL: "medial", L_LATERAL: "lateral", R_LATERAL: "lateral",
 };
 
-function unavailable(reason: string): LoadDistribution {
+function unavailable(reason: string, instrumented: readonly ChannelCode[], bilateral: boolean): LoadDistribution {
   return {
     distribution_version: DISTRIBUTION_VERSION, left_share: null, right_share: null, forefoot_share: null, rearfoot_share: null,
-    asymmetry: { heel: null, medial: null, lateral: null }, variability: null, total_mean: null, unavailable_reason: reason,
+    asymmetry: { heel: null, medial: null, lateral: null }, variability: null, total_mean: null, instrumented, bilateral, unavailable_reason: reason,
   };
 }
 
-export function computeDistribution(metrics: Readonly<Record<ChannelCode, Pick<ChannelMetrics, "sample_mean" | "sample_sd_population" | "n_valid">>>): LoadDistribution {
+type DistributionInput = Readonly<Record<ChannelCode, Pick<ChannelMetrics, "sample_mean" | "sample_sd_population" | "n_valid" | "unavailable_reason">>>;
+
+/** Posiciones instrumentadas según las métricas: las que no llevan `NOT_INSTRUMENTED`. */
+export function instrumentedChannels(metrics: Readonly<Partial<Record<ChannelCode, Pick<ChannelMetrics, "unavailable_reason">>>>): ChannelCode[] {
+  return CHANNEL_CODES.filter((c) => isInstrumented(metrics[c]));
+}
+
+export function computeDistribution(metrics: DistributionInput): LoadDistribution {
+  const instrumented = instrumentedChannels(metrics);
+  const feet = new Set(instrumented.map((c) => CHANNEL_POSITIONS[c].foot));
+  const bilateral = feet.has("left") && feet.has("right");
+  if (instrumented.length === 0) return unavailable("ninguna posición instrumentada", instrumented, bilateral);
   const means: Partial<Record<ChannelCode, number>> = {};
-  for (const code of CHANNEL_CODES) {
+  for (const code of instrumented) {
     const m = metrics[code];
-    if (!m || m.sample_mean === null || !Number.isFinite(m.sample_mean) || m.n_valid === 0) return unavailable(`sin lecturas válidas en ${code}`);
+    if (!m || m.sample_mean === null || !Number.isFinite(m.sample_mean) || m.n_valid === 0) return unavailable(`sin lecturas válidas en ${code}`, instrumented, bilateral);
     means[code] = m.sample_mean;
   }
   const mean = (code: ChannelCode) => means[code]!;
-  const total = CHANNEL_CODES.reduce((s, c) => s + mean(c), 0);
-  if (total <= 0) return unavailable("suma de medias nula");
+  const total = instrumented.reduce((s, c) => s + mean(c), 0);
+  if (total <= 0) return unavailable("suma de medias nula", instrumented, bilateral);
 
-  const left = CHANNEL_CODES.filter((c) => CHANNEL_POSITIONS[c].foot === "left").reduce((s, c) => s + mean(c), 0);
-  const fore = CHANNEL_CODES.filter((c) => ZONE_OF[c] !== "heel").reduce((s, c) => s + mean(c), 0);
+  const left = instrumented.filter((c) => CHANNEL_POSITIONS[c].foot === "left").reduce((s, c) => s + mean(c), 0);
+  const fore = instrumented.filter((c) => ZONE_OF[c] !== "heel").reduce((s, c) => s + mean(c), 0);
+  const hasHeel = instrumented.some((c) => ZONE_OF[c] === "heel");
+  const hasFore = instrumented.some((c) => ZONE_OF[c] !== "heel");
   const asym = (zone: Zone): number | null => {
-    const l = CHANNEL_CODES.find((c) => ZONE_OF[c] === zone && CHANNEL_POSITIONS[c].foot === "left")!;
-    const r = CHANNEL_CODES.find((c) => ZONE_OF[c] === zone && CHANNEL_POSITIONS[c].foot === "right")!;
+    const l = instrumented.find((c) => ZONE_OF[c] === zone && CHANNEL_POSITIONS[c].foot === "left");
+    const r = instrumented.find((c) => ZONE_OF[c] === zone && CHANNEL_POSITIONS[c].foot === "right");
+    if (!l || !r) return null;
     const sum = mean(l) + mean(r);
     return sum > 0 ? (mean(l) - mean(r)) / sum : null;
   };
   let cvSum = 0, cvN = 0;
-  for (const code of CHANNEL_CODES) {
+  for (const code of instrumented) {
     const sd = metrics[code].sample_sd_population;
     if (sd !== null && mean(code) > 0) { cvSum += sd / mean(code); cvN += 1; }
   }
   return {
     distribution_version: DISTRIBUTION_VERSION,
-    left_share: left / total, right_share: 1 - left / total,
-    forefoot_share: fore / total, rearfoot_share: 1 - fore / total,
+    left_share: bilateral ? left / total : null, right_share: bilateral ? 1 - left / total : null,
+    forefoot_share: hasHeel && hasFore ? fore / total : null, rearfoot_share: hasHeel && hasFore ? 1 - fore / total : null,
     asymmetry: { heel: asym("heel"), medial: asym("medial"), lateral: asym("lateral") },
-    variability: cvN === CHANNEL_CODES.length ? cvSum / cvN : null,
+    variability: cvN === instrumented.length ? cvSum / cvN : null,
     total_mean: total,
+    instrumented, bilateral,
   };
 }
 
@@ -82,7 +104,8 @@ export function computeDistribution(metrics: Readonly<Record<ChannelCode, Pick<C
  * ponderando cada media por su cantidad de lecturas válidas: equivale a la
  * media de todas las lecturas juntas. La desviación combinada usa la ley de
  * varianza total (dentro + entre ventanas). Ventanas sin lecturas válidas en
- * un canal no aportan a ese canal.
+ * un canal no aportan a ese canal. Un canal que ninguna ventana instrumenta
+ * queda «no instrumentado»; si lo instrumenta al menos una, se combina lo que hay.
  */
 export function combineChannelMetrics(windows: readonly Readonly<Record<ChannelCode, ChannelMetrics>>[]): Readonly<Record<ChannelCode, ChannelMetrics>> {
   const out = {} as Record<ChannelCode, ChannelMetrics>;
@@ -90,9 +113,11 @@ export function combineChannelMetrics(windows: readonly Readonly<Record<ChannelC
     let n_received = 0, n_valid = 0, sum = 0, max = Number.NEGATIVE_INFINITY;
     const parts: { n: number; mean: number; sd: number }[] = [];
     let unit: ChannelMetrics["unit"] = "adc_count";
+    let instrumented = false;
     for (const w of windows) {
       const m = w[code];
-      if (!m) continue;
+      if (!m || !isInstrumented(m)) continue;
+      instrumented = true;
       unit = m.unit;
       n_received += m.n_received;
       if (m.sample_mean === null || m.n_valid === 0) continue;
@@ -101,6 +126,7 @@ export function combineChannelMetrics(windows: readonly Readonly<Record<ChannelC
       if (m.sample_max !== null && m.sample_max > max) max = m.sample_max;
       parts.push({ n: m.n_valid, mean: m.sample_mean, sd: m.sample_sd_population ?? 0 });
     }
+    if (!instrumented) { out[code] = notInstrumented(unit); continue; }
     if (n_valid === 0) {
       out[code] = { metric_version: "desc-1.0", unit, n_received, n_valid: 0, n_invalid: n_received, sample_mean: null, sample_max: null, sample_sd_population: null, unavailable_reason: n_received === 0 ? "sin lecturas" : "sin lecturas válidas" };
       continue;
@@ -114,8 +140,8 @@ export function combineChannelMetrics(windows: readonly Readonly<Record<ChannelC
 }
 
 /**
- * Carga acumulada aproximada de una ventana: suma de las medias de las seis
- * posiciones multiplicada por el tiempo con lecturas válidas (período × n).
+ * Carga acumulada aproximada de una ventana: suma de las medias de las
+ * posiciones instrumentadas multiplicada por el tiempo con lecturas válidas (período × n).
  * Unidad: cuentas·segundo. Es una aproximación en unidades crudas (sin
  * calibración no se convierte a N·s) y sólo sirve para comparar ventanas con
  * la misma configuración.

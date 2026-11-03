@@ -1,5 +1,5 @@
 import { CHANNEL_CODES, type ChannelCode } from "@plantillas/contract";
-import type { ChannelMetrics } from "./describe";
+import { isInstrumented, type ChannelMetrics } from "./describe";
 import type { CaptureMetrics } from "./compute";
 
 /**
@@ -66,9 +66,13 @@ export interface ChannelDifference {
   readonly delta_mean_ratio: number | null;
 }
 
-/** Diferencias por canal B − A. Solo tiene sentido si `assessComparability` dio compatible. */
+/**
+ * Diferencias por canal B − A, sólo sobre las posiciones instrumentadas en
+ * ambos lados (con la misma configuración son las mismas). Solo tiene sentido
+ * si `assessComparability` dio compatible.
+ */
 export function compareMetrics(a: CaptureMetrics, b: CaptureMetrics): ChannelDifference[] {
-  return CHANNEL_CODES.map((channel) => {
+  return CHANNEL_CODES.filter((channel) => isInstrumented(a[channel]) && isInstrumented(b[channel])).map((channel) => {
     const ma = a[channel], mb = b[channel];
     const both = ma.sample_mean !== null && mb.sample_mean !== null;
     const delta_mean = both ? mb.sample_mean! - ma.sample_mean! : null;

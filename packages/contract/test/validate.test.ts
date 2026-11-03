@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIMULATED_CONFIGURATION, validateSourceRecord, type SourceRecord } from "../src/index";
+import { LEFT_MODULE_CONFIGURATION, SIMULATED_CONFIGURATION, validateSourceRecord, type SourceRecord } from "../src/index";
 import { clone, loadFixture } from "./fixtures";
 
 const config = SIMULATED_CONFIGURATION;
@@ -72,6 +72,25 @@ describe("validación del contrato v1.0", () => {
     const desconocido = clone(loadFixture("registro_valido.json")) as { samples: { channel_id: string }[] };
     desconocido.samples[2]!.channel_id = "L_TOE";
     expectErrorCodes(desconocido, "unknown_channel", "missing_channel");
+  });
+
+  it("C06b - configuración unilateral: exige exactamente sus tres canales, ni más ni menos", () => {
+    const base = clone(loadFixture("registro_valido.json")) as SourceRecord & { samples: unknown[] };
+    const unilateral = { ...base, device_id: LEFT_MODULE_CONFIGURATION.device_id, configuration_id: LEFT_MODULE_CONFIGURATION.configuration_id };
+    const tres = { ...unilateral, samples: base.samples.slice(0, 3) };
+    const ok = validateSourceRecord(tres, LEFT_MODULE_CONFIGURATION);
+    expect(ok.ok, JSON.stringify(ok)).toBe(true);
+    if (ok.ok) expect(ok.record.samples.map((s) => s.channel_id)).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+
+    // Un registro de seis canales contra la configuración de tres: el pie derecho no está declarado.
+    const seis = validateSourceRecord(unilateral, LEFT_MODULE_CONFIGURATION);
+    expect(seis.ok).toBe(false);
+    if (!seis.ok) expect(seis.errors.map((e) => e.code)).toContain("channel_not_in_configuration");
+
+    const dos = { ...unilateral, samples: base.samples.slice(0, 2) };
+    const faltante = validateSourceRecord(dos, LEFT_MODULE_CONFIGURATION);
+    expect(faltante.ok).toBe(false);
+    if (!faltante.ok) expect(faltante.errors.map((e) => e.code)).toContain("missing_channel");
   });
 
   it("C07 - campos no finitos o fuera del tipo admitido: error representacional", () => {

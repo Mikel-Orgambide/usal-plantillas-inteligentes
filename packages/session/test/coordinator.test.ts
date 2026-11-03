@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIMULATED_CONFIGURATION } from "@plantillas/contract";
+import { LEFT_MODULE_CONFIGURATION, SIMULATED_CONFIGURATION, type AcquisitionConfiguration } from "@plantillas/contract";
 import { SessionRepository, migrate } from "@plantillas/storage";
 import { NodeSqliteDriver } from "@plantillas/storage/node";
 import { SessionCoordinator, recoverOpenSessions, type Clock } from "../src/index";
@@ -11,15 +11,16 @@ class TestClock implements Clock {
   monotonicMs(): number { return this.mono; }
 }
 
-async function setup(opts: { lateDataWindowMs?: number } = {}) {
+async function setup(opts: { lateDataWindowMs?: number; configuration?: AcquisitionConfiguration } = {}) {
   const db = new NodeSqliteDriver();
   await migrate(db);
   const repository = new SessionRepository(db);
   await repository.ensureLocalUser();
-  const source = new ManualSource();
+  const configuration = opts.configuration ?? SIMULATED_CONFIGURATION;
+  const source = new ManualSource(configuration);
   const clock = new TestClock();
   const coordinator = new SessionCoordinator({
-    repository, source, configuration: SIMULATED_CONFIGURATION, userId: "local",
+    repository, source, configuration, userId: "local",
     activity: "prueba", context: "ctx", sessionId: "S1", clock, batchSize: 5, maxLatencyMs: 10, ...opts,
   });
   return { db, repository, source, clock, coordinator };
@@ -28,6 +29,35 @@ async function setup(opts: { lateDataWindowMs?: number } = {}) {
 const tick = () => new Promise((r) => setTimeout(r, 30));
 
 describe("SessionCoordinator", () => {
+  it("módulo unilateral: el pie derecho queda «no disponible» (nunca cero) y los tres canales se guardan", async () => {
+    const cfg = LEFT_MODULE_CONFIGURATION;
+    const { repository, source, coordinator } = await setup({ configuration: cfg });
+    const before = coordinator.snapshot().values;
+    expect(before.L_HEEL.status).toBe("stale");
+    expect(before.R_HEEL).toEqual({ value: null, status: "unavailable" });
+    await coordinator.start();
+    source.event({ type: "capture_started", at_us: 0, capture_id: "CAP-L" });
+    source.emit(payload("CAP-L", 0, {}, cfg));
+    source.emit(payload("CAP-L", 1, {}, cfg));
+    await tick();
+    const during = coordinator.snapshot().values;
+    expect(during.L_HEEL.status).toBe("ok");
+    expect(during.L_LATERAL.value).toBe(103);
+    expect(during.R_MEDIAL).toEqual({ value: null, status: "unavailable" });
+    source.event({ type: "disconnected", at_us: 40_000, reason: "x" });
+    await tick();
+    // Tras un corte las posiciones configuradas pasan a stale; las no configuradas siguen unavailable.
+    const after = coordinator.snapshot().values;
+    expect(after.L_HEEL.status).toBe("stale");
+    expect(after.R_HEEL.status).toBe("unavailable");
+    source.event({ type: "reconnected", at_us: 100_000 });
+    const result = await coordinator.stop();
+    expect(result.state).toBe("completed");
+    expect(result.stats.accepted).toBe(2);
+    const session = await repository.getSession("S1");
+    expect(session?.state).toBe("completed");
+  });
+
   it("recorrido normal: prepared → recording → finalizing → completed, con registros y eventos persistidos", async () => {
     const { repository, source, clock, coordinator } = await setup();
     const states: string[] = [];

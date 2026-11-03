@@ -1,8 +1,8 @@
-export { METRIC_VERSION, describeFromAggregates, describeValues } from "./describe";
+export { METRIC_VERSION, NOT_INSTRUMENTED, describeFromAggregates, describeValues, isInstrumented, notInstrumented } from "./describe";
 export type { ChannelMetrics, ReadingLike } from "./describe";
 export { computeCaptureMetrics } from "./compute";
 export type { CaptureMetrics } from "./compute";
 export { assessComparability, compareMetrics } from "./compare";
 export type { Caveat, ChannelDifference, Comparability, ComparisonSide, Requirement } from "./compare";
-export { DISTRIBUTION_VERSION, approximateLoad, combineChannelMetrics, computeDistribution } from "./distribution";
+export { DISTRIBUTION_VERSION, approximateLoad, combineChannelMetrics, computeDistribution, instrumentedChannels } from "./distribution";
 export type { LoadDistribution, Zone } from "./distribution";

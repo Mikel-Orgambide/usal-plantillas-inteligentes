@@ -1,9 +1,13 @@
 /**
  * Configuración de canales del contrato v1.0.
  *
- * Seis posiciones instrumentadas: un FSR406 en cada talón y dos FSR402 en el
- * antepié (medial y lateral) de cada pie. El código de posición identifica el
- * lugar lógico; la unidad física instalada se identifica por separado mediante
+ * Seis posiciones lógicas: un FSR406 en cada talón y dos FSR402 en el antepié
+ * (medial y lateral) de cada pie. Una configuración concreta declara un
+ * subconjunto de esas posiciones (de 1 a 6, en el orden del contrato): el
+ * módulo unilateral del 3/11/2026 instrumenta sólo el pie izquierdo. Las
+ * posiciones no declaradas quedan «no disponibles»; nunca se rellenan con
+ * ceros ni con valores copiados. El código de posición identifica el lugar
+ * lógico; la unidad física instalada se identifica por separado mediante
  * `installation_id` dentro de cada configuración.
  */
 
@@ -105,19 +109,68 @@ export const SIMULATED_CONFIGURATION: AcquisitionConfiguration = {
   })),
 };
 
-/** Comprueba que una configuración declare las seis posiciones exactamente una vez. */
+/**
+ * Configuración de referencia del módulo unilateral izquierdo (3/11/2026): un
+ * ESP32 con tres divisores FSR en el pie izquierdo. Sirve de fixture y de
+ * ejemplo de subconjunto; la configuración real la anuncia el dispositivo.
+ */
+export const LEFT_MODULE_CONFIGURATION: AcquisitionConfiguration = {
+  configuration_id: "ESP32-FSR-L-001",
+  device_id: "ESP32-000000",
+  source: "physical",
+  raw_range: { min: 0, max: 4095, resolution_bits: 12 },
+  description: "Módulo unilateral izquierdo: 3 divisores FSR (2,2 kΩ talón, 4,7 kΩ antepié), ADC 12 bits",
+  channels: (["L_HEEL", "L_MEDIAL", "L_LATERAL"] as const).map((code) => ({
+    code,
+    installation_id: `ESP32-FSR-L-001-${code}`,
+    model: CHANNEL_POSITIONS[code].expected_model,
+    unit: RAW_UNIT,
+  })),
+};
+
+/** Códigos de posición declarados por una configuración, en el orden del contrato. */
+export function configuredChannels(config: Pick<AcquisitionConfiguration, "channels">): ChannelCode[] {
+  const declared = new Set(config.channels.map((ch) => ch.code));
+  return CHANNEL_CODES.filter((code) => declared.has(code));
+}
+
+/** Pies con al menos una posición instrumentada en la configuración. */
+export interface FootAvailability {
+  readonly left: boolean;
+  readonly right: boolean;
+  /** Ambos pies instrumentados: condición de las métricas bilaterales. */
+  readonly bilateral: boolean;
+}
+
+export function footAvailability(config: Pick<AcquisitionConfiguration, "channels">): FootAvailability {
+  const codes = configuredChannels(config);
+  const left = codes.some((c) => CHANNEL_POSITIONS[c].foot === "left");
+  const right = codes.some((c) => CHANNEL_POSITIONS[c].foot === "right");
+  return { left, right, bilateral: left && right };
+}
+
+/**
+ * Comprueba que una configuración declare entre 1 y 6 posiciones conocidas, sin
+ * repetir y en el orden del contrato. No exige las seis: una configuración
+ * unilateral es válida y las posiciones ausentes quedan «no disponibles».
+ */
 export function validateConfiguration(config: AcquisitionConfiguration): string[] {
   const errors: string[] = [];
   const seen = new Set<string>();
+  let lastIndex = -1;
+  if (config.channels.length === 0) errors.push("la configuración no declara ningún canal");
   for (const channel of config.channels) {
-    if (!isChannelCode(channel.code)) errors.push(`código de canal desconocido: ${String(channel.code)}`);
+    if (!isChannelCode(channel.code)) {
+      errors.push(`código de canal desconocido: ${String(channel.code)}`);
+      continue;
+    }
     if (seen.has(channel.code)) errors.push(`código de canal duplicado: ${channel.code}`);
     seen.add(channel.code);
+    const index = CHANNEL_CODES.indexOf(channel.code);
+    if (index < lastIndex) errors.push(`canal ${channel.code} fuera del orden del contrato`);
+    lastIndex = Math.max(lastIndex, index);
     if (!channel.installation_id) errors.push(`canal ${channel.code} sin installation_id`);
     if (channel.unit !== RAW_UNIT) errors.push(`canal ${channel.code} con unidad no admitida: ${channel.unit}`);
-  }
-  for (const code of CHANNEL_CODES) {
-    if (!seen.has(code)) errors.push(`falta el canal ${code}`);
   }
   const { min, max, resolution_bits } = config.raw_range;
   if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHANNEL_CODES, type ChannelCode } from "@plantillas/contract";
-import { METRIC_VERSION, assessComparability, compareMetrics, describeValues, type CaptureMetrics, type ComparisonSide } from "../src/index";
+import { METRIC_VERSION, assessComparability, compareMetrics, describeValues, notInstrumented, type CaptureMetrics, type ComparisonSide } from "../src/index";
 
 const side = (over: Partial<ComparisonSide> = {}): ComparisonSide => ({
   configuration_id: "SIM-CONFIG-001", source: "simulated", unit: "adc_count", metric_version: METRIC_VERSION, activity: "caminata", context: null, capture_count: 1, ...over,
@@ -11,6 +11,18 @@ function metricsOf(values: Partial<Record<ChannelCode, number[]>>): CaptureMetri
   for (const c of CHANNEL_CODES) out[c] = describeValues((values[c] ?? []).map((v) => ({ raw_value: v, status: "ok" as const })));
   return out;
 }
+
+describe("compareMetrics con módulo unilateral", () => {
+  it("sólo compara las posiciones instrumentadas en ambos lados", () => {
+    const left = (v: number): CaptureMetrics => ({
+      ...metricsOf({ L_HEEL: [v], L_MEDIAL: [v], L_LATERAL: [v] }),
+      R_HEEL: notInstrumented(), R_MEDIAL: notInstrumented(), R_LATERAL: notInstrumented(),
+    });
+    const d = compareMetrics(left(100), left(130));
+    expect(d.map((x) => x.channel)).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(d[0]!.delta_mean).toBe(30);
+  });
+});
 
 describe("assessComparability", () => {
   it("compatibles con mismas configuración, unidad, procedencia y versión; sin advertencias", () => {

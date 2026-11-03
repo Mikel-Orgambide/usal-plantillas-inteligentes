@@ -1,25 +1,35 @@
 import { CHANNEL_CODES, type ChannelCode } from "@plantillas/contract";
 import type { ResultRow, SessionRepository } from "@plantillas/storage";
-import { METRIC_VERSION, describeFromAggregates, type ChannelMetrics } from "./describe";
+import { METRIC_VERSION, describeFromAggregates, notInstrumented, type ChannelMetrics } from "./describe";
 
 /**
  * Calcula (o recupera, si ya existen con esta versión) las métricas por canal
  * de una captura y las guarda en `result`. Una ventana = una captura: las
  * capturas de una sesión no se combinan (los reinicios interrumpen el tiempo).
+ *
+ * Las seis posiciones del contrato están siempre presentes en el resultado;
+ * las que la configuración no instrumenta llevan `unavailable_reason =
+ * NOT_INSTRUMENTED` y no se guardan como filas (no midieron nada).
  */
 export type CaptureMetrics = Readonly<Record<ChannelCode, ChannelMetrics>>;
 
-export async function computeCaptureMetrics(repo: SessionRepository, captureId: number, nowIso = () => new Date().toISOString()): Promise<CaptureMetrics> {
+export async function computeCaptureMetrics(
+  repo: SessionRepository,
+  captureId: number,
+  nowIso = () => new Date().toISOString(),
+  channels: readonly ChannelCode[] = CHANNEL_CODES,
+): Promise<CaptureMetrics> {
   const existing = await repo.getResults(captureId, METRIC_VERSION);
-  if (existing.length === CHANNEL_CODES.length) return fromRows(existing);
+  if (existing.length === channels.length && channels.every((c) => existing.some((r) => r.channel_code === c))) return fromRows(existing, channels);
 
   const aggregates = await repo.getChannelAggregates(captureId);
   const computed: Record<ChannelCode, ChannelMetrics> = {} as Record<ChannelCode, ChannelMetrics>;
   for (const code of CHANNEL_CODES) {
+    if (!channels.includes(code)) { computed[code] = notInstrumented(); continue; }
     const a = aggregates.find((x) => x.channel_code === code) ?? { channel_code: code, n_received: 0, n_valid: 0, sum: null, sum_sq: null, max: null };
     computed[code] = describeFromAggregates(a);
   }
-  await repo.saveResults(captureId, CHANNEL_CODES.map((code) => ({
+  await repo.saveResults(captureId, channels.map((code) => ({
     channel_code: code,
     metric_version: METRIC_VERSION,
     unit: computed[code].unit,
@@ -34,9 +44,10 @@ export async function computeCaptureMetrics(repo: SessionRepository, captureId: 
   return computed;
 }
 
-function fromRows(rows: ResultRow[]): CaptureMetrics {
+function fromRows(rows: ResultRow[], channels: readonly ChannelCode[]): CaptureMetrics {
   const out = {} as Record<ChannelCode, ChannelMetrics>;
   for (const code of CHANNEL_CODES) {
+    if (!channels.includes(code)) { out[code] = notInstrumented(); continue; }
     const r = rows.find((x) => x.channel_code === code)!;
     out[code] = {
       metric_version: METRIC_VERSION,

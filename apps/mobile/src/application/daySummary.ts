@@ -147,7 +147,13 @@ export function dayLabel(day: string): string {
 
 /** Texto descriptivo, no evaluativo, de la distribución del día. */
 export function describeDistribution(d: LoadDistribution): string {
-  if (d.left_share === null || d.forefoot_share === null) return `No disponible: ${d.unavailable_reason ?? "faltan lecturas válidas"}.`;
+  if (d.unavailable_reason) return `No disponible: ${d.unavailable_reason}.`;
+  if (!d.bilateral) {
+    const foot = d.instrumented.some((c) => c.startsWith("L_")) ? "izquierdo" : "derecho";
+    const f = d.forefoot_share === null ? null : Math.round(d.forefoot_share * 100);
+    return `Sólo el pie ${foot} está instrumentado en esta configuración.${f === null ? "" : ` La lectura se reparte ${f}/${100 - f} entre antepié y talón de ese pie.`} El reparto entre pies y la asimetría requieren ambos pies.`;
+  }
+  if (d.left_share === null || d.forefoot_share === null) return "No disponible: faltan lecturas válidas.";
   const l = Math.round(d.left_share * 100);
   const f = Math.round(d.forefoot_share * 100);
   const zones: Array<[string, number | null]> = [["talón", d.asymmetry.heel], ["medial", d.asymmetry.medial], ["lateral", d.asymmetry.lateral]];

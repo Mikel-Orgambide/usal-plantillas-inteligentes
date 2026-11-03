@@ -144,9 +144,12 @@ export default function CompareScreen() {
             B − A sobre la media de la señal original, en cuentas ADC y en % de A. Son diferencias de lectura, no un juicio de rendimiento.
           </Text>
           <Card>
-            {POSITION_ORDER.map((code, i) => (
-              <DifferenceRow key={code} d={differences.find((x) => x.channel === code)!} last={i === POSITION_ORDER.length - 1} />
+            {POSITION_ORDER.filter((code) => differences.some((x) => x.channel === code)).map((code, i, list) => (
+              <DifferenceRow key={code} d={differences.find((x) => x.channel === code)!} last={i === list.length - 1} />
             ))}
+            {differences.length < POSITION_ORDER.length ? (
+              <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>Las posiciones no instrumentadas en esta configuración no se comparan.</Text>
+            ) : null}
           </Card>
         </>
       ) : compatible ? (
@@ -168,8 +171,12 @@ export default function CompareScreen() {
             ))}
           </View>
           <View style={{ marginTop: space[3], gap: space[4] }}>
-            <LineChart series={[{ name: "A · izq.", values: da.series[lc] }, { name: "B · izq.", values: db.series[lc] }]} startLabel="0:00" endLabel="fin" label="Pie izquierdo · alineadas por tiempo de sesión" />
-            <LineChart series={[{ name: "A · der.", values: da.series[rc] }, { name: "B · der.", values: db.series[rc] }]} startLabel="0:00" endLabel="fin" label="Pie derecho · alineadas por tiempo de sesión" />
+            {da.series[lc].length > 0 || db.series[lc].length > 0 ? (
+              <LineChart series={[{ name: "A · izq.", values: da.series[lc] }, { name: "B · izq.", values: db.series[lc] }]} startLabel="0:00" endLabel="fin" label="Pie izquierdo · alineadas por tiempo de sesión" />
+            ) : <Text variant="caption" color={colors.textSecondary}>Pie izquierdo no instrumentado en esta configuración.</Text>}
+            {da.series[rc].length > 0 || db.series[rc].length > 0 ? (
+              <LineChart series={[{ name: "A · der.", values: da.series[rc] }, { name: "B · der.", values: db.series[rc] }]} startLabel="0:00" endLabel="fin" label="Pie derecho · alineadas por tiempo de sesión" />
+            ) : <Text variant="caption" color={colors.textSecondary}>Pie derecho no instrumentado en esta configuración.</Text>}
           </View>
         </>
       ) : null}

@@ -53,13 +53,16 @@ export default function RecordingScreen() {
   const { snapshot, live, result } = active;
   const stale = snapshot.state === "interrupted";
   const v = snapshot.values;
-  const left = { heel: v.L_HEEL.value, medial: v.L_MEDIAL.value, lateral: v.L_LATERAL.value };
-  const right = { heel: v.R_HEEL.value, medial: v.R_MEDIAL.value, lateral: v.R_LATERAL.value };
+  // Una posición no instrumentada por la configuración se muestra como «n/d», nunca como cero.
+  const fv = (c: ChannelCode): number | null | "unavailable" => (v[c].status === "unavailable" ? "unavailable" : v[c].value);
+  const left = { heel: fv("L_HEEL"), medial: fv("L_MEDIAL"), lateral: fv("L_LATERAL") };
+  const right = { heel: fv("R_HEEL"), medial: fv("R_MEDIAL"), lateral: fv("R_LATERAL") };
   const [lc, rc] = ZONE_CHANNELS[zone];
   const series = [
-    { name: "Izquierdo", values: liveSeries(live, lc), stale },
-    { name: "Derecho", values: liveSeries(live, rc), stale },
+    ...(v[lc].status !== "unavailable" ? [{ name: "Izquierdo", values: liveSeries(live, lc), stale }] : []),
+    ...(v[rc].status !== "unavailable" ? [{ name: "Derecho", values: liveSeries(live, rc), stale }] : []),
   ];
+  const feetLabel = series.length === 2 ? "izquierdo y derecho" : v[lc].status !== "unavailable" ? "izquierdo · derecho no instrumentado" : "derecho · izquierdo no instrumentado";
   const rate = snapshot.durationMs > 0 ? snapshot.stats.accepted / (snapshot.durationMs / 1000) : 0;
 
   const finish = async () => {
@@ -132,7 +135,7 @@ export default function RecordingScreen() {
         ))}
       </View>
       <View style={{ marginTop: space[3] }}>
-        <LineChart series={series} startLabel="−10 s" endLabel="ahora" label={`${ZONE_LABEL[zone]} · izquierdo y derecho · últimos 10 segundos${snapshot.stats.gaps ? ` · ${snapshot.stats.gaps} hueco(s)` : ""}`} />
+        <LineChart series={series} startLabel="−10 s" endLabel="ahora" label={`${ZONE_LABEL[zone]} · ${feetLabel} · últimos 10 segundos${snapshot.stats.gaps ? ` · ${snapshot.stats.gaps} hueco(s)` : ""}`} />
       </View>
 
       <View style={styles.counters}>

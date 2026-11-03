@@ -1,6 +1,7 @@
 import {
   CHANNEL_CODES,
   classifySequence,
+  configuredChannels,
   normalizeRecord,
   validateSourceRecord,
   type AcquisitionConfiguration,
@@ -40,7 +41,13 @@ export interface CoordinatorOptions {
   readonly maxLatencyMs?: number;
 }
 
-export type ChannelValue = { readonly value: number | null; readonly status: "ok" | "read_error" | "stale" };
+/**
+ * Último valor conocido de una posición.
+ * - `ok` / `read_error`: lectura recibida en el último registro.
+ * - `stale`: la posición está instrumentada pero no hay registro reciente (antes del primero o tras un corte).
+ * - `unavailable`: la posición no forma parte de la configuración (p. ej. pie derecho en el módulo unilateral). Nunca se representa con cero.
+ */
+export type ChannelValue = { readonly value: number | null; readonly status: "ok" | "read_error" | "stale" | "unavailable" };
 
 export interface SessionStats {
   readonly received: number;
@@ -79,8 +86,13 @@ export interface SessionResult {
 
 export type SnapshotListener = (snapshot: SessionSnapshot) => void;
 
-const emptyValues = (): Record<ChannelCode, ChannelValue> =>
-  Object.fromEntries(CHANNEL_CODES.map((c) => [c, { value: null, status: "stale" }])) as Record<ChannelCode, ChannelValue>;
+/** Valores iniciales: `stale` para las posiciones configuradas, `unavailable` para el resto. */
+const emptyValues = (config: AcquisitionConfiguration): Record<ChannelCode, ChannelValue> => {
+  const configured = new Set(configuredChannels(config));
+  return Object.fromEntries(
+    CHANNEL_CODES.map((c) => [c, { value: null, status: configured.has(c) ? "stale" : "unavailable" }]),
+  ) as Record<ChannelCode, ChannelValue>;
+};
 
 const emptyStats = (): SessionStats => ({
   received: 0, accepted: 0, rejected: 0, duplicates: 0, gaps: 0, outOfOrder: 0, lateRejected: 0,
@@ -100,7 +112,7 @@ export class SessionCoordinator {
   private listeners = new Set<SnapshotListener>();
   private unsubscribe: (() => void) | undefined;
 
-  private values = emptyValues();
+  private values: Record<ChannelCode, ChannelValue>;
   private stats = emptyStats();
   private lastEvent: string | undefined;
   private lastError: string | undefined;
@@ -129,6 +141,7 @@ export class SessionCoordinator {
     this.source = opts.source;
     this.config = opts.configuration;
     this.clock = opts.clock ?? systemClock;
+    this.values = emptyValues(this.config);
   }
 
   get currentState(): SessionState {
@@ -340,7 +353,7 @@ export class SessionCoordinator {
   }
 
   private updateValues(rec: SourceRecord): void {
-    const v = emptyValues();
+    const v = emptyValues(this.config);
     for (const smp of rec.samples) v[smp.channel_id] = { value: smp.raw_value, status: smp.status };
     this.values = v;
   }
@@ -390,7 +403,7 @@ export class SessionCoordinator {
 
   private markStale(): void {
     const v = { ...this.values };
-    for (const c of CHANNEL_CODES) v[c] = { ...v[c], status: "stale" };
+    for (const c of CHANNEL_CODES) if (v[c].status !== "unavailable") v[c] = { ...v[c], status: "stale" };
     this.values = v;
   }
 }

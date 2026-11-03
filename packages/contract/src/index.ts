@@ -2,12 +2,16 @@ export {
   CHANNEL_CODES,
   CHANNEL_POSITIONS,
   RAW_UNIT,
+  LEFT_MODULE_CONFIGURATION,
   SIMULATED_CONFIGURATION,
+  configuredChannels,
+  footAvailability,
   isChannelCode,
   validateConfiguration,
 } from "./channels";
 export type {
   AcquisitionConfiguration,
+  FootAvailability,
   ChannelCode,
   ChannelDefinition,
   ChannelPosition,

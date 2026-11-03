@@ -3,10 +3,12 @@ import { SIMULATED_CONFIGURATION, FORMAT_VERSION } from "@plantillas/contract";
 
 /** Fuente controlada a mano para pruebas deterministas del coordinador. */
 export class ManualSource implements DataSource {
-  readonly configuration: AcquisitionConfiguration = SIMULATED_CONFIGURATION;
+  readonly configuration: AcquisitionConfiguration;
   readonly calls: string[] = [];
   private listeners = new Set<SourceListener>();
   failStop = false;
+
+  constructor(configuration: AcquisitionConfiguration = SIMULATED_CONFIGURATION) { this.configuration = configuration; }
 
   subscribe(l: SourceListener): () => void {
     this.listeners.add(l);
@@ -23,13 +25,18 @@ export class ManualSource implements DataSource {
   event(e: SourceEvent): void { for (const l of this.listeners) l.onEvent(e); }
 }
 
-export function payload(captureId: string, sequence: number, overrides: Partial<Record<string, unknown>> = {}): unknown {
-  const codes = ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"];
+export function payload(
+  captureId: string,
+  sequence: number,
+  overrides: Partial<Record<string, unknown>> = {},
+  configuration: AcquisitionConfiguration = SIMULATED_CONFIGURATION,
+): unknown {
+  const codes = configuration.channels.map((c) => c.code);
   return {
     format_version: FORMAT_VERSION,
-    device_id: "SIM-001",
+    device_id: configuration.device_id,
     capture_id: captureId,
-    configuration_id: "SIM-CONFIG-001",
+    configuration_id: configuration.configuration_id,
     sequence,
     samples: codes.map((c, i) => ({ channel_id: c, time_us: sequence * 20_000 + i * 400, raw_value: 100 + sequence + i, unit: "adc_count", status: "ok" })),
     ...overrides,

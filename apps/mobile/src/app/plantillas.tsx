@@ -91,7 +91,7 @@ export default function DeviceScreen() {
               {last ? <ListRow title={last.name} subtitle={`Última conectada · ${last.id}`} onPress={device.connecting ? undefined : () => void connect(last)} /> : null}
               <Card title="Para conectar">
                 <View style={{ gap: space[2] }}>
-                  {["Encendé la placa (USB o batería) y acercala al teléfono.", "Tocá Buscar plantillas y elegí la que aparezca.", "La app lee la configuración de la placa y reconoce las seis posiciones.", "Mientras estén conectadas, las sesiones nuevas usan las plantillas en lugar del simulador."].map((t, i) => (
+                  {["Encendé la placa (USB o batería) y acercala al teléfono.", "Tocá Buscar plantillas y elegí la que aparezca.", "La app lee la configuración de la placa y reconoce las posiciones que instrumenta (tres por pie).", "Mientras estén conectadas, las sesiones nuevas usan las plantillas en lugar del simulador."].map((t, i) => (
                     <View key={i} style={{ flexDirection: "row", gap: space[3] }}>
                       <Text variant="body">{i + 1}</Text>
                       <Text variant="body" color={colors.textSecondary} style={{ flex: 1 }}>{t}</Text>

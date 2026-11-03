@@ -2,7 +2,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
-import type { ChannelMetrics } from "@plantillas/metrics";
+import { isInstrumented, type ChannelMetrics } from "@plantillas/metrics";
 import { Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../../../presentation/theme/tokens";
 import { useSessionDetail } from "../../../../application/useSessions";
@@ -42,8 +42,14 @@ const POSITION_ORDER: ChannelCode[] = ["L_HEEL", "R_HEEL", "L_MEDIAL", "R_MEDIAL
 
 /** Texto secundario de una posición: máximo, dispersión y cantidades, o el motivo de no disponibilidad. */
 function metricSub(m: ChannelMetrics): string {
+  if (!isInstrumented(m)) return "no instrumentada en esta configuración";
   if (m.sample_mean === null) return `${m.unavailable_reason ?? "no disponible"} · ${m.n_valid}/${m.n_received} válidas`;
   return `máx ${formatNumber(m.sample_max ?? 0)} · σ ${formatNumber(m.sample_sd_population ?? 0, 1)} · ${formatNumber(m.n_valid)}/${formatNumber(m.n_received)} válidas`;
+}
+
+/** Valor para la silueta: «n/d» si la posición no está instrumentada en la configuración de la captura. */
+function footValue(m: ChannelMetrics): number | null | "unavailable" {
+  return isInstrumented(m) ? m.sample_mean : "unavailable";
 }
 
 /** Detalle de sesión: calidad, métricas por posición, gráfico de la sesión completa y eventos. */
@@ -117,7 +123,7 @@ export default function SessionDetailScreen() {
       {exportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[3] }}>No se pudo exportar: {exportError}</Text> : null}
       <View style={styles.metaRow}>
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
-        <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · 6 posiciones · cuentas ADC 0–4095</Text>
+        <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · {window ? `${POSITION_ORDER.filter((c) => isInstrumented(window.metrics[c])).length} posiciones` : "posiciones"} · cuentas ADC 0–4095</Text>
       </View>
       <View style={[styles.metaRow, { marginTop: space[2] }]}>
         {syncChip}
@@ -159,8 +165,8 @@ export default function SessionDetailScreen() {
         <>
           <View style={{ marginTop: space[4] }}>
             <FootMap
-              left={{ heel: window.metrics.L_HEEL.sample_mean, medial: window.metrics.L_MEDIAL.sample_mean, lateral: window.metrics.L_LATERAL.sample_mean }}
-              right={{ heel: window.metrics.R_HEEL.sample_mean, medial: window.metrics.R_MEDIAL.sample_mean, lateral: window.metrics.R_LATERAL.sample_mean }}
+              left={{ heel: footValue(window.metrics.L_HEEL), medial: footValue(window.metrics.L_MEDIAL), lateral: footValue(window.metrics.L_LATERAL) }}
+              right={{ heel: footValue(window.metrics.R_HEEL), medial: footValue(window.metrics.R_MEDIAL), lateral: footValue(window.metrics.R_LATERAL) }}
             />
           </View>
           <View style={styles.grid}>
@@ -170,7 +176,7 @@ export default function SessionDetailScreen() {
                 <ValueCard
                   key={code}
                   label={POSITION_LABEL[code]}
-                  value={m.sample_mean === null ? null : Math.round(m.sample_mean)}
+                  value={!isInstrumented(m) ? "n/d" : m.sample_mean === null ? null : Math.round(m.sample_mean)}
                   unit={m.sample_mean === null ? undefined : "cuentas"}
                   sub={metricSub(m)}
                   style={styles.half}
@@ -188,14 +194,17 @@ export default function SessionDetailScreen() {
         ))}
       </View>
       <View style={{ marginTop: space[3] }}>
-        {series[lc].length === 0 ? (
+        {series[lc].length === 0 && series[rc].length === 0 ? (
           <Text variant="caption" color={colors.textSecondary}>Sin datos para graficar.</Text>
         ) : (
           <LineChart
-            series={[{ name: "Izquierdo", values: series[lc] }, { name: "Derecho", values: series[rc] }]}
+            series={[
+              ...(series[lc].length > 0 ? [{ name: "Izquierdo", values: series[lc] }] : []),
+              ...(series[rc].length > 0 ? [{ name: "Derecho", values: series[rc] }] : []),
+            ]}
             startLabel="0:00"
             endLabel={formatDuration(duration)}
-            label={`${ZONE_LABEL[zone]} · izquierdo y derecho${captures.length > 1 ? " · primera captura" : ""}${quality.gaps ? ` · ${quality.gaps} hueco(s)` : ""}`}
+            label={`${ZONE_LABEL[zone]} · ${series[lc].length > 0 && series[rc].length > 0 ? "izquierdo y derecho" : series[lc].length > 0 ? "izquierdo · derecho no instrumentado" : "derecho · izquierdo no instrumentado"}${captures.length > 1 ? " · primera captura" : ""}${quality.gaps ? ` · ${quality.gaps} hueco(s)` : ""}`}
           />
         )}
       </View>

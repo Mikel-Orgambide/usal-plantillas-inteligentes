@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { validateSourceRecord } from "@plantillas/contract";
-import { MEASUREMENT_BYTES, ProtocolError, decodeMeasurement, encodeMeasurement, parseDeviceInfo, parseStatus } from "../src/index";
+import { CHANNEL_CODES, validateConfiguration, validateSourceRecord } from "@plantillas/contract";
+import { MEASUREMENT_BYTES, ProtocolError, decodeMeasurement, encodeMeasurement, measurementBytes, measurementContextOf, parseDeviceInfo, parseStatus } from "../src/index";
+import { LEFT_FIRMWARE_INFO } from "./fake-board";
 import { FIRMWARE_INFO } from "./fake-board";
 
 const bytes = (s: string) => Array.from(new TextEncoder().encode(s));
@@ -30,7 +31,7 @@ describe("parseDeviceInfo", () => {
 });
 
 describe("decodeMeasurement", () => {
-  const info = { device_id: "ESP32-9E7EE4", configuration_id: "ESP32-SYN-001" };
+  const info = { device_id: "ESP32-9E7EE4", configuration_id: "ESP32-SYN-001", channel_codes: CHANNEL_CODES };
 
   it("decodifica el registro binario de 45 bytes y el validador del contrato lo acepta", () => {
     const raw = encodeMeasurement({ boot: 8, capture: 1, sequence: 298, samples: [810, 746, 622, 72, 70, 67].map((v, i) => ({ time_us: 14950030 + i * 3, value: v })) });
@@ -62,6 +63,36 @@ describe("decodeMeasurement", () => {
     const raw = encodeMeasurement({ boot: 1, capture: 1, sequence: 0, samples: Array.from({ length: 6 }, () => ({ time_us: 0, value: 1 })) });
     raw[0] = 9;
     expect(() => decodeMeasurement(raw, info)).toThrow(/versión binaria/);
+  });
+});
+
+describe("módulo unilateral (firmware 0.3.0, tres canales)", () => {
+  it("acepta la info con un subconjunto de canales y modelos por canal", () => {
+    const { info, configuration } = parseDeviceInfo(bytes(JSON.stringify(LEFT_FIRMWARE_INFO)));
+    expect(info.channel_codes).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(configuration.channels.map((c) => c.model)).toEqual(["FSR406", "FSR402", "FSR402"]);
+    expect(configuration.channels[0]!.installation_id).toBe("ESP32-FSR-L-001-L_HEEL");
+    expect(validateConfiguration(configuration)).toEqual([]);
+  });
+
+  it("rechaza canales vacíos, desconocidos o fuera del orden del contrato", () => {
+    expect(() => parseDeviceInfo(bytes(JSON.stringify({ ...LEFT_FIRMWARE_INFO, channels: [] })))).toThrow(/sin canales/);
+    expect(() => parseDeviceInfo(bytes(JSON.stringify({ ...LEFT_FIRMWARE_INFO, channels: ["L_HEEL", "L_LATERAL", "L_MEDIAL"] })))).toThrow(/orden/);
+    expect(() => parseDeviceInfo(bytes(JSON.stringify({ ...LEFT_FIRMWARE_INFO, channels: ["L_HEEL", "L_TOE"] })))).toThrow(/orden|desconocido/);
+  });
+
+  it("decodifica el registro de 27 bytes con el tamaño que fija la configuración y el validador lo acepta", () => {
+    const { configuration } = parseDeviceInfo(bytes(JSON.stringify(LEFT_FIRMWARE_INFO)));
+    const ctx = measurementContextOf(configuration);
+    const raw = encodeMeasurement({ boot: 2, capture: 1, sequence: 7, samples: [3501, 3583, 3846].map((v, i) => ({ time_us: 1000 + i, value: v })) });
+    expect(raw.length).toBe(measurementBytes(3));
+    expect(raw.length).toBe(27);
+    const rec = decodeMeasurement(raw, ctx) as { samples: Array<{ channel_id: string }> };
+    expect(rec.samples.map((s) => s.channel_id)).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(validateSourceRecord(rec, configuration).ok).toBe(true);
+    // Un registro de seis canales ya no corresponde a esta configuración.
+    const seis = encodeMeasurement({ boot: 2, capture: 1, sequence: 8, samples: Array.from({ length: 6 }, () => ({ time_us: 0, value: 1 })) });
+    expect(() => decodeMeasurement(seis, ctx)).toThrow(/45 bytes/);
   });
 });
 

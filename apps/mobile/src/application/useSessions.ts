@@ -60,7 +60,10 @@ export async function loadSessionDetail(id: string, buckets = 120): Promise<Sess
   const series = Object.fromEntries(CHANNELS.map((c) => [c, [] as Array<number | null>])) as Record<ChannelCode, Array<number | null>>;
   const first = captures[0];
   if (first) {
-    for (const c of CHANNELS) series[c] = await repository.getChannelSeries(first.id, c, buckets);
+    // Sólo las posiciones instrumentadas por la configuración de la captura; las demás quedan vacías (no son ceros).
+    const configuration = await repository.getConfiguration(first.configuration_id);
+    const instrumented = configuration ? configuration.channels.map((ch) => ch.code) : CHANNELS;
+    for (const c of CHANNELS) series[c] = instrumented.includes(c) ? await repository.getChannelSeries(first.id, c, buckets) : [];
   }
   const metrics = session.state === "completed" || session.state === "incomplete" ? await ensureSessionMetrics(id) : [];
   return { session, captures, events, quality: { records, expected, readErrors, gaps, captures: captures.length }, series, metrics };

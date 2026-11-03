@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChannelCode } from "@plantillas/contract";
-import { approximateLoad, combineChannelMetrics, computeDistribution, describeValues, type ChannelMetrics } from "../src/index";
+import { approximateLoad, combineChannelMetrics, computeDistribution, describeValues, instrumentedChannels, notInstrumented, type ChannelMetrics } from "../src/index";
 
 function metrics(values: Partial<Record<ChannelCode, { mean: number; sd?: number; n?: number }>>): Record<ChannelCode, ChannelMetrics> {
   const out = {} as Record<ChannelCode, ChannelMetrics>;
@@ -12,6 +12,43 @@ function metrics(values: Partial<Record<ChannelCode, { mean: number; sd?: number
   }
   return out;
 }
+
+/** Métricas del módulo unilateral: pie izquierdo medido, pie derecho no instrumentado. */
+function leftOnly(values: Partial<Record<"L_HEEL" | "L_MEDIAL" | "L_LATERAL", { mean: number; sd?: number }>>): Record<ChannelCode, ChannelMetrics> {
+  const out = metrics(values);
+  for (const code of ["R_HEEL", "R_MEDIAL", "R_LATERAL"] as const) out[code] = notInstrumented();
+  return out;
+}
+
+describe("distribución con módulo unilateral (tres posiciones)", () => {
+  it("calcula antepié/retropié y variabilidad sobre el pie instrumentado; izquierda/derecha y asimetría quedan n/d", () => {
+    const d = computeDistribution(leftOnly({ L_HEEL: { mean: 300, sd: 30 }, L_MEDIAL: { mean: 100, sd: 10 }, L_LATERAL: { mean: 100, sd: 10 } }));
+    expect(d.unavailable_reason).toBeUndefined();
+    expect(d.instrumented).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(d.bilateral).toBe(false);
+    expect(d.left_share).toBeNull();
+    expect(d.right_share).toBeNull();
+    expect(d.forefoot_share).toBeCloseTo(0.4, 9);
+    expect(d.rearfoot_share).toBeCloseTo(0.6, 9);
+    expect(d.asymmetry).toEqual({ heel: null, medial: null, lateral: null });
+    expect(d.variability).toBeCloseTo(0.1, 9);
+    expect(d.total_mean).toBe(500);
+  });
+
+  it("una posición instrumentada sin lecturas válidas sigue dejando todo n/d; las no instrumentadas no cuentan", () => {
+    const d = computeDistribution(leftOnly({ L_HEEL: { mean: 300 }, L_MEDIAL: { mean: 100 } }));
+    expect(d.unavailable_reason).toBe("sin lecturas válidas en L_LATERAL");
+    expect(d.instrumented).toHaveLength(3);
+  });
+
+  it("combinar ventanas unilaterales conserva el pie derecho como no instrumentado", () => {
+    const combined = combineChannelMetrics([leftOnly({ L_HEEL: { mean: 500 } }), leftOnly({ L_HEEL: { mean: 100 } })]);
+    expect(combined.L_HEEL.sample_mean).toBe(300);
+    expect(combined.R_HEEL.unavailable_reason).toBe("no instrumentado");
+    expect(instrumentedChannels(combined)).toEqual(["L_HEEL", "L_MEDIAL", "L_LATERAL"]);
+    expect(approximateLoad(combined, 0.05)).toBeCloseTo(300 * 20 * 0.05, 9);
+  });
+});
 
 describe("distribución de la carga (dist-1.0)", () => {
   it("reparte izquierda/derecha y antepié/retropié a partir de las medias", () => {

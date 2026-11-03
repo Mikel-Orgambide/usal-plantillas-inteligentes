@@ -34,7 +34,7 @@ void send_info() {
     char inst[40];
     snprintf(inst, sizeof(inst), "%s-%s", cfg::CONFIGURATION_ID, cfg::CHANNEL_CODES[i]);
     c["installation_id"] = inst;
-    c["model"] = cfg::MODEL;
+    c["model"] = cfg::CHANNEL_MODELS[i];
     c["unit"] = "adc_count";
   }
   serializeJson(doc, Serial);

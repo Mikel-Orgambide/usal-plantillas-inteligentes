@@ -2,7 +2,7 @@
 #include "record.h"
 
 // Servidor GATT (ADR 0006): info (read), control (write), status (notify),
-// measurement (notify, registro binario de 45 bytes).
+// measurement (notify, registro binario de 9 + 6 × CHANNEL_COUNT bytes: 45 con seis canales, 27 con tres).
 namespace ble {
 void begin();
 bool connected();
