@@ -4,9 +4,11 @@ import { combineChannelMetrics, computeDistribution } from "@plantillas/metrics"
 import {
   AssistantError,
   FIXED_ANSWERS,
+  MAX_HISTORY_TURNS,
   buildAssistantContext,
   classifyQuestion,
   createAssistantClient,
+  shortSessionLabel,
   type AssistantContextInput,
   type AssistantSessionInput,
   type ChatTurn,
@@ -26,7 +28,7 @@ import { resolveLocalUserId, useAuth } from "./authStore";
  * vive en el backend) o «servidor propio» (LM Studio u otro compatible con
  * OpenAI, en la red local). Cada intercambio queda registrado localmente
  * (`assistant_exchange`) como evidencia; no se sincroniza. La conversación
- * vive en memoria y se vacía al cerrar la hoja.
+ * vive en memoria y se vacía al cerrar la pantalla del chat.
  */
 
 export interface ChatMessage {
@@ -164,7 +166,8 @@ export async function askAssistant(question: string, options: AskOptions = {}): 
   const askedAt = new Date().toISOString();
   const userMsg: ChatMessage = { id: nextId++, role: "user", text: q };
   set({ messages: [...state.messages, userMsg], busy: true });
-  const history: ChatTurn[] = state.messages.filter((m) => !m.error).slice(-8, -1).map((m) => ({ role: m.role, content: m.text }));
+  // Los últimos turnos de esta conversación (sin la pregunta nueva ni los errores).
+  const history: ChatTurn[] = state.messages.filter((m) => !m.error).slice(-(MAX_HISTORY_TURNS + 1), -1).map((m) => ({ role: m.role, content: m.text }));
   const scope = classifyQuestion(q);
   const { repository } = await getDatabase();
   const userId = await resolveLocalUserId();
@@ -189,6 +192,26 @@ export async function askAssistant(question: string, options: AskOptions = {}): 
     set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, error: true }], busy: false });
     await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: contextText.length, context_summary: contextSummary || "no se pudo armar el contexto", server_url: serverLabel(settings), model: settings.assistantMode === "local" ? settings.assistantModel.trim() || null : null, answer: null, error: e instanceof Error ? e.message : String(e), elapsed_ms: Date.now() - Date.parse(askedAt), mode: settings.assistantMode }).catch(() => undefined);
   }
+}
+
+/** Reintenta la última pregunta que terminó en error: quita el error y la vuelve a enviar. */
+export async function retryLastQuestion(options: AskOptions = {}): Promise<void> {
+  if (state.busy) return;
+  const msgs = [...state.messages];
+  const last = msgs[msgs.length - 1];
+  if (!last || !last.error) return;
+  const question = [...msgs].reverse().find((m) => m.role === "user");
+  if (!question) return;
+  const idx = msgs.lastIndexOf(question);
+  set({ messages: msgs.slice(0, idx), busy: false });
+  await askAssistant(question.text, options);
+}
+
+/** Etiqueta corta de la sesión para la cabecera del chat («Sesión del 3/11 · 17:44»), en la hora del teléfono. */
+export async function sessionChipLabel(sessionId: string): Promise<string | undefined> {
+  const { repository } = await getDatabase();
+  const s = await repository.getSession(sessionId);
+  return s ? `Sesión del ${shortSessionLabel(s.started_at).replace(" ", " · ")}` : undefined;
 }
 
 function describeError(e: unknown, settings: Settings): string {

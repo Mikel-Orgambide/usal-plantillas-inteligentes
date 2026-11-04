@@ -47,6 +47,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "slide_from_right" }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="grabacion" options={{ gestureEnabled: false, animation: "fade" }} />
+        <Stack.Screen name="asistente" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
       </Stack>
       {dbError ? (
         <Sheet visible>

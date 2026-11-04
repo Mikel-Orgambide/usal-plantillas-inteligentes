@@ -22,4 +22,4 @@ export { MeterRow } from "./MeterRow";
 export { Halo } from "./Halo";
 export { DayCard } from "./DayCard";
 export { Brand } from "./Brand";
-export { AssistantFab, AssistantSheet } from "./AssistantFab";
+export { AssistantFab } from "./AssistantFab";

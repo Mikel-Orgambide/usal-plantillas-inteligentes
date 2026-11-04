@@ -6,6 +6,23 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 - Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
 
+## [0.14.3] - 2026-11-04 — ajustes del asistente
+
+### Corregido
+- Contexto del asistente: las fechas y horas se muestran en la zona horaria del teléfono (con la zona declarada en el contexto y una forma corta para citar, «3/11 17:44»), en lugar de depender de la hora del motor; orden por instante de inicio.
+- Un sensor instrumentado que no recibió carga figura como «0 en toda la sesión (instrumentado, sin carga registrada)», distinto de «no disponible».
+
+### Añadido
+- Ficha de conocimiento (`packages/assistant/src/knowledge.ts`): qué mide el sistema, cómo se calcula y se lee cada indicador, qué puede explicar una diferencia entre sesiones y los límites del prototipo.
+- Prompt en tres niveles: medición; lectura descriptiva y educativa (permitida: qué significa un indicador o un cambio, causas no clínicas posibles, cómo comparar mejor); lo clínico, no.
+- Comparación precalculada en el contexto entre la sesión principal y la anterior comparable (deltas por posición, absolutos y %, cambio de reparto en puntos porcentuales, condiciones), o el motivo por el que no es comparable.
+- Chat del asistente a pantalla completa (`/asistente`, modal sobre la barra inferior): cabecera con la sesión y el modo, preguntas sugeridas, indicador de escritura, «Reintentar» y etiqueta «Generado por IA · revisar» discreta.
+- `scripts/sync-assistant-prompt.mjs`: genera `supabase/functions/_shared/assistant-prompt.ts` desde el paquete; una prueba falla si quedó desactualizado.
+
+### Cambiado
+- Clasificación: las preguntas de lectura («¿qué significa?», «¿qué cambió?», «¿por qué?») y los consejos sobre el registro («¿qué puedo mejorar para comparar?») ya no se rechazan; los consejos que no hablan del registro y las preguntas por valores «normales» siguen siendo clínicos.
+- Generación: `temperature` 0,4, `max_tokens` 600, últimos 6 turnos; la función gestionada usa los mismos valores y el mismo prompt (ya no hay copia a mano).
+
 ## [0.14.1] - 2026-11-04 — etapa 14, modo nube
 
 ### Añadido
