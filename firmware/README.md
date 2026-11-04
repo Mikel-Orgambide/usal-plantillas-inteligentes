@@ -5,7 +5,8 @@ Proyecto PlatformIO (Arduino Core, C++17). Decisiones de transporte en `docs/dec
 ## Entornos
 
 - `esp32-synthetic` (por defecto): lecturas sintéticas generadas en la placa, sin sensores. Sirve para H1, H5 y H6 antes de que lleguen los FSR. `configuration_id = ESP32-SYN-001`.
-- `esp32-analog`: **módulo unilateral izquierdo** (decisión del 3/11/2026): tres divisores FSR + resistencia fija en pines ADC1. `configuration_id = ESP32-FSR-L-001`, firmware 0.3.0. El pie derecho no se instrumenta y la app lo muestra como «no disponible».
+- `esp32-analog`: **módulo del pie izquierdo** (decisión del 3/11/2026): tres divisores FSR + resistencia fija en pines ADC1 (36, 39, 34). `configuration_id = ESP32-FSR-L-001`. Las posiciones del otro pie se muestran en la app como «no disponible».
+- `esp32-analog-right`: **módulo del pie derecho** (ADR 0011), mismo circuito y pines, códigos `R_HEEL`, `R_MEDIAL`, `R_LATERAL`, `configuration_id = ESP32-FSR-R-001`. Se carga en el segundo ESP32; la app conecta ambos módulos a la vez. Firmware 0.3.1 para los dos.
 
   | Canal | Sensor | Pin | Rótulo en la placa | Resistencia fija |
   |---|---|---|---|---|
@@ -33,4 +34,4 @@ Cada línea es un JSON del contrato v1.0 (`format_version`, `device_id`, `captur
 ## Estado
 
 - H0/H1/H5/H6 cerrados con `esp32-synthetic` (etapas 8a y 8b).
-- H2–H4 ensayados en banco el 3/11/2026 con `esp32-adc-test` (etapa 9); `esp32-analog` 0.3.0 pendiente de carga y de sesión física en la app.
+- H2–H6 validados en banco el 3/11/2026 con el módulo izquierdo (`esp32-analog` 0.3.0: 475 registros USB sin saltos a 50,00 ms; sesiones físicas por BLE en la app). `esp32-analog-right` pendiente de carga en la segunda placa (6/11).
