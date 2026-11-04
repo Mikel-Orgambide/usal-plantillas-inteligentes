@@ -17,11 +17,13 @@ describe("coordinador + simulador + SQLite", () => {
       repository, source, configuration: SIMULATED_CONFIGURATION, userId: "local", activity: "integración", sessionId: "INT-1",
     });
     await coordinator.start();
-    await new Promise((r) => setTimeout(r, 120));
+    // Espera por cantidad y no por tiempo: en Windows el temporizador de 2 ms rinde menos que en Linux.
+    const deadline = Date.now() + 5000;
+    while (coordinator.snapshot().stats.accepted < 20 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 20));
     const result = await coordinator.stop();
     expect(result.state).toBe("completed");
     expect(result.stats.captures).toBe(2);
-    expect(result.stats.accepted).toBeGreaterThan(10);
+    expect(result.stats.accepted).toBeGreaterThanOrEqual(20);
     expect(result.stats.committed).toBe(result.stats.accepted);
     const summary = (await repository.listSessions())[0]!;
     expect(summary.record_count).toBe(result.stats.accepted);
