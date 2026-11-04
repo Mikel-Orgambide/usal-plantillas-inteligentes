@@ -1,0 +1,107 @@
+# Registro de cambios
+
+Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Las versiones siguen la de la app (`apps/mobile/app.json`); cada etapa cerrada lleva además un tag `vX.Y-etapaN` (ver [`docs/incrementos`](docs/incrementos/README.md)). «Implementado» no significa «validado»: la evidencia de cada etapa dice qué se comprobó y con qué datos.
+
+## [Sin publicar]
+
+- Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; etapa 14 (asistente explicativo).
+
+## [0.13.1] - 2026-11-04
+
+### Añadido
+- Grabación: modo de números grandes (alternador «123»), para leer el teléfono desde lejos en un ensayo de banco; preferencia persistida.
+- Detalle: «Exportar sesión (CSV)», una fila por muestra con valores originales en `adc_count` (`@plantillas/report`: `buildSessionCsv`).
+- Repositorio: README completo, licencia MIT y este registro de cambios.
+
+## [0.13.0] - 2026-11-04 — etapa 13 (implementada; validación física pendiente)
+
+### Añadido
+- ADR 0011: dos módulos autónomos, uno por pie; la app es cliente de dos servidores BLE; correspondencia temporal por instante de recepción con desfase declarado; si se pierde un módulo la sesión sigue y el tramo queda incompleto.
+- Sesión con uno o dos módulos: estado por módulo (`identified`, `connected`, `stale`, `disconnected`, `reconnecting`), captura, cola y secuencia propias; eventos `module_lost` / `module_recovered`.
+- Métricas `bilateral-1.0`: izquierda/derecha y asimetría sólo sobre tramos con ambos módulos; `offset_ms` y fracción completa declarados.
+- Firmware 0.3.1: entorno `esp32-analog-right` (`ESP32-FSR-R-001`) para el módulo del pie derecho.
+- App: Plantillas con una fila por pie, Grabación con chips de estado por módulo y aviso de módulo perdido, Detalle con calidad por módulo, Comparación e informe PDF bilaterales; simulador con dos módulos y deriva de reloj configurable.
+- Respaldo: `configurations[]` en el paquete de sesión (compatible con paquetes anteriores).
+
+### Cambiado
+- Numeración de etapas: 13 = bilateral; el asistente explicativo pasa a 14.
+
+## [0.12.0] - 2026-11-03 — etapa 12 (implementada; validada en la build preview 0.12.0 el 3/11)
+
+### Añadido
+- Marca «.NSL» (ADR 0009): ícono `.N`, ícono adaptativo, splash, componente `Brand` (Manrope 800) en Ajustes → «Acerca de» y en la hoja de cuenta; fuentes en `docs/diseno/marca/`.
+- Informe de sesión para revisión profesional en PDF (ADR 0010): `@plantillas/report` genera HTML autocontenido con SVG; `expo-print` lo convierte y se comparte; ocho secciones (identificación seudonimizada, montaje y canales, origen y transporte, calidad, indicadores, gráficos, comparabilidad, limitaciones). Describe mediciones, no diagnostica. Disponible también para la comparación de dos sesiones.
+
+### Cambiado
+- Nombre visible de la app: «NSL».
+
+## [0.11.0 + fuente física] - 2026-11-03 — etapa 9 (en curso: banco validado; falta H3 por sensor)
+
+### Añadido
+- Firmware 0.3.0: `esp32-analog` con tres canales (`ESP32-FSR-L-001`, pines 36/39/34, modelo por canal, registro binario de `9 + 6 × n` bytes); entorno `esp32-adc-test` para pruebas de banco.
+- Contrato: una configuración declara un subconjunto de las seis posiciones en el orden del contrato; el validador de registros exige exactamente las de la configuración (`channel_not_in_configuration`).
+- Sesión y app: posiciones no instrumentadas como «n/d» (estado `unavailable`), nunca cero; métricas izquierda/derecha y asimetría `null` sin ambos pies.
+- `scripts/check_serial.py` toma los canales de la línea `info` del log.
+- Evidencia: banco de FSR (resistencias 2,2 kΩ talón y 4,7 kΩ antepié elegidas por ensayo), 475 registros por USB sin saltos a 50,00 ms, dos sesiones físicas por BLE desde la app (436 y 609 registros, sin saltos), capturas y exports en `test-data/fisico/` y `docs/capturas/0.12.0-fsr/`.
+
+## [0.11.0] - 2026-10-27 — etapa 11 (cerrada)
+
+### Añadido
+- Complemento remoto (ADR 0008): cuenta con correo y contraseña (Supabase Auth), esquema remoto con titularidad y RLS (migraciones 0001 y 0002), `@plantillas/sync` con identificadores estables, lotes y confirmación por cantidades; sincronización automática al cerrar una sesión, iniciar sesión, abrir la app y volver a primer plano.
+- Una cuenta por vez: Inicio e Historial muestran sólo las sesiones de la cuenta activa.
+- Hoy con día navegable y tres indicadores del día; Historial por día (propuesta B de Figma); barra Historial · Hoy · Más; Ajustes en la barra.
+
+### Corregido
+- Privilegios del rol `authenticated` (`permission denied for table session`); errores de red legibles; almacén de sesión síncrono (NullPointerException del kv-store asíncrono).
+
+## [0.10.0] - 2026-10-20 — etapa 10 (cerrada)
+
+### Añadido
+- Respaldo y restauración (ADR 0007): paquete por sesión y copia completa, importación con validación y deduplicación; build preview sin servidor de desarrollo.
+- Evidencia reproducible desde una copia limpia (`npm ci`, typecheck, 103 pruebas, `expo export`).
+
+## [0.8.0] - 2026-10-20 — etapa 8 (cerrada: H0, H1, H5, H6 con lecturas sintéticas)
+
+### Añadido
+- Firmware ESP32 (ADR 0006): adquisición en tarea propia a 20 reg/s, USB JSON por línea a 230400, servicio GATT con registros binarios, `start` idempotente, reanudación de captura al reconectar; `device_id` por MAC; contador de arranques en NVS.
+- `@plantillas/ble` y pestaña Plantillas: búsqueda, conexión, reconexión, sesión física con lecturas sintéticas de la placa (H06 verificada: desconexión de 5 s reconocida y recuperada).
+
+## [0.7.0] - 2026-10-19 — etapa 7 (cerrada)
+
+### Añadido
+- Historial y comparación: política de comparabilidad (misma configuración, unidad, procedencia y versión de métrica) y diferencias numéricas por posición.
+
+## [0.6.0] - 2026-10-19 — etapa 6 (cerrada)
+
+### Añadido
+- `@plantillas/metrics`: media, máximo, desvío poblacional y cantidades por canal con versión de algoritmo (`desc-1.0`); tabla `result`.
+
+## [0.5.0] - 2026-10-19 — etapa 5 (cerrada)
+
+### Añadido
+- Pantallas mínimas sobre el sistema de diseño (ADR 0005): Hoy, Grabación, Detalle, Historial, Ajustes; barra inferior; siluetas y gráfico de ventana reciente.
+
+## [0.4.0] - 2026-10-18 — etapa 4 (cerrada)
+
+### Añadido
+- `@plantillas/session`: coordinador con máquina de estados, cierre idempotente y recuperación de sesiones abiertas.
+
+## [0.3.0] - 2026-10-18 — etapa 3 (cerrada)
+
+### Añadido
+- `@plantillas/storage` (ADR 0004): SQLite versionado con migraciones, repositorio y cola de escritura serializada.
+
+## [0.2.0] - 2026-10-18 — etapa 2 (cerrada)
+
+### Añadido
+- `@plantillas/simulator`: fuente simulada determinista con escenarios de falla (`read_error`, `disconnect`, `sequence_gap`, `capture_restart`) y pantalla de verificación.
+
+## [0.1.0] - 2026-10-18 — etapa 1 (cerrada)
+
+### Añadido
+- `@plantillas/contract`: contrato de datos v1.0 (seis posiciones, `adc_count`, validación en ejecución, normalización y secuencia).
+
+## [0.0.0] - 2026-10-18 — etapa 0 (cerrada)
+
+### Añadido
+- Monorepo (ADR 0001–0003): Expo SDK 57 / React Native / TypeScript, workspaces, EAS, CI con typecheck y pruebas, plantilla de variables de entorno.
