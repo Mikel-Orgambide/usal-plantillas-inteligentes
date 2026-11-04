@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import type { ChannelCode } from "@plantillas/contract";
-import { Button, Chip, FootMap, Icon, LineChart, Screen, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
+import { BigNumbers, Button, Chip, FootMap, Icon, LineChart, Screen, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
 import { colors, formatDuration, formatNumber, radius, space } from "../presentation/theme/tokens";
 import { ACTIVITY_LABEL, clearSession, liveSeries, stopSession, useActiveSession } from "../application/sessionStore";
-import { loadSettings } from "../infrastructure/settings/settings";
+import { loadSettings, saveSettings } from "../infrastructure/settings/settings";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = {
@@ -35,6 +35,8 @@ export default function RecordingScreen() {
   const [stopping, setStopping] = useState(false);
   const [, tick] = useState(0);
   const keepAwake = loadSettings().keepAwake;
+  const [bigNumbers, setBigNumbers] = useState(loadSettings().bigNumbers);
+  const toggleBigNumbers = () => setBigNumbers((b) => saveSettings({ bigNumbers: !b }).bigNumbers);
 
   // Refresco del reloj y del gráfico aunque no lleguen registros (huecos visibles).
   const finished = !!active?.result;
@@ -105,9 +107,12 @@ export default function RecordingScreen() {
           </Pressable>
         ) : null}
         <View style={[styles.dot, { backgroundColor: stale ? colors.alert : finished ? colors.stale : colors.accent }]} />
-        <Text variant="caption" color={colors.textSecondary}>
+        <Text variant="caption" color={colors.textSecondary} style={{ flex: 1 }} numberOfLines={1}>
           {STATE_LABEL[snapshot.state]} · {active.sourceTitle} · {active.sourceKind === "physical" ? "físicas" : "simuladas"} · {ACTIVITY_LABEL[active.activity]}
         </Text>
+        <Pressable onPress={toggleBigNumbers} accessibilityRole="switch" accessibilityState={{ checked: bigNumbers }} accessibilityLabel={bigNumbers ? "Volver a las siluetas" : "Mostrar números grandes"} hitSlop={8} style={[styles.toggle, bigNumbers && styles.toggleOn]}>
+          <Text variant="label" color={bigNumbers ? colors.accent : colors.textSecondary}>123</Text>
+        </Pressable>
       </View>
 
       {multi ? (
@@ -147,7 +152,7 @@ export default function RecordingScreen() {
       />
 
       <View style={{ marginTop: space[6] }}>
-        <FootMap left={left} right={right} stale={stale} />
+        {bigNumbers ? <BigNumbers left={left} right={right} stale={stale} /> : <FootMap left={left} right={right} stale={stale} />}
       </View>
 
       <View style={styles.chips}>
@@ -190,6 +195,8 @@ const styles = StyleSheet.create({
   modules: { flexDirection: "row", gap: space[2], marginTop: space[3] },
   back: { width: 32, height: 32, alignItems: "center", justifyContent: "center", marginLeft: -8, transform: [{ scaleX: -1 }] },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
+  toggle: { paddingHorizontal: space[2], height: 28, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, justifyContent: "center" },
+  toggleOn: { borderColor: colors.accent },
   chips: { flexDirection: "row", gap: space[2], marginTop: space[6] },
   counters: { flexDirection: "row", justifyContent: "space-between", marginTop: space[3] },
 });

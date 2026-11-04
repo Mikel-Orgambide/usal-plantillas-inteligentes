@@ -4,6 +4,7 @@ export { Chip } from "./Chip";
 export { FootMap } from "./FootMap";
 export type { FootValue, FootValues } from "./FootMap";
 export { FOOT_UNAVAILABLE } from "./FootMap";
+export { BigNumbers } from "./BigNumbers";
 export { Header } from "./Header";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";

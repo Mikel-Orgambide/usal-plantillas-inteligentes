@@ -12,12 +12,14 @@ export interface Settings {
   /** Simulador con dos módulos (uno por pie, relojes distintos) en lugar de la placa simulada de seis. */
   simulatorBilateral: boolean;
   keepAwake: boolean;
+  /** Grabación con números grandes en lugar de las siluetas (para leer el teléfono desde lejos en un ensayo). */
+  bigNumbers: boolean;
   /** Escenario del simulador para demostraciones y verificación. */
   scenario: ScenarioName;
   seed: number;
 }
 
-const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, scenario: "normal", seed: 1, simulatorBilateral: false };
+const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, bigNumbers: false, scenario: "normal", seed: 1, simulatorBilateral: false };
 const KEY = "settings.v1";
 
 export function loadSettings(): Settings {

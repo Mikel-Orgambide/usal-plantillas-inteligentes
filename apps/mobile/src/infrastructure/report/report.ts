@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { buildComparisonReportHtml, buildSessionReportHtml, reportFileName } from "@plantillas/report";
+import { buildComparisonReportHtml, buildSessionCsv, buildSessionReportHtml, csvFileName, reportFileName } from "@plantillas/report";
 import { exportSessionBundle, type SessionBundle } from "@plantillas/storage";
 import { getDatabase } from "../sqlite/database";
 
@@ -55,4 +55,15 @@ export async function shareComparisonReport(aId: string, bId: string): Promise<s
   const [a, b] = await Promise.all([loadBundle(aId), loadBundle(bId)]);
   const html = buildComparisonReportHtml(a, b, { appVersion: Constants.expoConfig?.version ?? undefined, logoSvg: LOGO_LIGHT_SVG });
   return sharePdf(html, `informe-comparacion-${aId.slice(0, 8)}-${bId.slice(0, 8)}.pdf`, "Informe de comparación (PDF)");
+}
+
+/** Genera y comparte la sesión como CSV (una fila por muestra, valores originales en adc_count). */
+export async function shareSessionCsv(sessionId: string): Promise<string> {
+  const bundle = await loadBundle(sessionId);
+  const target = new File(Paths.cache, csvFileName(bundle));
+  if (target.exists) target.delete();
+  target.write(buildSessionCsv(bundle));
+  if (!(await Sharing.isAvailableAsync())) throw new Error("este dispositivo no permite compartir archivos");
+  await Sharing.shareAsync(target.uri, { mimeType: "text/csv", dialogTitle: "Sesión en CSV", UTI: "public.comma-separated-values-text" });
+  return target.uri;
 }

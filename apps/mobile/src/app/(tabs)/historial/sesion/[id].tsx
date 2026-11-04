@@ -8,7 +8,7 @@ import { colors, formatDate, formatDuration, formatNumber, space } from "../../.
 import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
-import { shareSessionReport } from "../../../../infrastructure/report/report";
+import { shareSessionCsv, shareSessionReport } from "../../../../infrastructure/report/report";
 import { useAuth } from "../../../../application/authStore";
 import { describeOutcome, syncOne, useSessionSyncState, useSync } from "../../../../application/syncStore";
 
@@ -85,6 +85,12 @@ export default function SessionDetailScreen() {
     setReportBusy(true);
     try { await shareSessionReport(sessionId); } catch (e) { setExportError(e instanceof Error ? e.message : String(e)); } finally { setReportBusy(false); }
   };
+  const [csvBusy, setCsvBusy] = useState(false);
+  const exportCsv = async (sessionId: string) => {
+    setExportError(undefined);
+    setCsvBusy(true);
+    try { await shareSessionCsv(sessionId); } catch (e) { setExportError(e instanceof Error ? e.message : String(e)); } finally { setCsvBusy(false); }
+  };
 
   if (error) {
     return (
@@ -124,7 +130,7 @@ export default function SessionDetailScreen() {
       : <Chip>Sólo en este teléfono</Chip>;
 
   return (
-    <Screen tabbed footer={<View style={{ gap: space[2] }}><Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>{closed && captures.length > 0 ? <Button icon="export" disabled={reportBusy} onPress={() => void exportReport(session.id)}>{reportBusy ? "Generando informe…" : "Exportar informe (PDF)"}</Button> : null}</View>}>
+    <Screen tabbed footer={<View style={{ gap: space[2] }}><Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>{closed && captures.length > 0 ? <Button icon="export" disabled={reportBusy} onPress={() => void exportReport(session.id)}>{reportBusy ? "Generando informe…" : "Exportar informe (PDF)"}</Button> : null}{closed && captures.length > 0 ? <Button icon="export" disabled={csvBusy} onPress={() => void exportCsv(session.id)}>{csvBusy ? "Generando CSV…" : "Exportar sesión (CSV)"}</Button> : null}</View>}>
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
