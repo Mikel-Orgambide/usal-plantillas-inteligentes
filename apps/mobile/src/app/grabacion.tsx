@@ -18,6 +18,8 @@ const ZONE_LABEL: Record<Zone, string> = { heel: "Talón", medial: "Medial", lat
 const STATE_LABEL: Record<string, string> = {
   prepared: "Preparada", recording: "Grabando", interrupted: "Interrumpida", finalizing: "Finalizando", completed: "Completa", incomplete: "Incompleta",
 };
+const MODULE_LABEL: Record<string, string> = { identified: "sin enlace", connected: "conectado", stale: "sin datos", disconnected: "perdido", reconnecting: "reconectando" };
+const FOOT_SHORT: Record<string, string> = { left: "Izq", right: "Der" };
 
 function KeepAwake() {
   useKeepAwake();
@@ -53,6 +55,10 @@ export default function RecordingScreen() {
   const { snapshot, live, result } = active;
   const stale = snapshot.state === "interrupted";
   const v = snapshot.values;
+  // Con dos módulos (ADR 0011): si uno se pierde la sesión sigue con el otro; el tramo queda incompleto.
+  const multi = snapshot.modules.length > 1;
+  const lostModules = snapshot.modules.filter((m) => m.status === "reconnecting" || m.status === "disconnected");
+  const partial = multi && !stale && !finished && lostModules.length > 0;
   // Una posición no instrumentada por la configuración se muestra como «n/d», nunca como cero.
   const fv = (c: ChannelCode): number | null | "unavailable" => (v[c].status === "unavailable" ? "unavailable" : v[c].value);
   const left = { heel: fv("L_HEEL"), medial: fv("L_MEDIAL"), lateral: fv("L_LATERAL") };
@@ -104,9 +110,24 @@ export default function RecordingScreen() {
         </Text>
       </View>
 
+      {multi ? (
+        <View style={styles.modules}>
+          {snapshot.modules.map((m) => (
+            <Chip key={m.device_id} variant={m.status === "connected" ? "selected" : "neutral"} icon={m.status === "connected" ? "bluetooth" : "bluetooth-off"}>
+              {`${m.foot ? FOOT_SHORT[m.foot] : "Ambos"} · ${MODULE_LABEL[m.status]}`}
+            </Chip>
+          ))}
+        </View>
+      ) : null}
       {stale ? (
         <View style={{ marginTop: space[4] }}>
           <StatusBanner tone="alert" icon="bluetooth-off" detail="Los valores en gris son anteriores a la desconexión">Conexión interrumpida</StatusBanner>
+        </View>
+      ) : partial ? (
+        <View style={{ marginTop: space[4] }}>
+          <StatusBanner tone="alert" icon="bluetooth-off" detail={`${lostModules.map((m) => m.device_id).join(", ")} · la sesión sigue con el otro pie; este tramo no cuenta para izquierda/derecha`}>
+            {`Módulo ${lostModules[0]!.foot === "left" ? "izquierdo" : "derecho"} ${MODULE_LABEL[lostModules[0]!.status]}`}
+          </StatusBanner>
         </View>
       ) : null}
       {finished && result?.reason ? (
@@ -166,6 +187,7 @@ export default function RecordingScreen() {
 
 const styles = StyleSheet.create({
   statusRow: { flexDirection: "row", alignItems: "center", gap: space[2], paddingTop: space[3] },
+  modules: { flexDirection: "row", gap: space[2], marginTop: space[3] },
   back: { width: 32, height: 32, alignItems: "center", justifyContent: "center", marginLeft: -8, transform: [{ scaleX: -1 }] },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   chips: { flexDirection: "row", gap: space[2], marginTop: space[6] },

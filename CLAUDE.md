@@ -4,7 +4,8 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 
 ## Límites que todo el código respeta
 
-- Seis posiciones del contrato: `L_HEEL`, `L_MEDIAL`, `L_LATERAL`, `R_HEEL`, `R_MEDIAL`, `R_LATERAL` (FSR406 en talones, FSR402 en antepié). Una configuración declara un subconjunto en ese orden; el prototipo físico (3/11/2026) es un módulo unilateral izquierdo de tres canales (`ESP32-FSR-L-001`) y las posiciones no declaradas son «no disponibles» (nunca ceros; métricas bilaterales → n/d).
+- Seis posiciones del contrato: `L_HEEL`, `L_MEDIAL`, `L_LATERAL`, `R_HEEL`, `R_MEDIAL`, `R_LATERAL` (FSR406 en talones, FSR402 en antepié). Una configuración declara un subconjunto en ese orden; cada módulo físico es un ESP32 con tres canales de un pie (`ESP32-FSR-L-001` validado el 3/11/2026; `ESP32-FSR-R-001` para el segundo ESP32) y las posiciones no declaradas son «no disponibles» (nunca ceros).
+- Una sesión tiene uno o dos módulos (ADR 0011): pies distintos, misma procedencia, cada uno con su captura, secuencia y reloj; nunca una secuencia global. La correspondencia temporal se estima por recepción y se declara como desfase (no es sincronización); si se pierde un módulo la sesión sigue, el tramo queda incompleto y las métricas bilaterales se calculan sólo en tramos con ambos (`bilateral-1.0`); sin ambos → n/d.
 - Valores originales en `adc_count`. Ausencia o error nunca se convierten en cero (`raw_value = null` + `status = read_error`).
 - Procedencia `simulated` o `physical`, asignada por el adaptador, nunca mezclada en una sesión.
 - Sin conversión a fuerza o presión sin calibración comprobada. Sin diagnóstico ni "detección de fatiga".

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import * as Crypto from "expo-crypto";
 import { CHANNEL_CODES, type ChannelCode, type DataSource } from "@plantillas/contract";
 import { BleDataSource } from "@plantillas/ble";
-import { SessionCoordinator, type SessionResult, type SessionSnapshot } from "@plantillas/session";
+import { SessionCoordinator, type SessionModule, type SessionResult, type SessionSnapshot } from "@plantillas/session";
 import { SCENARIOS, SimulatedDataSource } from "@plantillas/simulator";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { ensureSessionMetrics } from "./sessionMetrics";
@@ -87,25 +87,39 @@ export async function startSession(activity: Activity, context: string | undefin
   const { repository } = await getDatabase();
   // Titular de la sesión: el usuario local vinculado a la cuenta activa, o `local` sin cuenta (etapa 11).
   const userId = await resolveLocalUserId();
-  let source: DataSource;
+  const modules: SessionModule[] = [];
   if (resolved.kind === "physical") {
-    // Tras recargar la app o reiniciar la placa, el estado puede decir «conectadas» sin enlace real.
-    if (getDevice().linkLost) {
-      try {
-        await reconnectLink();
-      } catch (e) {
-        throw new Error(`Las plantillas no responden (${e instanceof Error ? e.message : String(e)}). Reconectalas desde Ajustes → Plantillas.`);
+    // Un módulo por placa conectada (ADR 0011). Tras recargar la app o reiniciar una placa, el
+    // estado puede decir «conectadas» sin enlace real: se reconecta cada una antes de empezar.
+    for (const m of getDevice().modules) {
+      if (m.linkLost) {
+        try {
+          await reconnectLink(m.id);
+        } catch (e) {
+          throw new Error(`La plantilla ${m.info.device_id} no responde (${e instanceof Error ? e.message : String(e)}). Reconectala desde Ajustes → Plantillas.`);
+        }
       }
+      const device = getDevice().modules.find((x) => x.id === m.id)!;
+      const id = device.id;
+      const source: DataSource = new BleDataSource(device.link, device.configuration, device.info, { reconnect: () => reconnectLink(id), reconnectAttempts: 12, reconnectDelayMs: 1000 });
+      modules.push({ source, configuration: device.configuration });
     }
-    const device = getDevice().connected!;
-    source = new BleDataSource(device.link, device.configuration, device.info, { reconnect: reconnectLink, reconnectAttempts: 12, reconnectDelayMs: 1000 });
+  } else if (settings.simulatorBilateral) {
+    // Dos fuentes simuladas con relojes distintos: la derecha arranca después y deriva +0,5 %.
+    for (const m of resolved.modules) {
+      const right = m.foot === "right";
+      const source: DataSource = new SimulatedDataSource({
+        seed: settings.seed + (right ? 1 : 0), scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40,
+        configuration: m.configuration, clock_drift_ppm: right ? 5000 : 0,
+      });
+      modules.push({ source, configuration: m.configuration });
+    }
   } else {
-    source = new SimulatedDataSource({ seed: settings.seed, scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40 });
+    modules.push({ source: new SimulatedDataSource({ seed: settings.seed, scenario: SCENARIOS[settings.scenario], emit_interval_ms: 40 }), configuration: resolved.configuration });
   }
   const coordinator = new SessionCoordinator({
     repository,
-    source,
-    configuration: resolved.configuration,
+    modules,
     userId,
     activity,
     ...(context ? { context } : {}),

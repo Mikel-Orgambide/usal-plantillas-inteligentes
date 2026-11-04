@@ -7,6 +7,7 @@ export class ManualSource implements DataSource {
   readonly calls: string[] = [];
   private listeners = new Set<SourceListener>();
   failStop = false;
+  failConnect = false;
 
   constructor(configuration: AcquisitionConfiguration = SIMULATED_CONFIGURATION) { this.configuration = configuration; }
 
@@ -14,7 +15,10 @@ export class ManualSource implements DataSource {
     this.listeners.add(l);
     return () => this.listeners.delete(l);
   }
-  async connect(): Promise<void> { this.calls.push("connect"); }
+  async connect(): Promise<void> {
+    this.calls.push("connect");
+    if (this.failConnect) throw new Error("placa no encontrada");
+  }
   async disconnect(): Promise<void> { this.calls.push("disconnect"); }
   async startCapture(): Promise<void> { this.calls.push("startCapture"); }
   async stopCapture(): Promise<void> {

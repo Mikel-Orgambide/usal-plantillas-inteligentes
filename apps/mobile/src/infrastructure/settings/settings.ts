@@ -7,13 +7,17 @@ export interface Settings {
   simulatorMode: boolean;
   /** Última placa conectada, para reconectar sin volver a buscar. */
   lastDevice?: { id: string; name: string };
+  /** Últimas placas conectadas (hasta dos, una por pie), para reconectar ambas. */
+  lastDevices?: { id: string; name: string }[];
+  /** Simulador con dos módulos (uno por pie, relojes distintos) en lugar de la placa simulada de seis. */
+  simulatorBilateral: boolean;
   keepAwake: boolean;
   /** Escenario del simulador para demostraciones y verificación. */
   scenario: ScenarioName;
   seed: number;
 }
 
-const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, scenario: "normal", seed: 1 };
+const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, scenario: "normal", seed: 1, simulatorBilateral: false };
 const KEY = "settings.v1";
 
 export function loadSettings(): Settings {

@@ -34,6 +34,7 @@ export default function DemoScreen() {
       <Header title="Demostración" context="Simulador y opciones de grabación" onBack={() => router.back()} />
       <ListRow title="Fuente de las sesiones nuevas" subtitle={`${source.title} · ${source.detail}`} chevron={false} />
       <Toggle label="Simulador sin plantillas" detail="Si no hay plantillas conectadas, las sesiones usan el simulador y se marcan «Simulada». Con plantillas conectadas se usan siempre las plantillas." value={settings.simulatorMode} onChange={(v) => update({ simulatorMode: v })} />
+      <Toggle label="Simular dos módulos" detail="Dos fuentes simuladas, una por pie, con relojes de distinto origen y deriva: prueba la sesión bilateral (ADR 0011) sin hardware. Apagado: una placa simulada de seis posiciones." value={settings.simulatorBilateral} onChange={(v) => update({ simulatorBilateral: v })} />
       <Toggle label="Pantalla encendida al grabar" detail="Evita que Android pause la captura." value={settings.keepAwake} onChange={(v) => update({ keepAwake: v })} />
       <View style={{ marginTop: space[6], gap: space[2] }}>
         <Text variant="body">Escenario del simulador</Text>

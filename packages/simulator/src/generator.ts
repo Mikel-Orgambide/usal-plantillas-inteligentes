@@ -27,6 +27,12 @@ export interface GeneratorOptions {
   readonly signal: SignalParams;
   /** Prefijo para los capture_id generados. */
   readonly capture_prefix: string;
+  /**
+   * Deriva simulada del reloj de la fuente, en partes por millón: `time_us`
+   * avanza (1 + ppm/1e6) veces más rápido que el período nominal. Sirve para
+   * probar dos módulos con relojes distintos (ADR 0011). 0 = sin deriva.
+   */
+  readonly clock_drift_ppm: number;
 }
 
 export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
@@ -37,6 +43,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   scenario: SCENARIOS.normal,
   signal: DEFAULT_SIGNAL,
   capture_prefix: "SIM-CAPTURE",
+  clock_drift_ppm: 0,
 };
 
 export type GeneratorOutput =
@@ -133,7 +140,7 @@ export class SimulatedGenerator implements Iterator<GeneratorOutput> {
     const gap = this.faultsAt("sequence_gap").find((f) => f.after_sequence === seq);
     const step = gap ? gap.skip + 1 : 1;
     this.capture.sequence = seq + step;
-    this.capture.time_us = t0 + step * this.options.record_period_us;
+    this.capture.time_us = t0 + Math.round(step * this.options.record_period_us * (1 + this.options.clock_drift_ppm / 1e6));
 
     // El reinicio se aplica una sola vez por falla: la captura nueva vuelve a secuencia 0
     // y no debe disparar la misma falla otra vez.

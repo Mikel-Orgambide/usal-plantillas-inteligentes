@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
-import { assessComparability, compareMetrics, type ChannelDifference, type Comparability } from "@plantillas/metrics";
+import { assessComparability, combineChannelMetrics, compareMetrics, type CaptureMetrics, type ChannelDifference, type Comparability } from "@plantillas/metrics";
 import { Button, Card, Chip, Header, Icon, LineChart, Screen, StatusBanner, Text, ValueCard } from "../../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, radius, space } from "../../../presentation/theme/tokens";
 import { loadSessionDetail, type SessionDetail } from "../../../application/useSessions";
@@ -23,16 +23,29 @@ const POSITION_ORDER: ChannelCode[] = ["L_HEEL", "R_HEEL", "L_MEDIAL", "R_MEDIAL
 
 function sourceLabel(s: string): string { return s === "simulated" ? "simulada" : "física"; }
 
-/** Política de comparación (etapa 7): requisitos que bloquean y condiciones que solo se señalan. Compara la primera captura de cada sesión. */
+/** Configuración de la sesión: la de su módulo o, con dos módulos, ambas (ADR 0011). */
+function configurationOf(d: SessionDetail): string {
+  return d.modules.length > 0 ? d.modules.map((m) => m.configuration_id).join(" + ") : d.captures[0]?.configuration_id ?? "sin captura";
+}
+
+/** Ventana comparable: la primera captura de cada módulo combinadas (con un módulo, la primera captura). */
+function windowOf(d: SessionDetail): CaptureMetrics | undefined {
+  const firsts = d.modules.map((m) => m.captures[0]?.id).filter((id): id is number => id !== undefined);
+  const wins = firsts.map((id) => d.metrics.find((m) => m.capture.id === id)?.metrics).filter((m): m is CaptureMetrics => !!m);
+  if (wins.length === 0) return d.metrics[0]?.metrics;
+  return wins.length === 1 ? wins[0] : combineChannelMetrics(wins);
+}
+
+/** Política de comparación (etapa 7): requisitos que bloquean y condiciones que solo se señalan. Compara la primera captura de cada módulo. */
 function assess(a: SessionDetail, b: SessionDetail): Comparability {
   const side = (d: SessionDetail) => ({
-    configuration_id: d.captures[0]?.configuration_id ?? "sin captura",
+    configuration_id: configurationOf(d),
     source: d.session.source,
     unit: d.metrics[0]?.metrics.L_HEEL.unit ?? "adc_count",
     metric_version: d.metrics[0]?.metrics.L_HEEL.metric_version ?? "—",
     activity: ACTIVITY_LABEL[d.session.activity as Activity] ?? d.session.activity,
     context: d.session.context,
-    capture_count: d.captures.length,
+    capture_count: Math.max(1, d.captures.length - Math.max(0, d.modules.length - 1)),
   });
   return assessComparability(side(a), side(b));
 }
@@ -69,7 +82,7 @@ function SessionCard({ letter, d, color }: { letter: string; d: SessionDetail; c
         <Text variant="label">{letter} · {formatDate(d.session.started_at)}</Text>
       </View>
       <Text variant="caption" color={colors.textSecondary}>{ACTIVITY_LABEL[d.session.activity as Activity] ?? d.session.activity} · {formatDuration(d.session.duration_ms ?? 0)} · {formatNumber(d.quality.records)} reg.</Text>
-      <Text variant="caption" color={colors.textSecondary}>{d.session.source === "simulated" ? "Simulada" : "Física"} · {d.captures[0]?.device_id ?? "—"}</Text>
+      <Text variant="caption" color={colors.textSecondary}>{d.session.source === "simulated" ? "Simulada" : "Física"} · {d.modules.length > 1 ? `${d.modules.length} módulos` : d.captures[0]?.device_id ?? "—"}</Text>
     </View>
   );
 }
@@ -106,7 +119,9 @@ export default function CompareScreen() {
   };
   const compatible = policy.compatible;
   const failed = policy.requirements.filter((r) => !r.ok);
-  const differences = compatible && da.metrics[0] && db.metrics[0] ? compareMetrics(da.metrics[0].metrics, db.metrics[0].metrics) : null;
+  const wa = windowOf(da), wb = windowOf(db);
+  const differences = compatible && wa && wb ? compareMetrics(wa, wb) : null;
+  const bilateralBoth = compatible && da.bilateral?.distribution && db.bilateral?.distribution ? { a: da.bilateral, b: db.bilateral } : null;
   const [lc, rc] = ZONE_CHANNELS[zone];
 
   return (
@@ -163,6 +178,19 @@ export default function CompareScreen() {
         </>
       ) : compatible ? (
         <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[4] }}>Sin métricas calculadas para alguna de las dos sesiones (sin capturas).</Text>
+      ) : null}
+
+      {bilateralBoth ? (
+        <>
+          <Text variant="heading" style={{ marginTop: space[6] }}>Izquierda / derecha</Text>
+          <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[1], marginBottom: space[3] }}>
+            Sólo tramos con ambos módulos: A {formatNumber(bilateralBoth.a.complete_fraction * 100, 0)} % · B {formatNumber(bilateralBoth.b.complete_fraction * 100, 0)} % de cada sesión. Desfase estimado A {formatNumber(Math.abs(bilateralBoth.a.offset_ms ?? 0))} ms · B {formatNumber(Math.abs(bilateralBoth.b.offset_ms ?? 0))} ms.
+          </Text>
+          <View style={{ flexDirection: "row", gap: space[3] }}>
+            <ValueCard label="Izquierdo · A → B" value={bilateralBoth.a.distribution!.left_share == null || bilateralBoth.b.distribution!.left_share == null ? "n/d" : `${Math.round(bilateralBoth.a.distribution!.left_share * 100)} → ${Math.round(bilateralBoth.b.distribution!.left_share * 100)}`} unit="%" style={{ flex: 1 }} />
+            <ValueCard label="Asimetría talón · A → B" value={bilateralBoth.a.distribution!.asymmetry.heel == null || bilateralBoth.b.distribution!.asymmetry.heel == null ? "n/d" : `${formatNumber(bilateralBoth.a.distribution!.asymmetry.heel, 2)} → ${formatNumber(bilateralBoth.b.distribution!.asymmetry.heel, 2)}`} style={{ flex: 1 }} />
+          </View>
+        </>
       ) : null}
 
       <Text variant="heading" style={{ marginTop: space[6] }}>Calidad de recepción</Text>

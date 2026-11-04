@@ -27,9 +27,14 @@ export const LEFT_FIRMWARE_INFO = {
 
 const text = (s: string) => Array.from(new TextEncoder().encode(s));
 
+/** Info del módulo derecho (firmware 0.3.1, entorno `esp32-analog-right`). */
+export const RIGHT_FIRMWARE_INFO = { ...LEFT_FIRMWARE_INFO, device_id: "ESP32-A1B2C3", configuration_id: "ESP32-FSR-R-001", firmware: "0.3.1", channels: ["R_HEEL", "R_MEDIAL", "R_LATERAL"] };
+
 /** Placa falsa: responde a start/stop por la característica status y emite registros binarios a pedido. */
 export class FakeBoard implements BleLink {
   mtu: number;
+  /** Info que publica la placa (por defecto la sintética de seis). */
+  info: Record<string, unknown> = FIRMWARE_INFO;
   boot = 8;
   capture = 0;
   sequence = 0;
@@ -39,18 +44,18 @@ export class FakeBoard implements BleLink {
   private lost = new Set<(reason: string) => void>();
   writes: number[][] = [];
 
-  constructor(mtu = 185) { this.mtu = mtu; }
+  constructor(mtu = 185, info: Record<string, unknown> = FIRMWARE_INFO) { this.mtu = mtu; this.info = info; }
 
   async read(c: string) {
     if (c !== INFO_UUID) throw new Error(`lectura no soportada: ${c}`);
-    return text(JSON.stringify(FIRMWARE_INFO));
+    return text(JSON.stringify(this.info));
   }
 
   async write(c: string, data: readonly number[]) {
     if (c !== CONTROL_UUID) throw new Error("escritura fuera de control");
     this.writes.push([...data]);
     const status = (event: string) => this.monitors.get(STATUS_UUID)?.(text(JSON.stringify({
-      event, capture_id: `ESP32-9E7EE4-B${this.boot}-C${this.capture}`, boot: this.boot, n: this.capture, dropped: 0,
+      event, capture_id: `${String(this.info["device_id"])}-B${this.boot}-C${this.capture}`, boot: this.boot, n: this.capture, dropped: 0,
     })));
     if (data[0] === COMMAND_START) {
       if (!this.active) { this.capture += 1; this.sequence = 0; this.active = true; }

@@ -128,6 +128,38 @@ export const LEFT_MODULE_CONFIGURATION: AcquisitionConfiguration = {
   })),
 };
 
+/** Módulo derecho (ADR 0011): mismo circuito que el izquierdo en un segundo ESP32. */
+export const RIGHT_MODULE_CONFIGURATION: AcquisitionConfiguration = {
+  configuration_id: "ESP32-FSR-R-001",
+  device_id: "ESP32-000001",
+  source: "physical",
+  raw_range: { min: 0, max: 4095, resolution_bits: 12 },
+  description: "Módulo unilateral derecho: 3 divisores FSR (2,2 kΩ talón, 4,7 kΩ antepié), ADC 12 bits",
+  channels: (["R_HEEL", "R_MEDIAL", "R_LATERAL"] as const).map((code) => ({
+    code,
+    installation_id: `ESP32-FSR-R-001-${code}`,
+    model: CHANNEL_POSITIONS[code].expected_model,
+    unit: RAW_UNIT,
+  })),
+};
+
+/**
+ * Configuración simulada de un solo pie: imita un módulo (tres posiciones) con
+ * procedencia `simulated`, para probar la sesión con dos fuentes sin hardware.
+ */
+export function simulatedModuleConfiguration(foot: Foot): AcquisitionConfiguration {
+  const id = foot === "left" ? "SIM-L-001" : "SIM-R-001";
+  const codes = CHANNEL_CODES.filter((c) => CHANNEL_POSITIONS[c].foot === foot);
+  return {
+    configuration_id: id,
+    device_id: foot === "left" ? "SIM-L" : "SIM-R",
+    source: "simulated",
+    raw_range: { min: 0, max: 4095, resolution_bits: 12 },
+    description: `Simulador de módulo ${foot === "left" ? "izquierdo" : "derecho"} (tres posiciones), rango ilustrativo de 12 bits`,
+    channels: codes.map((code) => ({ code, installation_id: `${id}-${code}`, model: CHANNEL_POSITIONS[code].expected_model, unit: RAW_UNIT })),
+  };
+}
+
 /** Códigos de posición declarados por una configuración, en el orden del contrato. */
 export function configuredChannels(config: Pick<AcquisitionConfiguration, "channels">): ChannelCode[] {
   const declared = new Set(config.channels.map((ch) => ch.code));

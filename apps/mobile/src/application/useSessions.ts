@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ChannelCode } from "@plantillas/contract";
-import type { CaptureRow, EventRow, SessionRow, SessionSummary } from "@plantillas/storage";
+import { CHANNEL_POSITIONS, type ChannelCode, type Foot } from "@plantillas/contract";
+import { computeBilateral, type BilateralMetrics } from "@plantillas/metrics";
+import { exportSessionBundle, type CaptureRow, type EventRow, type SessionRow, type SessionSummary } from "@plantillas/storage";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { ensureSessionMetrics, type CaptureWithMetrics } from "./sessionMetrics";
 import { useAuth } from "./authStore";
@@ -30,15 +31,37 @@ export function useSessionList() {
   return { sessions, hiddenCount, error, reload };
 }
 
+/** Un módulo de la sesión: un dispositivo, su configuración y sus capturas (ADR 0011). */
+export interface SessionModuleDetail {
+  device_id: string;
+  configuration_id: string;
+  foot: Foot | null;
+  captures: CaptureRow[];
+  records: number;
+  gaps: number;
+  readErrors: number;
+}
+
 export interface SessionDetail {
   session: SessionRow;
   captures: CaptureRow[];
   events: EventRow[];
   quality: { records: number; expected: number; readErrors: number; gaps: number; captures: number };
-  /** Series reducidas por canal de la primera captura (etapa 5). */
+  /** Series reducidas por canal, de la primera captura del módulo que instrumenta cada posición (etapa 5). */
   series: Record<ChannelCode, Array<number | null>>;
   /** Métricas descriptivas por posición, una ventana por captura (etapa 6). */
   metrics: CaptureWithMetrics[];
+  /** Módulos (dispositivos) de la sesión, izquierdo primero. */
+  modules: SessionModuleDetail[];
+  /** Métricas bilaterales sobre tramos con ambos módulos; `null` con un solo módulo. */
+  bilateral: BilateralMetrics | null;
+}
+
+const FOOT_ORDER: Record<string, number> = { left: 0, right: 1, both: 2 };
+
+function footOfChannels(codes: readonly ChannelCode[]): Foot | null {
+  const feet = new Set(codes.map((c) => CHANNEL_POSITIONS[c].foot));
+  return feet.size === 1 ? [...feet][0]! : null;
 }
 
 const CHANNELS: ChannelCode[] = ["L_HEEL", "L_MEDIAL", "L_LATERAL", "R_HEEL", "R_MEDIAL", "R_LATERAL"];
@@ -58,15 +81,49 @@ export async function loadSessionDetail(id: string, buckets = 120): Promise<Sess
   }
   const gaps = events.filter((e) => e.type === "sequence_gap").length;
   const series = Object.fromEntries(CHANNELS.map((c) => [c, [] as Array<number | null>])) as Record<ChannelCode, Array<number | null>>;
-  const first = captures[0];
-  if (first) {
-    // Sólo las posiciones instrumentadas por la configuración de la captura; las demás quedan vacías (no son ceros).
+
+  // Módulos: las capturas agrupadas por dispositivo (una sesión bilateral tiene dos, ADR 0011).
+  const modules: SessionModuleDetail[] = [];
+  for (const c of captures) {
+    let m = modules.find((x) => x.device_id === c.device_id);
+    if (!m) {
+      const configuration = await repository.getConfiguration(c.configuration_id);
+      m = { device_id: c.device_id, configuration_id: c.configuration_id, foot: footOfChannels(configuration ? configuration.channels.map((ch) => ch.code) : CHANNELS), captures: [], records: 0, gaps: 0, readErrors: 0 };
+      modules.push(m);
+    }
+    m.captures.push(c);
+    const q = await repository.getCaptureQuality(c.id);
+    m.records += q.records;
+    m.readErrors += q.read_errors;
+  }
+  for (const e of events) {
+    if (e.type !== "sequence_gap") continue;
+    const cap = e.capture_id === null ? undefined : captures.find((c) => c.id === e.capture_id);
+    const m = cap ? modules.find((x) => x.device_id === cap.device_id) : modules[0];
+    if (m) m.gaps += 1;
+  }
+  modules.sort((a, b) => FOOT_ORDER[a.foot ?? "both"]! - FOOT_ORDER[b.foot ?? "both"]!);
+
+  // Series: por cada posición, la primera captura del módulo que la instrumenta; las demás quedan vacías (no son ceros).
+  for (const m of modules) {
+    const first = m.captures[0];
+    if (!first) continue;
     const configuration = await repository.getConfiguration(first.configuration_id);
     const instrumented = configuration ? configuration.channels.map((ch) => ch.code) : CHANNELS;
-    for (const c of CHANNELS) series[c] = instrumented.includes(c) ? await repository.getChannelSeries(first.id, c, buckets) : [];
+    for (const c of instrumented) if (series[c].length === 0) series[c] = await repository.getChannelSeries(first.id, c, buckets);
   }
-  const metrics = session.state === "completed" || session.state === "incomplete" ? await ensureSessionMetrics(id) : [];
-  return { session, captures, events, quality: { records, expected, readErrors, gaps, captures: captures.length }, series, metrics };
+  const closed = session.state === "completed" || session.state === "incomplete";
+  const metrics = closed ? await ensureSessionMetrics(id) : [];
+  let bilateral: BilateralMetrics | null = null;
+  if (closed && modules.length === 2) {
+    const { driver } = await getDatabase();
+    const bundle = await exportSessionBundle(driver, id);
+    if (bundle) {
+      const devByCapture = new Map(bundle.captures.map((c) => [c.external_capture_id, c.device_id]));
+      bilateral = computeBilateral(bundle.records.map((r) => ({ device_id: devByCapture.get(r.capture_id) ?? "", received_at: r.received_at, samples: r.samples })));
+    }
+  }
+  return { session, captures, events, quality: { records, expected, readErrors, gaps, captures: captures.length }, series, metrics, modules, bilateral };
 }
 
 export function useSessionDetail(id: string | undefined) {

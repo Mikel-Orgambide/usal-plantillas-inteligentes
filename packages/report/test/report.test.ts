@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { CHANNEL_CODES, SIMULATED_CONFIGURATION } from "@plantillas/contract";
+import { CHANNEL_CODES, RIGHT_MODULE_CONFIGURATION, SIMULATED_CONFIGURATION } from "@plantillas/contract";
 import { validateBundle, type SessionBundle } from "@plantillas/storage";
 import { buildComparisonReportHtml, buildSessionReportHtml, reportFileName } from "../src";
 
@@ -20,7 +20,42 @@ function simulatedBundle(): SessionBundle {
   };
 }
 
+/** Sesión bilateral (ADR 0011): el módulo izquierdo real más un módulo derecho espejado con reloj desfasado 300 ms. */
+function bilateralBundle(): SessionBundle {
+  const left = physical;
+  const t0 = Date.parse(left.records[0]!.received_at);
+  const rightRecords = left.records.map((r) => ({
+    ...r, capture_id: "ESP32-000001-B1-C1",
+    received_at: new Date(Date.parse(r.received_at) + 20).toISOString(),
+    samples: r.samples.map((s) => ({ ...s, channel_id: s.channel_id.replace("L_", "R_") as typeof s.channel_id, time_us: s.time_us + 300_000, raw_value: s.raw_value === null ? null : Math.round(s.raw_value * 0.8) })),
+  })).filter((r) => Date.parse(r.received_at) - t0 < 4000); // el derecho se pierde a los 4 s
+  return {
+    ...left,
+    configurations: [left.configuration, RIGHT_MODULE_CONFIGURATION],
+    captures: [...left.captures, { device_id: RIGHT_MODULE_CONFIGURATION.device_id, configuration_id: RIGHT_MODULE_CONFIGURATION.configuration_id, external_capture_id: "ESP32-000001-B1-C1", source: "physical", started_at: left.captures[0]!.started_at }],
+    records: [...left.records, ...rightRecords],
+    events: [...left.events, { type: "module_lost", at_us: null, received_at: new Date(t0 + 4000).toISOString(), detail: JSON.stringify({ device_id: RIGHT_MODULE_CONFIGURATION.device_id, foot: "right" }), capture_id: null } as SessionBundle["events"][number]],
+  };
+}
+
 describe("informe de sesión", () => {
+  it("sesión bilateral con dos módulos: izquierda/derecha sobre tramos completos, desfase declarado y módulo perdido", () => {
+    const b = bilateralBundle();
+    const html = buildSessionReportHtml(b, { appVersion: "0.13.0", generatedAt: "2026-11-04T10:00:00.000Z", transport: "BLE" });
+    expect(html).toContain("dos módulos autónomos, uno por pie");
+    expect(html).toContain("Módulo derecho");
+    expect(html).toContain("6 de 6");
+    expect(html).toContain("Izquierdo / derecho (tramos completos)");
+    expect(html).toMatch(/Desfase estimado entre módulos<\/td><td>(2[6-9]\d|3[0-3]\d) ms/);
+    expect(html).not.toContain("n/d · requiere ambos pies");
+    expect(html).toContain("no es sincronización");
+    // seis series + barras
+    expect((html.match(/<svg /g) ?? []).length).toBe(7);
+    const cmp = buildComparisonReportHtml(b, b, { generatedAt: "2026-11-04T10:00:00.000Z" });
+    expect(cmp).toContain("ESP32-FSR-L-001 + ESP32-FSR-R-001");
+    expect(cmp).toContain("tramos completos");
+  });
+
   it("sesión física de tres canales: lista el pie derecho como no disponible y las métricas bilaterales como n/d", () => {
     const html = buildSessionReportHtml(physical, { appVersion: "0.12.0", generatedAt: "2026-11-03T21:00:00.000Z", transport: "BLE" });
     expect(html.startsWith("<!DOCTYPE html>")).toBe(true);

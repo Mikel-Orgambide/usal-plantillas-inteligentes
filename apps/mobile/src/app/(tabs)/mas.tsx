@@ -102,7 +102,7 @@ export default function MoreScreen() {
 
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Dispositivo</Text>
       <View style={styles.group}>
-        <ListRow title="Plantillas" subtitle={`${source.title} · ${source.detail}`} chip={device.connected ? <Chip variant="selected" icon="bluetooth">Conectadas</Chip> : undefined} onPress={() => router.push("/plantillas")} />
+        <ListRow title="Plantillas" subtitle={`${source.title} · ${source.detail}`} chip={device.connected ? <Chip variant="selected" icon="bluetooth">{device.modules.length === 2 ? "Ambos pies" : "Conectadas"}</Chip> : undefined} onPress={() => router.push("/plantillas")} />
       </View>
 
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Datos</Text>

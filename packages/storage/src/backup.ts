@@ -17,7 +17,10 @@ export interface SessionBundle {
   readonly format: typeof BUNDLE_FORMAT;
   readonly exported_at: string;
   readonly schema_version: number;
+  /** Configuración del primer módulo (compatibilidad con paquetes de un solo módulo). */
   readonly configuration: AcquisitionConfiguration;
+  /** Todas las configuraciones de la sesión (una por módulo, ADR 0011). Ausente en paquetes anteriores. */
+  readonly configurations?: readonly AcquisitionConfiguration[];
   readonly session: SessionRow;
   readonly captures: readonly Omit<CaptureRow, "id" | "session_id">[];
   readonly records: readonly {
@@ -46,8 +49,12 @@ export async function exportSessionBundle(db: SqlDriver, sessionId: string, now 
   const session = await repo.getSession(sessionId);
   if (!session) return null;
   const captures = await repo.getCaptures(sessionId);
-  const first = captures[0];
-  const configuration = first ? await readConfiguration(db, first.configuration_id) : null;
+  const configurations: AcquisitionConfiguration[] = [];
+  for (const id of [...new Set(captures.map((c) => c.configuration_id))]) {
+    const cfg = await readConfiguration(db, id);
+    if (cfg) configurations.push(cfg);
+  }
+  const configuration = configurations[0];
   if (!configuration) throw new Error(`la sesión ${sessionId} no tiene capturas ni configuración que exportar`);
   const byId = new Map(captures.map((c) => [c.id, c.external_capture_id]));
   const records: SessionBundle["records"][number][] = [];
@@ -71,7 +78,7 @@ export async function exportSessionBundle(db: SqlDriver, sessionId: string, now 
   const version = await db.get<{ user_version: number }>("PRAGMA user_version");
   return {
     format: BUNDLE_FORMAT, exported_at: now(), schema_version: version?.user_version ?? 0,
-    configuration, session,
+    configuration, configurations, session,
     captures: captures.map(({ id: _id, session_id: _s, ...rest }) => rest),
     records, events, results,
   };
@@ -95,8 +102,15 @@ export function validateBundle(value: unknown): SessionBundle {
   const b = value as Partial<SessionBundle>;
   if (!b || b.format !== BUNDLE_FORMAT) throw new Error("el archivo no es un respaldo de sesión reconocido");
   if (!b.session?.id || !b.configuration?.configuration_id || !Array.isArray(b.captures) || !Array.isArray(b.records)) throw new Error("respaldo incompleto: faltan sesión, configuración, capturas o registros");
-  for (const ch of b.configuration.channels) if (!(ch.code in CHANNEL_POSITIONS)) throw new Error(`canal desconocido en el respaldo: ${String(ch.code)}`);
+  for (const cfg of bundleConfigurations(b as SessionBundle)) {
+    for (const ch of cfg.channels) if (!(ch.code in CHANNEL_POSITIONS)) throw new Error(`canal desconocido en el respaldo: ${String(ch.code)}`);
+  }
   return b as SessionBundle;
+}
+
+/** Configuraciones del paquete: `configurations` si existe, si no la única `configuration`. */
+export function bundleConfigurations(b: Pick<SessionBundle, "configuration" | "configurations">): readonly AcquisitionConfiguration[] {
+  return b.configurations && b.configurations.length > 0 ? b.configurations : [b.configuration];
 }
 
 /** Restaura un paquete en la base dada. Si la sesión ya existe, no modifica nada y lo informa. */
@@ -104,7 +118,9 @@ export async function restoreSessionBundle(db: SqlDriver, bundle: SessionBundle,
   const b = validateBundle(bundle);
   const repo = new SessionRepository(db);
   await repo.ensureLocalUser(userId);
-  await repo.ensureConfiguration(b.configuration);
+  const configs = bundleConfigurations(b);
+  for (const cfg of configs) await repo.ensureConfiguration(cfg);
+  const configById = new Map(configs.map((c) => [c.configuration_id, c]));
   if (await repo.getSession(b.session.id)) {
     return { session: "exists", captures: 0, records_inserted: 0, records_duplicate: 0, records_rejected: 0, events: 0, results: 0 };
   }
@@ -114,14 +130,18 @@ export async function restoreSessionBundle(db: SqlDriver, bundle: SessionBundle,
     [s.id, userId, s.activity, s.context, s.source, s.state, s.started_at, s.ended_at, s.duration_ms, s.created_at, s.updated_at],
   );
   const captureIds = new Map<string, number>();
+  const captureConfig = new Map<string, AcquisitionConfiguration>();
   for (const c of b.captures) {
-    const row = await repo.openCapture(s.id, b.configuration, c.external_capture_id, c.started_at);
+    const cfg = configById.get(c.configuration_id) ?? b.configuration;
+    const row = await repo.openCapture(s.id, cfg, c.external_capture_id, c.started_at);
     captureIds.set(c.external_capture_id, row.id);
+    captureConfig.set(c.external_capture_id, cfg);
   }
   let inserted = 0, duplicate = 0, rejected = 0;
   for (const [external, rowId] of captureIds) {
+    const cfg = captureConfig.get(external) ?? b.configuration;
     const records: NormalizedRecord[] = b.records.filter((r) => r.capture_id === external).map((r) => ({
-      format_version: r.format_version, device_id: b.configuration.device_id, capture_id: r.capture_id, configuration_id: b.configuration.configuration_id,
+      format_version: r.format_version, device_id: cfg.device_id, capture_id: r.capture_id, configuration_id: cfg.configuration_id,
       sequence: r.sequence, samples: r.samples, source: s.source, session_id: s.id, received_at: r.received_at,
     }));
     for (let i = 0; i < records.length; i += 200) {

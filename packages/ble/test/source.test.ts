@@ -4,7 +4,7 @@ import { SessionRepository, migrate } from "@plantillas/storage";
 import { NodeSqliteDriver } from "@plantillas/storage/node";
 import { SessionCoordinator } from "@plantillas/session";
 import { BleDataSource, ProtocolError, parseDeviceInfo } from "../src/index";
-import { FIRMWARE_INFO, FakeBoard } from "./fake-board";
+import { FIRMWARE_INFO, LEFT_FIRMWARE_INFO, RIGHT_FIRMWARE_INFO, FakeBoard } from "./fake-board";
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 const { info, configuration } = parseDeviceInfo(Array.from(new TextEncoder().encode(JSON.stringify(FIRMWARE_INFO))));
@@ -140,6 +140,47 @@ describe("integración con el coordinador y SQLite", () => {
     expect(types).toEqual(expect.arrayContaining(["connected", "capture_started", "disconnected", "reconnected", "sequence_gap", "capture_stopped", "session_stopped"]));
     const q = await repo.getCaptureQuality(capture!.id);
     expect(q).toMatchObject({ records: 4, max_sequence: 4, read_errors: 1 });
+    await db.close();
+  });
+
+  it("dos placas a la vez (una por pie): dos fuentes BLE independientes, el corte de una no afecta a la otra (ADR 0011)", async () => {
+    const db = new NodeSqliteDriver();
+    await migrate(db);
+    const repo = new SessionRepository(db);
+    await repo.ensureLocalUser();
+    const parse = (i: Record<string, unknown>) => parseDeviceInfo(Array.from(new TextEncoder().encode(JSON.stringify(i))));
+    const L = parse(LEFT_FIRMWARE_INFO), R = parse(RIGHT_FIRMWARE_INFO);
+    const bl = new FakeBoard(185, LEFT_FIRMWARE_INFO), br = new FakeBoard(185, RIGHT_FIRMWARE_INFO);
+    const sl = new BleDataSource(bl, L.configuration, L.info, { reconnect: async () => bl, reconnectDelayMs: 5 });
+    const sr = new BleDataSource(br, R.configuration, R.info, { reconnect: async () => br, reconnectDelayMs: 5 });
+    const coord = new SessionCoordinator({
+      repository: repo, modules: [{ source: sl, configuration: L.configuration }, { source: sr, configuration: R.configuration }],
+      userId: "local", activity: "caminata", sessionId: "P2", batchSize: 2, maxLatencyMs: 5,
+    });
+    await coord.start();
+    for (let i = 0; i < 3; i++) { bl.emit([100, 200, 300]); br.emit([110, 210, 310]); }
+    br.cut();
+    br.emit([0, 0, 0], false); // perdido durante el corte
+    bl.emit([100, 200, 300]);
+    await tick(30);
+    const mid = coord.snapshot();
+    expect(mid.state).toBe("recording");
+    expect(mid.modules.map((m) => m.status)).toEqual(["connected", "connected"]); // el derecho ya reconectó
+    br.emit([110, 210, 310]);
+    await tick(10);
+    const result = await coord.stop();
+    expect(result.state).toBe("completed");
+    const captures = await repo.getCaptures("P2");
+    expect(captures.map((c) => [c.device_id, c.external_capture_id])).toEqual([["ESP32-9E7EE4", "ESP32-9E7EE4-B8-C1"], ["ESP32-A1B2C3", "ESP32-A1B2C3-B8-C1"]]);
+    expect(await repo.countRecords(captures[0]!.id)).toBe(4);
+    expect(await repo.countRecords(captures[1]!.id)).toBe(4);
+    const events = await repo.getEvents("P2");
+    const lost = events.find((e) => e.type === "module_lost");
+    expect(JSON.parse(lost!.detail!)).toMatchObject({ device_id: "ESP32-A1B2C3", foot: "right" });
+    expect(events.some((e) => e.type === "module_recovered")).toBe(true);
+    // El hueco de secuencia está en la captura derecha, no en la izquierda.
+    const gap = events.find((e) => e.type === "sequence_gap");
+    expect(gap?.capture_id).toBe(captures[1]!.id);
     await db.close();
   });
 });

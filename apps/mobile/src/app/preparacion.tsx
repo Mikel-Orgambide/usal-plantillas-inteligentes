@@ -18,7 +18,8 @@ export default function PrepareScreen() {
   const [error, setError] = useState<string | undefined>();
 
   const source = useActiveSource();
-  const channels = source.configuration?.channels ?? [];
+  // Con dos módulos (ADR 0011) se reconocen las posiciones de ambas configuraciones.
+  const channels = source.modules.flatMap((m) => m.configuration.channels);
   const recognized = CHANNEL_CODES.filter((c) => channels.some((ch) => ch.code === c));
   // Una configuración válida declara entre 1 y 6 posiciones en el orden del contrato; las demás quedan «no instrumentadas».
   const allOk = recognized.length > 0 && recognized.length === channels.length;
@@ -58,10 +59,17 @@ export default function PrepareScreen() {
       />
 
       <View style={{ marginTop: space[6] }}>
-        <Card title="Dispositivo">
+        <Card title={source.modules.length > 1 ? "Módulos" : "Dispositivo"}>
           <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>
             {source.kind === "physical" ? "Física" : source.kind === "simulated" ? "Simulada" : "Sin fuente"} · {source.detail}
           </Text>
+          {source.modules.length > 1 ? (
+            <View style={[styles.chips, { marginBottom: space[3] }]}>
+              {source.modules.map((m) => (
+                <Chip key={m.device_id} variant={m.linkLost ? "neutral" : "selected"} icon={m.linkLost ? "bluetooth-off" : "check"}>{`${m.foot === "left" ? "Izq" : m.foot === "right" ? "Der" : "Ambos"} · ${m.device_id}${m.linkLost ? " · se reconecta al iniciar" : ""}`}</Chip>
+              ))}
+            </View>
+          ) : null}
           <View style={styles.grid}>
             {CHANNEL_CODES.map((code) => {
               const pos = CHANNEL_POSITIONS[code];

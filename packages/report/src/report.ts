@@ -1,6 +1,6 @@
-import { CHANNEL_CODES, CHANNEL_POSITIONS, configuredChannels, type ChannelCode } from "@plantillas/contract";
-import { computeDistribution, describeValues, notInstrumented, type ChannelMetrics, type LoadDistribution } from "@plantillas/metrics";
-import type { SessionBundle } from "@plantillas/storage";
+import { CHANNEL_CODES, CHANNEL_POSITIONS, configuredChannels, type AcquisitionConfiguration, type ChannelCode } from "@plantillas/contract";
+import { computeBilateral, computeDistribution, describeValues, notInstrumented, type BilateralMetrics, type ChannelMetrics, type LoadDistribution } from "@plantillas/metrics";
+import { bundleConfigurations, type SessionBundle } from "@plantillas/storage";
 
 /**
  * Informe de sesión para revisión profesional (ADR 0010).
@@ -78,6 +78,10 @@ export function reportFileName(bundle: SessionBundle): string {
 }
 
 interface Analysis {
+  /** Configuraciones de la sesión: una por módulo (ADR 0011). */
+  readonly configurations: readonly AcquisitionConfiguration[];
+  /** Métricas bilaterales sobre tramos con ambos módulos; `null` con un solo módulo. */
+  readonly bilateral: BilateralMetrics | null;
   readonly channels: ChannelCode[];
   readonly metrics: Readonly<Record<ChannelCode, ChannelMetrics>>;
   readonly distribution: LoadDistribution;
@@ -89,7 +93,8 @@ interface Analysis {
 }
 
 function analyse(b: SessionBundle): Analysis {
-  const channels = configuredChannels(b.configuration);
+  const configurations = bundleConfigurations(b);
+  const channels = CHANNEL_CODES.filter((c) => configurations.some((cfg) => configuredChannels(cfg).includes(c)));
   const perChannel: Partial<Record<ChannelCode, { raw_value: number | null; status: "ok" | "read_error" }[]>> = {};
   const series: Partial<Record<ChannelCode, { t: number[]; v: (number | null)[] }>> = {};
   for (const c of channels) { perChannel[c] = []; series[c] = { t: [], v: [] }; }
@@ -117,8 +122,14 @@ function analyse(b: SessionBundle): Analysis {
   let tMin = Number.POSITIVE_INFINITY, tMax = Number.NEGATIVE_INFINITY;
   for (const c of channels) for (const t of series[c]!.t) { if (t < tMin) tMin = t; if (t > tMax) tMax = t; }
   const spanSeconds = Number.isFinite(tMin) && tMax > tMin ? tMax - tMin : null;
-  const rate = spanSeconds && records.length > 1 ? (records.length - 1) / spanSeconds : null;
+  const rate = spanSeconds && records.length > 1 ? (records.length - 1) / spanSeconds / Math.max(1, configurations.length) : null;
+  let bilateral: BilateralMetrics | null = null;
+  if (configurations.length === 2) {
+    const devByCapture = new Map(b.captures.map((c) => [c.external_capture_id, c.device_id]));
+    bilateral = computeBilateral(records.map((r) => ({ device_id: devByCapture.get(r.capture_id) ?? "", received_at: r.received_at, samples: r.samples })));
+  }
   return {
+    configurations, bilateral,
     channels, metrics, distribution: computeDistribution(metrics), series,
     quality: {
       received: records.length, valid: records.length * channels.length - invalid, invalid, gaps, missing,
@@ -226,21 +237,21 @@ function sectionIdentification(b: SessionBundle, o: ReportOptions): string {
 </table>`;
 }
 
-function sectionMount(b: SessionBundle, a: Analysis): string {
-  const c = b.configuration;
+function sectionMount(_b: SessionBundle, a: Analysis): string {
+  const c = a.configurations[0]!;
   const rows = CHANNEL_CODES.map((code) => {
     const pos = CHANNEL_POSITIONS[code];
-    const ch = c.channels.find((x) => x.code === code);
+    const ch = a.configurations.flatMap((cfg) => cfg.channels).find((x) => x.code === code);
     return ch
       ? `<tr><td><code>${code}</code></td><td>${FOOT_LABEL[pos.foot]}</td><td>${ZONE_LABEL[pos.zone]}</td><td>${esc(ch.model)}</td><td>${esc(ch.installation_id)}</td><td>${esc(ch.unit)}</td></tr>`
       : `<tr class="nd"><td><code>${code}</code></td><td>${FOOT_LABEL[pos.foot]}</td><td>${ZONE_LABEL[pos.zone]}</td><td colspan="3">no disponible (posición no instrumentada en esta configuración)</td></tr>`;
   }).join("");
   const feet = new Set(a.channels.map((x) => CHANNEL_POSITIONS[x].foot));
+  const configRows = a.configurations.map((cfg) => `<tr><td>${a.configurations.length > 1 ? `Módulo ${FOOT_LABEL[CHANNEL_POSITIONS[cfg.channels[0]!.code].foot]}` : "Configuración"}</td><td><code>${esc(cfg.configuration_id)}</code> · dispositivo <code>${esc(cfg.device_id)}</code> · ${esc(cfg.description ?? "—")}</td></tr>`).join("");
   return `<h2>2. Montaje y canales</h2><table class="kv">
-<tr><td>Configuración</td><td><code>${esc(c.configuration_id)}</code> · dispositivo <code>${esc(c.device_id)}</code></td></tr>
-<tr><td>Descripción</td><td>${esc(c.description ?? "—")}</td></tr>
+${configRows}
 <tr><td>Rango de valores</td><td>${num(c.raw_range.min)}–${num(c.raw_range.max)} cuentas · ${c.raw_range.resolution_bits} bits</td></tr>
-<tr><td>Posiciones instrumentadas</td><td>${a.channels.length} de ${CHANNEL_CODES.length} · ${feet.size === 2 ? "ambos pies" : `sólo pie ${[...feet].map((f) => FOOT_LABEL[f]).join(", ")}`}</td></tr>
+<tr><td>Posiciones instrumentadas</td><td>${a.channels.length} de ${CHANNEL_CODES.length} · ${feet.size === 2 ? `ambos pies${a.configurations.length === 2 ? " (dos módulos autónomos, uno por pie)" : ""}` : `sólo pie ${[...feet].map((f) => FOOT_LABEL[f]).join(", ")}`}</td></tr>
 </table>
 <table><thead><tr><th>Código</th><th>Pie</th><th>Zona</th><th>Modelo anunciado</th><th>Unidad instalada</th><th>Unidad de medida</th></tr></thead><tbody>${rows}</tbody></table>
 <p class="muted">El modelo es la denominación comercial del sensor; no acredita fabricante ni rango de fuerza.</p>`;
@@ -256,6 +267,12 @@ function sectionSource(b: SessionBundle, o: ReportOptions): string {
 <p>Transporte: ${esc(transport)}. El origen de la señal y el transporte son propiedades independientes: una placa real que transmite valores sintéticos sigue siendo señal simulada.</p>`;
 }
 
+function bilateralRows(bil: BilateralMetrics | null): string {
+  if (!bil) return "";
+  if (bil.offset_ms === null) return `<tr><td>Correspondencia entre módulos</td><td class="nd">${esc(bil.unavailable_reason ?? "n/d")}</td></tr>`;
+  return `<tr><td>Correspondencia entre módulos</td><td>desfase estimado ${num(Math.abs(bil.offset_ms))} ms entre los relojes de ambos módulos, por instante de recepción (no se corrige) · ${pct(bil.complete_fraction)} del tiempo con ambos presentes${bil.complete_intervals.length > 1 ? ` en ${bil.complete_intervals.length} tramos` : ""}</td></tr>`;
+}
+
 function sectionQuality(a: Analysis): string {
   const q = a.quality;
   return `<h2>4. Calidad del registro</h2><table class="kv">
@@ -263,6 +280,7 @@ function sectionQuality(a: Analysis): string {
 <tr><td>Muestras válidas / con error</td><td>${num(q.valid)} / ${num(q.invalid)}</td></tr>
 <tr><td>Saltos de secuencia</td><td>${num(q.gaps)}${q.missing ? ` (${num(q.missing)} registros faltantes)` : ""}</td></tr>
 <tr><td>Desconexiones / reconexiones</td><td>${num(q.disconnections)} / ${num(q.reconnections)}${q.restarts ? ` · reinicios de captura: ${num(q.restarts)}` : ""}</td></tr>
+${bilateralRows(a.bilateral)}
 <tr><td>Tasa efectiva</td><td>${q.rate === null ? "n/d" : `${num(q.rate, 1)} registros/s`} sobre ${q.spanSeconds === null ? "n/d" : `${num(q.spanSeconds, 1)} s`} de señal</td></tr>
 </table>
 <p class="muted">Un salto de secuencia o una desconexión marca un intervalo sin datos; esos intervalos no deben leerse como ausencia de apoyo.</p>`;
@@ -284,6 +302,18 @@ function sectionIndicators(a: Analysis): string {
 <tr><td>Izquierdo / derecho</td><td>${bil ? `${pct(d.left_share)} / ${pct(d.right_share)}` : '<span class="nd">n/d · requiere ambos pies</span>'}</td></tr>
 <tr><td>Asimetría por zona</td><td>${bil ? `talón ${num(d.asymmetry.heel, 2)} · medial ${num(d.asymmetry.medial, 2)} · lateral ${num(d.asymmetry.lateral, 2)}` : '<span class="nd">n/d · requiere ambos pies</span>'}</td></tr>
 <tr><td>Variabilidad (σ/media promedio)</td><td>${num(d.variability, 2)}</td></tr>
+</table>${bilateralBlock(a.bilateral)}`;
+}
+
+/** Bloque bilateral (ADR 0011): sólo tramos con ambos módulos; declara desfase y fracción completa. */
+function bilateralBlock(bil: BilateralMetrics | null): string {
+  if (!bil) return "";
+  const d = bil.distribution;
+  if (!d || d.left_share === null) return `<p class="muted">Izquierda/derecha con dos módulos: <span class="nd">n/d</span> · ${esc(bil.unavailable_reason ?? d?.unavailable_reason ?? "sin tramo con ambos módulos presentes")}.</p>`;
+  return `<table class="kv">
+<tr><td>Izquierdo / derecho (tramos completos)</td><td>${pct(d.left_share)} / ${pct(d.right_share)} <span class="muted">· sobre ${pct(bil.complete_fraction)} de la sesión con ambos módulos presentes</span></td></tr>
+<tr><td>Asimetría por zona (tramos completos)</td><td>talón ${num(d.asymmetry.heel, 2)} · medial ${num(d.asymmetry.medial, 2)} · lateral ${num(d.asymmetry.lateral, 2)}</td></tr>
+<tr><td>Desfase estimado entre módulos</td><td>${num(Math.abs(bil.offset_ms ?? 0))} ms <span class="muted">· estimado por recepción, incluye latencia BLE y deriva; no es sincronización</span></td></tr>
 </table>`;
 }
 
@@ -297,7 +327,7 @@ function sectionComparability(b: SessionBundle, o: ReportOptions): string {
     ? `<ul>${o.comparable.map((s) => `<li>${fmtDate(s.started_at)} · ${esc(ACTIVITY_LABEL[s.activity] ?? s.activity)} · <code>${esc(s.id.slice(0, 8))}</code></li>`).join("")}</ul>`
     : `<p class="muted">No se indicaron otras sesiones compatibles al generar este informe.</p>`;
   return `<h2>7. Comparabilidad</h2>
-<p>Esta sesión es comparable sólo con sesiones de la misma configuración (<code>${esc(b.configuration.configuration_id)}</code>) y el mismo origen de señal (${esc(b.configuration.source)}). Cambiar sensores, resistencias, ubicación o montaje crea otra configuración y rompe la comparabilidad.</p>${list}
+<p>Esta sesión es comparable sólo con sesiones de la misma configuración (<code>${esc(bundleConfigurations(b).map((c) => c.configuration_id).join(" + "))}</code>) y el mismo origen de señal (${esc(b.configuration.source)}). Cambiar sensores, resistencias, ubicación o montaje crea otra configuración y rompe la comparabilidad.</p>${list}
 <p>Las cuentas ADC no son newtons ni presión: no se dispone de calibración de fuerza, y la misma lectura en dos sensores de distinto modelo o ubicación no implica la misma carga.</p>`;
 }
 
@@ -320,13 +350,14 @@ export function buildSessionReportHtml(bundle: SessionBundle, options: ReportOpt
 /** Informe de comparación entre dos sesiones compatibles (A y B), con diferencias por posición. */
 export function buildComparisonReportHtml(aBundle: SessionBundle, bBundle: SessionBundle, options: ReportOptions = {}): string {
   const A = analyse(aBundle), B = analyse(bBundle);
-  const compatible = aBundle.configuration.configuration_id === bBundle.configuration.configuration_id && aBundle.configuration.source === bBundle.configuration.source;
+  const cfgId = (b: SessionBundle) => bundleConfigurations(b).map((c) => c.configuration_id).join(" + ");
+  const compatible = cfgId(aBundle) === cfgId(bBundle) && aBundle.configuration.source === bBundle.configuration.source;
   const common = A.channels.filter((c) => B.channels.includes(c));
   const col = (b: SessionBundle, an: Analysis, label: string) => `<div><p><span class="tag">${label}</span> ${fmtDate(b.session.started_at)} · ${esc(ACTIVITY_LABEL[b.session.activity] ?? b.session.activity)} · ${fmtDuration(b.session.duration_ms)} · <code>${esc(b.session.id.slice(0, 8))}</code></p>
-<table class="kv"><tr><td>Configuración</td><td><code>${esc(b.configuration.configuration_id)}</code> · ${esc(b.configuration.source)}</td></tr>
+<table class="kv"><tr><td>Configuración</td><td><code>${esc(cfgId(b))}</code> · ${esc(b.configuration.source)}</td></tr>
 <tr><td>Registros / saltos</td><td>${num(an.quality.received)} / ${num(an.quality.gaps)}</td></tr>
 <tr><td>Antepié / talón</td><td>${pct(an.distribution.forefoot_share)} / ${pct(an.distribution.rearfoot_share)}</td></tr>
-<tr><td>Izq / der</td><td>${an.distribution.bilateral ? `${pct(an.distribution.left_share)} / ${pct(an.distribution.right_share)}` : '<span class="nd">n/d · requiere ambos pies</span>'}</td></tr></table></div>`;
+<tr><td>Izq / der</td><td>${an.bilateral ? (an.bilateral.distribution?.left_share != null ? `${pct(an.bilateral.distribution.left_share)} / ${pct(an.bilateral.distribution.right_share)} <span class="muted">(tramos completos, ${pct(an.bilateral.complete_fraction)}; desfase ${num(Math.abs(an.bilateral.offset_ms ?? 0))} ms)</span>` : '<span class="nd">n/d · sin tramo con ambos módulos</span>') : an.distribution.bilateral ? `${pct(an.distribution.left_share)} / ${pct(an.distribution.right_share)}` : '<span class="nd">n/d · requiere ambos pies</span>'}</td></tr></table></div>`;
   const rows = CHANNEL_CODES.map((c) => {
     if (!common.includes(c)) return `<tr class="nd"><td><code>${c}</code></td><td colspan="5">no disponible en ambas sesiones</td></tr>`;
     const ma = A.metrics[c].sample_mean, mb = B.metrics[c].sample_mean;

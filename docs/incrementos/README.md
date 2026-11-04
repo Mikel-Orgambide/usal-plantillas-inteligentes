@@ -17,6 +17,7 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 10 - Respaldo y paquete | cerrada 2026-10-20 | v0.10-etapa10 |
 | 11 - Complemento remoto | cerrada 2026-10-27 (correo y contraseña; Google como evolución futura) | v0.11-etapa11 |
 | 12 - Informe para revisión profesional (PDF) y marca .NSL | implementada 2026-11-03 (ADR 0009 y 0010); pendiente de validar en la build preview 0.12.0 | - |
-| 13 - Asistente explicativo (LLM) | pendiente · prototipo posterior al cierre funcional (guía 03 §15): responde sobre métricas y eventos ya calculados; no calcula ni diagnostica | - |
+| 13 - Sesión bilateral con dos módulos (ADR 0011) | implementada 2026-11-04 con dos fuentes simuladas (coordinador, BLE doble, métricas `bilateral-1.0`, pantallas, informe); pendiente de validar con dos placas (6/11) | - |
+| 14 - Asistente explicativo (LLM) | pendiente · prototipo posterior al cierre funcional (guía 03 §15): responde sobre métricas y eventos ya calculados; no calcula ni diagnostica | - |
 
 Mejoras menores previstas tras la etapa 11: modo de números grandes en Grabación; exportar sesión a CSV.

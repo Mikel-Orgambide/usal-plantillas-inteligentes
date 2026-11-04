@@ -19,7 +19,9 @@ const EVENT_LABEL: Record<string, string> = {
   session_started: "Sesión iniciada", session_stopped: "Sesión finalizada", capture_started: "Captura iniciada", capture_restarted: "Reinicio de captura",
   capture_stopped: "Captura detenida", connected: "Conectado", disconnected: "Desconectado", reconnected: "Reconectado", sequence_gap: "Hueco de secuencia",
   out_of_order: "Registro fuera de orden", recovered_incomplete: "Recuperada como incompleta", source_error: "Error de la fuente",
+  module_lost: "Módulo perdido", module_recovered: "Módulo recuperado",
 };
+const FOOT_WORD: Record<string, string> = { left: "izquierdo", right: "derecho" };
 
 function eventDetail(e: { type: string; detail: string | null; received_at: string }, startedAt: string): string {
   const t = formatDuration(Math.max(0, Date.parse(e.received_at) - Date.parse(startedAt)));
@@ -30,7 +32,10 @@ function eventDetail(e: { type: string; detail: string | null; received_at: stri
     if (e.type === "capture_restarted") return `${t} · nueva captura ${String(d["capture_id"])}`;
     if (e.type === "session_stopped") return `${t} · ${String(d["state"])}${d["reason"] ? ` · ${String(d["reason"])}` : ""}`;
     if (e.type === "recovered_incomplete") return `${t} · ${String(d["reason"])}`;
-    if (e.type === "disconnected") return `${t} · ${String(d["reason"])}`;
+    if (e.type === "disconnected") return `${t} · ${String(d["reason"])}${d["device_id"] ? ` · ${String(d["device_id"])}` : ""}`;
+    if (e.type === "module_lost") return `${t} · ${String(d["device_id"])}${d["foot"] ? ` (${FOOT_WORD[String(d["foot"])] ?? String(d["foot"])})` : ""} · la sesión siguió con el otro módulo`;
+    if (e.type === "module_recovered") return `${t} · ${String(d["device_id"])} · tramo incompleto de ${formatDuration(Number(d["incomplete_ms"] ?? 0))}`;
+    if (d["device_id"]) return `${t} · ${String(d["device_id"])}`;
   } catch { /* detalle no interpretable */ }
   return t;
 }
@@ -101,7 +106,8 @@ export default function SessionDetailScreen() {
     );
   }
 
-  const { session, captures, events, quality, series, metrics } = detail;
+  const { session, captures, events, quality, series, metrics, modules, bilateral } = detail;
+  const multi = modules.length > 1;
   const window = metrics[Math.min(captureIndex, Math.max(0, metrics.length - 1))];
   const [lc, rc] = ZONE_CHANNELS[zone];
   const duration = session.duration_ms ?? 0;
@@ -130,7 +136,7 @@ export default function SessionDetailScreen() {
       {exportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[3] }}>No se pudo exportar: {exportError}</Text> : null}
       <View style={styles.metaRow}>
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
-        <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{captures[0]?.device_id ?? "—"} · {captures[0]?.configuration_id ?? "—"} · {window ? `${POSITION_ORDER.filter((c) => isInstrumented(window.metrics[c])).length} posiciones` : "posiciones"} · cuentas ADC 0–4095</Text>
+        <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{multi ? modules.map((m) => `${m.foot === "left" ? "izq" : m.foot === "right" ? "der" : ""} ${m.device_id}`.trim()).join(" + ") : `${captures[0]?.device_id ?? "—"} · ${captures[0]?.configuration_id ?? "—"}`} · {multi ? `${modules.reduce((n, m) => n + (m.captures[0] ? 1 : 0), 0) * 3} posiciones · dos módulos` : window ? `${POSITION_ORDER.filter((c) => isInstrumented(window.metrics[c])).length} posiciones` : "posiciones"} · cuentas ADC 0–4095</Text>
       </View>
       <View style={[styles.metaRow, { marginTop: space[2] }]}>
         {syncChip}
@@ -150,8 +156,25 @@ export default function SessionDetailScreen() {
         <ValueCard label="Registros" value={quality.records} unit="reg." sub={quality.expected ? `${formatNumber(received, 1)} % de ${formatNumber(quality.expected)} esperados` : "sin registros"} style={styles.half} />
         <ValueCard label="Huecos" value={quality.gaps} sub={quality.gaps ? "ver eventos" : "sin discontinuidades"} style={styles.half} />
         <ValueCard label="Lecturas fallidas" value={quality.readErrors} unit="read_error" sub={quality.records ? `${formatNumber((quality.readErrors / (quality.records * 6)) * 100, 2)} % de los canales` : "—"} style={styles.half} />
-        <ValueCard label="Capturas" value={quality.captures} sub={quality.captures > 1 ? `${quality.captures - 1} reinicio(s)` : "sin reinicios"} style={styles.half} />
+        <ValueCard label="Capturas" value={quality.captures} sub={multi ? `${modules.length} módulos${quality.captures > modules.length ? ` · ${quality.captures - modules.length} reinicio(s)` : ""}` : quality.captures > 1 ? `${quality.captures - 1} reinicio(s)` : "sin reinicios"} style={styles.half} />
       </View>
+      {multi ? (
+        <View style={{ marginTop: space[3] }}>
+          <Card title="Calidad por módulo">
+            {modules.map((m, i) => (
+              <ListRow key={m.device_id} title={`${m.foot ? `Pie ${FOOT_WORD[m.foot]}` : "Ambos pies"} · ${m.device_id}`} subtitle={`${m.configuration_id} · ${formatNumber(m.records)} registros · ${m.gaps} hueco(s) · ${m.readErrors} fallidas · ${m.captures.length} captura(s)`} chevron={false} last={i === modules.length - 1} />
+            ))}
+            {bilateral ? (
+              <ListRow
+                title="Correspondencia entre módulos"
+                subtitle={bilateral.offset_ms === null ? bilateral.unavailable_reason ?? "n/d" : `desfase estimado ${formatNumber(Math.abs(bilateral.offset_ms))} ms (por recepción; no se corrige) · ${formatNumber(bilateral.complete_fraction * 100, 0)} % del tiempo con ambos módulos${bilateral.complete_intervals.length > 1 ? ` · ${bilateral.complete_intervals.length} tramos` : ""}`}
+                chevron={false}
+                last
+              />
+            ) : null}
+          </Card>
+        </View>
+      ) : null}
 
       <Text variant="heading" style={{ marginTop: space[6], marginBottom: space[1] }}>Carga por posición</Text>
       <Text variant="caption" color={colors.textSecondary}>
@@ -193,6 +216,23 @@ export default function SessionDetailScreen() {
           </View>
         </>
       )}
+
+      {bilateral ? (
+        <>
+          <Text variant="heading" style={{ marginTop: space[6], marginBottom: space[1] }}>Izquierda / derecha</Text>
+          <Text variant="caption" color={colors.textSecondary}>
+            Calculado sólo en los tramos con ambos módulos presentes ({formatNumber(bilateral.complete_fraction * 100, 0)} % de la sesión). Reparto entre medias de cuentas ADC, sin calibración.
+          </Text>
+          <View style={styles.grid}>
+            <ValueCard label="Izquierdo" value={bilateral.distribution?.left_share === null || bilateral.distribution?.left_share === undefined ? "n/d" : Math.round(bilateral.distribution.left_share * 100)} unit={bilateral.distribution?.left_share != null ? "%" : undefined} sub={bilateral.distribution?.left_share == null ? bilateral.unavailable_reason ?? bilateral.distribution?.unavailable_reason ?? "sin tramo completo" : "de la suma de medias"} style={styles.half} />
+            <ValueCard label="Derecho" value={bilateral.distribution?.right_share == null ? "n/d" : Math.round(bilateral.distribution.right_share * 100)} unit={bilateral.distribution?.right_share != null ? "%" : undefined} sub={bilateral.distribution?.right_share == null ? "requiere ambos módulos" : "de la suma de medias"} style={styles.half} />
+            {(["heel", "medial", "lateral"] as const).map((z) => {
+              const a = bilateral.distribution?.asymmetry[z];
+              return <ValueCard key={z} label={`Asimetría ${ZONE_LABEL[z].toLowerCase()}`} value={a == null ? "n/d" : formatNumber(a, 2)} sub={a == null ? "n/d" : a > 0 ? "más carga a la izquierda" : a < 0 ? "más carga a la derecha" : "simétrico"} style={styles.half} />;
+            })}
+          </View>
+        </>
+      ) : null}
 
       <Text variant="heading" style={{ marginTop: space[6], marginBottom: space[3] }}>Sesión completa</Text>
       <View style={styles.chipsRow}>
