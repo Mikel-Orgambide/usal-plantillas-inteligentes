@@ -2,7 +2,7 @@
   "name": "@plantillas/assistant",
   "version": "0.1.0",
   "private": true,
-  "description": "Asistente explicativo (ADR 0012): arma el contexto a partir de los datos locales, clasifica la pregunta y consulta un servidor compatible con OpenAI (LM Studio); explica lo ya calculado y no diagnostica",
+  "description": "Asistente explicativo (ADR 0012): arma el contexto a partir de los datos locales, clasifica la pregunta y consulta el asistente en la nube (función gestionada de Supabase) o un servidor propio compatible con OpenAI (LM Studio); explica lo ya calculado y no diagnostica",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",

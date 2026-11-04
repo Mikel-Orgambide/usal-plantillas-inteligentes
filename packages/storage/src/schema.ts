@@ -210,6 +210,13 @@ CREATE TABLE assistant_exchange (
 CREATE INDEX assistant_exchange_user_idx ON assistant_exchange(user_id, asked_at DESC);
 `,
   },
+  {
+    version: 5,
+    description: "Asistente (ADR 0012, 4/11): modo con el que se respondió cada intercambio — 'cloud' (función gestionada con la clave en el backend) o 'local' (servidor propio, LM Studio)",
+    sql: `
+ALTER TABLE assistant_exchange ADD COLUMN mode TEXT NOT NULL DEFAULT 'local' CHECK (mode IN ('cloud','local'));
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

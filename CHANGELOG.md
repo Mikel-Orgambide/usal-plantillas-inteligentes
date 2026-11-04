@@ -4,7 +4,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 ## [Sin publicar]
 
-- Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; etapa 14 (asistente explicativo).
+- Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
+
+## [0.14.1] - 2026-11-04 — etapa 14, modo nube
+
+### Añadido
+- Asistente en modo **Nube (gestionado)**, por defecto: la app llama a la Edge Function `assistant` de Supabase con la cuenta iniciada; la clave del proveedor (OpenRouter, `qwen/qwen3-14b`) vive en los secretos del backend; límite de 30 preguntas por usuario y hora (`assistant_usage`, migración remota 0004). Nadie tiene que configurar nada.
+- `createAssistantClient` con dos transportes (`proxy` y `direct`); códigos de error `unauthorized` y `rate_limited`.
+- Ajustes → Asistente: selector «Nube · recomendado / Servidor propio»; «Probar conexión» en ambos.
+
+### Cambiado
+- `assistant_exchange` guarda el modo con el que se respondió (migración local 5).
+- ADR 0012 actualizado: dos modos, datos que salen del teléfono en cada uno, sin entrenamiento.
+
+## [0.14.0] - 2026-11-04 — etapa 14 (implementada; validación con el modelo pendiente)
+
+### Añadido
+- ADR 0012 y `packages/assistant`: contexto armado en el teléfono, filtro clínico previo con respuestas fijas, cliente compatible con OpenAI (LM Studio), descarte de bloques `<think>`; registro local `assistant_exchange` (migración 4).
+- App: botón flotante en Hoy, Historial y Detalle; hoja de chat con chip «Generado por IA · revisar»; Ajustes → Asistente.
+- Esquema remoto 0003 (`session_configuration`): sesiones bilaterales con las configuraciones de todos los módulos; `packages/sync` las envía y las exige para confirmar.
 
 ## [0.13.1] - 2026-11-04
 

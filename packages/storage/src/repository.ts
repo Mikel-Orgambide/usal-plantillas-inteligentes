@@ -135,6 +135,8 @@ export interface AssistantExchangeRow {
   readonly answer: string | null;
   readonly error: string | null;
   readonly elapsed_ms: number | null;
+  /** `cloud`: función gestionada (clave en el backend); `local`: servidor propio (LM Studio). */
+  readonly mode: "cloud" | "local";
 }
 
 export type NewAssistantExchange = Omit<AssistantExchangeRow, "id">;
@@ -614,9 +616,9 @@ export class SessionRepository {
   /** Guarda un intercambio con el asistente (pregunta, resumen del contexto y respuesta o error). */
   async addAssistantExchange(x: NewAssistantExchange): Promise<number> {
     const r = await this.db.run(
-      `INSERT INTO assistant_exchange (user_id, session_id, asked_at, question, scope, context_chars, context_summary, server_url, model, answer, error, elapsed_ms)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [x.user_id, x.session_id, x.asked_at, x.question, x.scope, x.context_chars, x.context_summary, x.server_url, x.model, x.answer, x.error, x.elapsed_ms],
+      `INSERT INTO assistant_exchange (user_id, session_id, asked_at, question, scope, context_chars, context_summary, server_url, model, answer, error, elapsed_ms, mode)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [x.user_id, x.session_id, x.asked_at, x.question, x.scope, x.context_chars, x.context_summary, x.server_url, x.model, x.answer, x.error, x.elapsed_ms, x.mode],
     );
     return Number(r.lastInsertRowId);
   }

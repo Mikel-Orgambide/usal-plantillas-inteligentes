@@ -12,7 +12,8 @@ import {
   type ChatTurn,
 } from "@plantillas/assistant";
 import { getDatabase } from "../infrastructure/sqlite/database";
-import { loadSettings } from "../infrastructure/settings/settings";
+import { loadSettings, type Settings } from "../infrastructure/settings/settings";
+import { getSupabase, remoteConfigured, supabaseAnonKey, supabaseUrl } from "../infrastructure/supabase/client";
 import { ensureSessionMetrics } from "./sessionMetrics";
 import { loadSessionDetail } from "./useSessions";
 import { resolveLocalUserId, useAuth } from "./authStore";
@@ -20,9 +21,12 @@ import { resolveLocalUserId, useAuth } from "./authStore";
 /**
  * Asistente explicativo (ADR 0012). Arma el contexto desde SQLite (sesiones
  * del usuario activo, indicadores ya calculados), clasifica la pregunta y
- * consulta el servidor configurado en Ajustes. Cada intercambio queda
- * registrado localmente (`assistant_exchange`) como evidencia; no se
- * sincroniza. La conversación vive en memoria y se vacía al cerrar la hoja.
+ * consulta el asistente en el modo elegido en Ajustes: «nube» (función
+ * gestionada del proyecto, con la cuenta iniciada; la clave del proveedor
+ * vive en el backend) o «servidor propio» (LM Studio u otro compatible con
+ * OpenAI, en la red local). Cada intercambio queda registrado localmente
+ * (`assistant_exchange`) como evidencia; no se sincroniza. La conversación
+ * vive en memoria y se vacía al cerrar la hoja.
  */
 
 export interface ChatMessage {
@@ -131,6 +135,27 @@ function aliasOf(id: string): string | undefined {
 
 export interface AskOptions { readonly selectedSessionId?: string }
 
+export class AssistantUnavailable extends Error {
+  override readonly name = "AssistantUnavailable";
+}
+
+/** Cliente según el modo. En «nube» requiere la cuenta iniciada (el token va en cada pedido). */
+async function clientFor(settings: Settings, timeoutMs: number) {
+  if (settings.assistantMode === "local") {
+    return createAssistantClient({ baseUrl: settings.assistantUrl, ...(settings.assistantModel.trim() ? { model: settings.assistantModel.trim() } : {}), timeoutMs });
+  }
+  if (!remoteConfigured || !supabaseUrl || !supabaseAnonKey) throw new AssistantUnavailable("Este paquete no tiene configurado el complemento remoto; el asistente en la nube no está disponible.");
+  const { data } = await getSupabase().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new AssistantUnavailable("Para usar el asistente iniciá sesión con tu cuenta (Ajustes → Cuenta).");
+  return createAssistantClient({ transport: "proxy", supabaseUrl, anonKey: supabaseAnonKey, accessToken: token, timeoutMs });
+}
+
+/** Dirección que queda en el registro local: la del servidor propio o la función gestionada. */
+function serverLabel(settings: Settings): string {
+  return settings.assistantMode === "local" ? settings.assistantUrl : `${supabaseUrl ?? "supabase"}/functions/v1/assistant`;
+}
+
 /** Envía una pregunta: respuesta fija si está fuera de alcance; si no, consulta al servidor. Siempre deja registro. */
 export async function askAssistant(question: string, options: AskOptions = {}): Promise<void> {
   const q = question.trim();
@@ -147,7 +172,7 @@ export async function askAssistant(question: string, options: AskOptions = {}): 
   if (scope !== "in_scope") {
     const text = FIXED_ANSWERS[scope];
     set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, generated: false }], busy: false });
-    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: 0, context_summary: "respuesta fija, sin consultar al modelo", server_url: null, model: null, answer: text, error: null, elapsed_ms: 0 }).catch(() => undefined);
+    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: 0, context_summary: "respuesta fija, sin consultar al modelo", server_url: null, model: null, answer: text, error: null, elapsed_ms: 0, mode: settings.assistantMode }).catch(() => undefined);
     return;
   }
 
@@ -155,34 +180,47 @@ export async function askAssistant(question: string, options: AskOptions = {}): 
   try {
     const ctx = await buildContext(options.selectedSessionId);
     contextText = ctx.text; contextSummary = ctx.summary;
-    const client = createAssistantClient({ baseUrl: settings.assistantUrl, ...(settings.assistantModel.trim() ? { model: settings.assistantModel.trim() } : {}), timeoutMs: 60_000 });
+    const client = await clientFor(settings, 60_000);
     const out = await client.ask(q, contextText, history);
     set({ messages: [...state.messages, { id: nextId++, role: "assistant", text: out.answer, generated: true, model: out.model }], busy: false });
-    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: contextText.length, context_summary: contextSummary, server_url: settings.assistantUrl, model: out.model, answer: out.answer, error: null, elapsed_ms: out.elapsed_ms }).catch(() => undefined);
+    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: contextText.length, context_summary: contextSummary, server_url: serverLabel(settings), model: out.model, answer: out.answer, error: null, elapsed_ms: out.elapsed_ms, mode: settings.assistantMode }).catch(() => undefined);
   } catch (e) {
-    const text = describeError(e, settings.assistantUrl);
+    const text = describeError(e, settings);
     set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, error: true }], busy: false });
-    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: contextText.length, context_summary: contextSummary || "no se pudo armar el contexto", server_url: settings.assistantUrl, model: settings.assistantModel.trim() || null, answer: null, error: e instanceof Error ? e.message : String(e), elapsed_ms: Date.now() - Date.parse(askedAt) }).catch(() => undefined);
+    await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope, context_chars: contextText.length, context_summary: contextSummary || "no se pudo armar el contexto", server_url: serverLabel(settings), model: settings.assistantMode === "local" ? settings.assistantModel.trim() || null : null, answer: null, error: e instanceof Error ? e.message : String(e), elapsed_ms: Date.now() - Date.parse(askedAt), mode: settings.assistantMode }).catch(() => undefined);
   }
 }
 
-function describeError(e: unknown, url: string): string {
+function describeError(e: unknown, settings: Settings): string {
+  if (e instanceof AssistantUnavailable) return e.message;
+  const local = settings.assistantMode === "local";
   if (e instanceof AssistantError) {
     switch (e.code) {
-      case "network": return `No se pudo contactar al asistente en ${url}. Comprobá que LM Studio esté corriendo con el servidor activo y «Serve on Local Network», y que el teléfono esté en la misma red.`;
-      case "timeout": return "El asistente no respondió a tiempo. Puede que el modelo esté cargando; probá de nuevo en unos segundos.";
-      case "no_model": return "El servidor responde pero no tiene ningún modelo cargado. Cargalo en LM Studio (pestaña Developer).";
-      case "http": return `El servidor respondió con un error (${e.status ?? "?"}). ${e.message}`;
+      case "network": return local
+        ? `No se pudo contactar al asistente en ${settings.assistantUrl}. Comprobá que LM Studio esté corriendo con el servidor activo y «Serve on Local Network», y que el teléfono esté en la misma red.`
+        : "No se pudo contactar al asistente. Comprobá la conexión a internet y probá de nuevo.";
+      case "timeout": return "El asistente no respondió a tiempo. Probá de nuevo en unos segundos.";
+      case "no_model": return local
+        ? "El servidor responde pero no tiene ningún modelo cargado. Cargalo en LM Studio (pestaña Developer)."
+        : "El servicio del asistente no tiene un modelo configurado.";
+      case "unauthorized": return "La cuenta no está autorizada para usar el asistente. Cerrá sesión y volvé a iniciarla.";
+      case "rate_limited": return `Se alcanzó el límite de preguntas por hora. ${e.message.replace(/^respuesta: /, "")}`;
+      case "http": return `${local ? "El servidor" : "El servicio"} respondió con un error (${e.status ?? "?"}). ${e.message}`;
       default: return `El asistente devolvió una respuesta que no se pudo leer. ${e.message}`;
     }
   }
   return `No se pudo preparar la pregunta: ${e instanceof Error ? e.message : String(e)}`;
 }
 
-/** Prueba de conexión desde Ajustes: devuelve los modelos que ofrece el servidor. */
-export async function testAssistantServer(baseUrl: string): Promise<string[]> {
-  const client = createAssistantClient({ baseUrl, timeoutMs: 8_000 });
+/** Prueba de conexión desde Ajustes, en el modo indicado: devuelve los modelos disponibles. */
+export async function testAssistant(settings: Settings): Promise<string[]> {
+  const client = await clientFor(settings, 8_000);
   return client.listModels();
+}
+
+/** Texto corto del error de una prueba de conexión. */
+export function describeAssistantError(e: unknown, settings: Settings): string {
+  return describeError(e, settings);
 }
 
 export function useAssistantEnabled(): boolean {

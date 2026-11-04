@@ -22,7 +22,9 @@ export default function MoreScreen() {
   const assistant = loadSettings();
   const source = resolveSource(device, assistant);
   const auth = useAuth();
-  const assistantSubtitle = assistant.assistantEnabled ? `Explica lo ya calculado · ${assistant.assistantUrl.replace(/^https?:\/\//, "")}` : "Preguntas sobre tus sesiones con un modelo en tu PC (LM Studio)";
+  const assistantSubtitle = !assistant.assistantEnabled
+    ? "Preguntas sobre tus sesiones · desactivado"
+    : assistant.assistantMode === "cloud" ? "Explica lo ya calculado · nube" : `Explica lo ya calculado · ${assistant.assistantUrl.replace(/^https?:\/\//, "")}`;
   const sync = useSync();
   const [notice, setNotice] = useState<{ title: string; body: string } | null>(null);
   const [busy, setBusy] = useState(false);

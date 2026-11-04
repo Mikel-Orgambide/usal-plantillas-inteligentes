@@ -18,6 +18,6 @@ Una entrada por etapa cerrada, con nombre `etapa-NN-descripcion.md`. Campos: fec
 | 11 - Complemento remoto | cerrada 2026-10-27 (correo y contraseña; Google como evolución futura) | v0.11-etapa11 |
 | 12 - Informe para revisión profesional (PDF) y marca .NSL | implementada 2026-11-03 (ADR 0009 y 0010); validada en la build preview 0.12.0 el 3/11 (ícono, marca, PDF compartido) | v0.12-etapa12 |
 | 13 - Sesión bilateral con dos módulos (ADR 0011) | implementada 2026-11-04 con dos fuentes simuladas (coordinador, BLE doble, métricas `bilateral-1.0`, pantallas, informe); esquema remoto con todas las configuraciones (migración 0003, probada en PostgreSQL local); pendiente de validar con dos placas (6/11) | v0.13-etapa13 |
-| 14 - Asistente explicativo (LLM, ADR 0012) | implementado 2026-11-04 (`packages/assistant`, chat flotante, Ajustes → Asistente, registro local de intercambios); pendiente de validar con LM Studio en la PC del autor | - |
+| 14 - Asistente explicativo (LLM, ADR 0012) | implementado 2026-11-04 en dos modos: nube gestionada (Edge Function `assistant`, clave en el backend, OpenRouter · `qwen/qwen3-14b`, límite por hora) y servidor propio (LM Studio); chat flotante, Ajustes → Asistente, registro local de intercambios. Pendiente: desplegar la función y validar en ambos modos | - |
 
 Mejoras menores (0.13.1, 2026-11-04): modo de números grandes en Grabación y exportación de sesión a CSV, implementadas; pendientes de verificar en el teléfono con la próxima build.

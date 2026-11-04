@@ -15,6 +15,9 @@ const KEY = process.env["EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY"];
 
 /** `true` si el paquete se construyó con las variables del complemento remoto. */
 export const remoteConfigured = Boolean(URL && KEY);
+/** URL del proyecto y clave publicable, para las funciones gestionadas (asistente, ADR 0012). */
+export const supabaseUrl = URL;
+export const supabaseAnonKey = KEY;
 
 let client: SupabaseClient | undefined;
 
