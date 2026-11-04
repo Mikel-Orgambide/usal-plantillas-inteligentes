@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { followUpSuggestions } from "@plantillas/assistant";
 import { askAssistant, clearAssistantChat, retryLastQuestion, sessionChipLabel, useAssistantChat, type ChatMessage } from "../application/assistantStore";
 import { loadSettings } from "../infrastructure/settings/settings";
 import { Chip, Icon, Text } from "../presentation/components";
@@ -12,8 +13,9 @@ import { colors, fonts, radius, size, space } from "../presentation/theme/tokens
  * por encima de la barra inferior. Cabecera con el contexto (la sesión desde
  * la que se abrió o «Todas tus sesiones») y el modo (nube o servidor propio);
  * mensajes con desplazamiento automático; preguntas sugeridas cuando está
- * vacío; indicador de escritura; errores con «Reintentar». La conversación
- * vive en memoria y se vacía al cerrar.
+ * vacío y preguntas de seguimiento (deterministas) después de cada respuesta;
+ * indicador de escritura; errores con «Reintentar»; «Nueva conversación» en
+ * la cabecera. La conversación vive en memoria y se vacía al cerrar.
  */
 export default function AssistantScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
@@ -46,7 +48,12 @@ export default function AssistantScreen() {
   const suggestions = sessionId
     ? ["¿Cómo se repartió la carga?", "¿Hubo problemas en el registro?", "¿Qué cambió respecto de la anterior?", "¿Qué significa el desvío?"]
     : ["¿Cómo vienen mis últimas sesiones?", "¿Qué cambió entre las dos últimas?", "¿Qué significa el reparto antepié / talón?", "¿Cómo puedo comparar mejor mis sesiones?"];
-  const lastIsError = chat.messages.length > 0 && chat.messages[chat.messages.length - 1]!.error === true;
+  const last = chat.messages[chat.messages.length - 1];
+  const lastIsError = last?.error === true;
+  // Seguimiento: sólo después de una respuesta del asistente que no sea un error.
+  const lastQuestion = [...chat.messages].reverse().find((m) => m.role === "user");
+  const asked = chat.messages.filter((m) => m.role === "user").map((m) => m.text);
+  const followUps = !chat.busy && last && last.role === "assistant" && !last.error && lastQuestion ? followUpSuggestions(lastQuestion.text, last.text, asked) : [];
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior="padding">
@@ -54,6 +61,11 @@ export default function AssistantScreen() {
         <View style={styles.titleRow}>
           <View style={styles.titleIcon}><Icon name="spark" size={20} color={colors.accent} /></View>
           <Text variant="heading" style={{ flex: 1 }}>Asistente</Text>
+          {chat.messages.length > 0 ? (
+            <Pressable onPress={() => { if (!chat.busy) { clearAssistantChat(); setText(""); } }} hitSlop={8} accessibilityRole="button" accessibilityLabel="Nueva conversación" style={[styles.close, chat.busy && { opacity: 0.4 }]}>
+              <Icon name="history" size={20} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
           <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cerrar" style={styles.close}>
             <Icon name="close" size={20} color={colors.textSecondary} />
           </Pressable>
@@ -87,6 +99,15 @@ export default function AssistantScreen() {
           </View>
         ) : chat.messages.map((m) => <Bubble key={m.id} m={m} />)}
         {chat.busy ? <Typing /> : null}
+        {followUps.length > 0 ? (
+          <View style={styles.followUps} accessibilityLabel="Preguntas de seguimiento">
+            {followUps.map((s) => (
+              <Pressable key={s} onPress={() => send(s)} accessibilityRole="button" style={({ pressed }) => [styles.followUp, pressed && { opacity: 0.7 }]}>
+                <Text variant="label" color={colors.accent}>{s}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {lastIsError && !chat.busy ? (
           <Pressable onPress={() => void retryLastQuestion(options)} accessibilityRole="button" style={({ pressed }) => [styles.retry, pressed && { opacity: 0.7 }]}>
             <Text variant="label" color={colors.accent}>Reintentar</Text>
@@ -173,6 +194,8 @@ const styles = StyleSheet.create({
   tag: { flexDirection: "row", alignItems: "center", gap: space[1], paddingLeft: space[1] },
   typing: { flexDirection: "row", gap: 6, paddingVertical: space[3] },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.textSecondary },
+  followUps: { flexDirection: "row", flexWrap: "wrap", gap: space[2], paddingTop: space[1] },
+  followUp: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill, backgroundColor: colors.accentSoft, borderWidth: size.hairline, borderColor: colors.line },
   retry: { alignSelf: "flex-start", paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill, backgroundColor: colors.accentSoft },
   inputBar: { flexDirection: "row", alignItems: "flex-end", gap: space[2], paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: size.hairline, borderTopColor: colors.line, backgroundColor: colors.bg },
   input: { flex: 1, minHeight: size.controlHeight, maxHeight: 120, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], paddingTop: 13, paddingBottom: 13, fontFamily: fonts.regular, fontSize: 16 },

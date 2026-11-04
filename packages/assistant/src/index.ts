@@ -7,3 +7,5 @@ export type { AssistantComparisonInput, AssistantContextInput, AssistantModuleIn
 export { AssistantError, createAssistantClient, DEFAULT_ASSISTANT_URL, GENERATION_DEFAULTS, MAX_HISTORY_TURNS, stripThinking, withNoThink } from "./client";
 export type { AssistantAnswer, AssistantClient, AssistantClientOptions, AssistantErrorCode, AssistantTransport, ChatTurn, DirectClientOptions, ProxyClientOptions } from "./client";
 export { renderSharedPromptModule, SHARED_PROMPT_PATH } from "./shared";
+export { detectFollowUpTopic, followUpSuggestions } from "./followups";
+export type { FollowUpTopic } from "./followups";
