@@ -120,6 +120,25 @@ export interface ChannelAggregate {
 
 export type EventLike = { readonly type: string; readonly at_us?: number | null } & Record<string, unknown>;
 
+
+export interface AssistantExchangeRow {
+  readonly id: number;
+  readonly user_id: string;
+  readonly session_id: string | null;
+  readonly asked_at: string;
+  readonly question: string;
+  readonly scope: "in_scope" | "out_of_scope_clinical" | "out_of_scope_other";
+  readonly context_chars: number;
+  readonly context_summary: string;
+  readonly server_url: string | null;
+  readonly model: string | null;
+  readonly answer: string | null;
+  readonly error: string | null;
+  readonly elapsed_ms: number | null;
+}
+
+export type NewAssistantExchange = Omit<AssistantExchangeRow, "id">;
+
 export interface SessionSummary extends SessionRow {
   readonly capture_count: number;
   readonly record_count: number;
@@ -587,6 +606,28 @@ export class SessionRepository {
       ]);
       await trimDiagnostics(tx, sessionId);
     });
+  }
+
+
+  // ------------------------------------------------------------ asistente (ADR 0012)
+
+  /** Guarda un intercambio con el asistente (pregunta, resumen del contexto y respuesta o error). */
+  async addAssistantExchange(x: NewAssistantExchange): Promise<number> {
+    const r = await this.db.run(
+      `INSERT INTO assistant_exchange (user_id, session_id, asked_at, question, scope, context_chars, context_summary, server_url, model, answer, error, elapsed_ms)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [x.user_id, x.session_id, x.asked_at, x.question, x.scope, x.context_chars, x.context_summary, x.server_url, x.model, x.answer, x.error, x.elapsed_ms],
+    );
+    return Number(r.lastInsertRowId);
+  }
+
+  async listAssistantExchanges(userId: string, limit = 50): Promise<AssistantExchangeRow[]> {
+    return this.db.all<AssistantExchangeRow>("SELECT * FROM assistant_exchange WHERE user_id = ? ORDER BY asked_at DESC, id DESC LIMIT ?", [userId, limit]);
+  }
+
+  async countAssistantExchanges(userId: string): Promise<number> {
+    const row = await this.db.get<{ n: number }>("SELECT count(*) AS n FROM assistant_exchange WHERE user_id = ?", [userId]);
+    return row?.n ?? 0;
   }
 
   async getEvents(sessionId: string): Promise<EventRow[]> {

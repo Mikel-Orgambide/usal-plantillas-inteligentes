@@ -187,6 +187,29 @@ CREATE TABLE sync_state (
 );
 `,
   },
+  {
+    version: 4,
+    description: "Asistente explicativo (ADR 0012): registro local de cada intercambio con el modelo, para la evidencia; no se sincroniza",
+    sql: `
+CREATE TABLE assistant_exchange (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         TEXT NOT NULL REFERENCES user(id),
+  session_id      TEXT REFERENCES session(id),
+  asked_at        TEXT NOT NULL,
+  question        TEXT NOT NULL,
+  scope           TEXT NOT NULL CHECK (scope IN ('in_scope','out_of_scope_clinical','out_of_scope_other')),
+  context_chars   INTEGER NOT NULL CHECK (context_chars >= 0),
+  context_summary TEXT NOT NULL,
+  server_url      TEXT,
+  model           TEXT,
+  answer          TEXT,
+  error           TEXT,
+  elapsed_ms      INTEGER,
+  CHECK ((answer IS NOT NULL) OR (error IS NOT NULL))
+);
+CREATE INDEX assistant_exchange_user_idx ON assistant_exchange(user_id, asked_at DESC);
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

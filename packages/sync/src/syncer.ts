@@ -1,3 +1,4 @@
+import type { AcquisitionConfiguration } from "@plantillas/contract";
 import { SessionRepository, type CaptureRow, type SqlDriver, type SyncStateRow } from "@plantillas/storage";
 import {
   SyncRejectedError,
@@ -64,8 +65,14 @@ export async function syncSession(opts: SyncOptions, sessionId: string): Promise
   if (user.remote_id !== opts.ownerRemoteId) return { status: "skipped", reason: "la sesión pertenece a otra cuenta" };
   const captures = await repo.getCaptures(sessionId);
   if (captures.length === 0) return { status: "skipped", reason: "la sesión no tiene capturas" };
-  const configuration = await repo.getConfiguration(captures[0]!.configuration_id);
-  if (!configuration) return { status: "skipped", reason: "falta la configuración de la captura" };
+  // Una configuración por módulo (dispositivo), en el orden en que aparecen las capturas (ADR 0011).
+  const configurations: AcquisitionConfiguration[] = [];
+  for (const id of [...new Set(captures.map((c) => c.configuration_id))]) {
+    const cfg = await repo.getConfiguration(id);
+    if (!cfg) return { status: "skipped", reason: `falta la configuración ${id} de la captura` };
+    configurations.push(cfg);
+  }
+  const configuration = configurations[0]!;
 
   const chunkSize = opts.chunkSize ?? DEFAULTS.chunkSize;
   const call = <T>(fn: () => Promise<T>) => withRetry(fn, opts.attempts ?? DEFAULTS.attempts, opts.sleep ?? defaultSleep);
@@ -78,7 +85,7 @@ export async function syncSession(opts: SyncOptions, sessionId: string): Promise
     const header: RemoteSessionPayload = {
       id: session.id, activity: session.activity, context: session.context, source: session.source, state: session.state,
       started_at: session.started_at, ended_at: session.ended_at, duration_ms: session.duration_ms, created_at: session.created_at, updated_at: session.updated_at,
-      device_id: configuration.device_id, configuration_id: configuration.configuration_id, configuration, schema_version: version?.user_version ?? 0,
+      device_id: configuration.device_id, configuration_id: configuration.configuration_id, configuration, configurations, schema_version: version?.user_version ?? 0,
     };
     const capturePayloads: RemoteCapturePayload[] = captures.map((c) => ({ external_capture_id: c.external_capture_id, source: c.source, started_at: c.started_at }));
     const begun = await call(() => opts.gateway.beginSession(header, capturePayloads));
@@ -161,24 +168,25 @@ export async function syncPendingSessions(opts: SyncOptions): Promise<SyncRunRep
 
 export async function localCounts(repo: SessionRepository, sessionId: string, captures?: readonly CaptureRow[]): Promise<EntityCounts> {
   const caps = captures ?? (await repo.getCaptures(sessionId));
+  const configurations = new Set(caps.map((c) => c.configuration_id)).size;
   let records = 0, results = 0;
   for (const c of caps) {
     records += await repo.countRecords(c.id);
     results += (await repo.getResults(c.id)).length;
   }
-  return { captures: caps.length, records, events: (await repo.getEvents(sessionId)).length, results };
+  return { configurations, captures: caps.length, records, events: (await repo.getEvents(sessionId)).length, results };
 }
 
 /** Texto del desajuste entre lo local y lo que informa el servidor, o `null` si coinciden. */
 export function compareCounts(local: EntityCounts, remote: EntityCounts): string | null {
   const diffs: string[] = [];
-  for (const k of ["captures", "records", "events", "results"] as const) {
-    if (remote[k] !== local[k]) diffs.push(`${LABEL[k]} ${remote[k]} de ${local[k]}`);
+  for (const k of ["configurations", "captures", "records", "events", "results"] as const) {
+    if (remote[k] !== local[k]) diffs.push(`${LABEL[k]} ${remote[k] ?? 0} de ${local[k]}`);
   }
   return diffs.length === 0 ? null : `el servidor informa ${diffs.join(", ")}`;
 }
 
-const LABEL: Record<keyof EntityCounts, string> = { captures: "capturas", records: "registros", events: "eventos", results: "resultados" };
+const LABEL: Record<keyof EntityCounts, string> = { configurations: "configuraciones", captures: "capturas", records: "registros", events: "eventos", results: "resultados" };
 
 async function withRetry<T>(fn: () => Promise<T>, attempts: number, sleep: (ms: number) => Promise<void>): Promise<T> {
   let last: unknown;

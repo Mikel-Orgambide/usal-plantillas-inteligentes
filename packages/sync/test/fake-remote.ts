@@ -90,7 +90,11 @@ export class FakeRemote implements RemoteGateway {
 
   countsOf(sessionId: string): EntityCounts {
     const caps = [...this.captures.entries()].filter(([, v]) => v.sessionId === sessionId).map(([id]) => id);
+    const header = this.sessions.get(sessionId)?.header;
+    // Como la migración 0003: una fila por dispositivo; sin `configurations` (app anterior) cuenta la única configuración.
+    const configurations = header ? new Set((header.configurations ?? [header.configuration]).map((c) => c.device_id)).size : 0;
     return {
+      configurations,
       captures: caps.length,
       records: caps.reduce((n, id) => n + (this.records.get(id)?.size ?? 0), 0),
       events: this.events.get(sessionId)?.size ?? 0,

@@ -43,13 +43,16 @@ function check(name, ok, detail = "") {
   console.log(`${ok ? "OK " : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
+const SIM_CONFIG = { configuration_id: "SIM-CONFIG-001", device_id: "SIM-001", source: "simulated", raw_range: { min: 0, max: 4095, resolution_bits: 12 }, channels: [] };
 function header(id) {
   const t = "2026-10-21T10:00:00.000Z";
   return {
     id, activity: "caminata", context: "verificación remota", source: "simulated", state: "completed",
     started_at: t, ended_at: "2026-10-21T10:00:30.000Z", duration_ms: 30000, created_at: t, updated_at: t,
-    device_id: "SIM-001", configuration_id: "SIM-CONFIG-001", schema_version: 3,
-    configuration: { configuration_id: "SIM-CONFIG-001", device_id: "SIM-001", source: "simulated", raw_range: { min: 0, max: 4095, resolution_bits: 12 }, channels: [] },
+    device_id: "SIM-001", configuration_id: "SIM-CONFIG-001", schema_version: 4,
+    configuration: SIM_CONFIG,
+    // Migración 0003: todas las configuraciones (una por módulo).
+    configurations: [SIM_CONFIG],
   };
 }
 const captures = [{ external_capture_id: "SIM-CAPTURE-CHECK-001", source: "simulated", started_at: "2026-10-21T10:00:00.000Z" }];
@@ -93,7 +96,7 @@ check("anónimo: RPC rechazada", !!anonRpc.error, anonRpc.error?.message);
 
 const ca = await signIn(A);
 const first = await transfer(ca, "REMOTE-CHECK-A");
-check("cuenta A: transferencia confirmada por cantidades", first.counts.records === 50 && first.counts.captures === 1 && first.counts.events === 1 && first.counts.results === 1, JSON.stringify(first.counts));
+check("cuenta A: transferencia confirmada por cantidades", first.counts.records === 50 && first.counts.captures === 1 && first.counts.events === 1 && first.counts.results === 1 && first.counts.configurations === 1, JSON.stringify(first.counts));
 const again = await transfer(ca, "REMOTE-CHECK-A");
 check("cuenta A: transferencia repetida no duplica", again.inserted === 0 && JSON.stringify(again.counts) === JSON.stringify(first.counts), `insertados ${again.inserted}, ${JSON.stringify(again.counts)}`);
 const listA = await ca.from("session_summary").select("id,record_count");

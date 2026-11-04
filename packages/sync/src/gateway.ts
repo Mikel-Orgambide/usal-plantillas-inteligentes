@@ -24,8 +24,10 @@ export interface RemoteSessionPayload {
   readonly updated_at: string;
   readonly device_id: string;
   readonly configuration_id: string;
-  /** Configuración completa, con sus canales, para interpretar los registros sin la base local. */
+  /** Configuración del primer módulo (compatibilidad con el esquema 0001). */
   readonly configuration: AcquisitionConfiguration;
+  /** Configuraciones de todos los módulos de la sesión, el primero primero (ADR 0011; migración 0003). */
+  readonly configurations: readonly AcquisitionConfiguration[];
   readonly schema_version: number;
 }
 
@@ -77,6 +79,8 @@ export interface RemoteResultPayload {
 
 /** Cantidades de una sesión, locales o informadas por el servidor. */
 export interface EntityCounts {
+  /** Configuraciones (módulos) de la sesión; el servidor la informa desde la migración 0003. */
+  readonly configurations: number;
   readonly captures: number;
   readonly records: number;
   readonly events: number;

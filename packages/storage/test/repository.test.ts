@@ -20,7 +20,7 @@ describe("migraciones", () => {
   it("aplica el esquema inicial y fija user_version", async () => {
     const db = new NodeSqliteDriver();
     const report = await migrate(db);
-    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2, 3] });
+    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2, 3, 4] });
     expect(await getSchemaVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
     const again = await migrate(db);
     expect(again.applied).toEqual([]);
@@ -46,7 +46,7 @@ describe("migraciones", () => {
     await db1.close();
 
     const db2 = new NodeSqliteDriver(path);
-    expect(await migrate(db2)).toEqual({ from: 1, to: 3, applied: [2, 3] });
+    expect(await migrate(db2)).toEqual({ from: 1, to: CURRENT_SCHEMA_VERSION, applied: [2, 3, 4] });
     const repo2 = new SessionRepository(db2);
     expect(await repo2.countRecords(capture.id)).toBe(5);
     expect(await repo2.getResults(capture.id)).toEqual([]);
@@ -60,10 +60,11 @@ describe("migraciones", () => {
     await repo.insertRecords(capture.id, simulatedRecords(5, "S1"));
     await db.close();
 
-    const v4: Migration = { version: 4, description: "prueba", sql: "ALTER TABLE session ADD COLUMN notes TEXT" };
+    const next = CURRENT_SCHEMA_VERSION + 1;
+    const vNext: Migration = { version: next, description: "prueba", sql: "ALTER TABLE session ADD COLUMN notes TEXT" };
     const db2 = new NodeSqliteDriver(path);
-    const report = await migrate(db2, [...MIGRATIONS, v4]);
-    expect(report).toEqual({ from: 3, to: 4, applied: [4] });
+    const report = await migrate(db2, [...MIGRATIONS, vNext]);
+    expect(report).toEqual({ from: CURRENT_SCHEMA_VERSION, to: next, applied: [next] });
     const repo2 = new SessionRepository(db2);
     expect(await repo2.countRecords(capture.id)).toBe(5);
     expect(await db2.get("SELECT notes FROM session WHERE id = 'S1'")).toEqual({ notes: null });
@@ -238,6 +239,26 @@ describe("consultas para visualización", () => {
     expect(await repo.getChannelSeries(999, "L_HEEL", 5)).toEqual([]);
     const q = await repo.getCaptureQuality(capture.id);
     expect(q).toEqual({ records: 16, max_sequence: 19, read_errors: 0 });
+    await db.close();
+  });
+});
+
+describe("asistente (ADR 0012): registro local de intercambios", () => {
+  it("guarda pregunta, resumen del contexto y respuesta o error, por usuario", async () => {
+    const db = new NodeSqliteDriver();
+    await migrate(db);
+    const repo = new SessionRepository(db);
+    await repo.ensureLocalUser();
+    const base = { user_id: "local", session_id: null, asked_at: "2026-11-04T18:00:00.000Z", context_chars: 1200, context_summary: "2 sesiones; seleccionada ninguna", server_url: "http://192.168.0.140:1234", model: "qwen3-14b" };
+    await repo.addAssistantExchange({ ...base, question: "¿Qué pasó ayer?", scope: "in_scope", answer: "En la sesión del 3/11…", error: null, elapsed_ms: 1800 });
+    await repo.addAssistantExchange({ ...base, asked_at: "2026-11-04T18:01:00.000Z", question: "¿Tengo fascitis?", scope: "out_of_scope_clinical", answer: "Eso no lo puedo responder…", error: null, elapsed_ms: 0, model: null });
+    await repo.addAssistantExchange({ ...base, asked_at: "2026-11-04T18:02:00.000Z", question: "¿Y el máximo?", scope: "in_scope", answer: null, error: "no se pudo contactar al asistente", elapsed_ms: 60000 });
+    await expect(repo.addAssistantExchange({ ...base, question: "sin nada", scope: "in_scope", answer: null, error: null, elapsed_ms: null })).rejects.toThrow();
+    const rows = await repo.listAssistantExchanges("local");
+    expect(rows.map((r) => r.question)).toEqual(["¿Y el máximo?", "¿Tengo fascitis?", "¿Qué pasó ayer?"]);
+    expect(rows[2]).toMatchObject({ scope: "in_scope", model: "qwen3-14b", answer: "En la sesión del 3/11…", error: null });
+    expect(await repo.countAssistantExchanges("local")).toBe(3);
+    expect(await repo.countAssistantExchanges("otro")).toBe(0);
     await db.close();
   });
 });

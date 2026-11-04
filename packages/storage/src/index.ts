@@ -7,7 +7,7 @@ export type { MigrationReport } from "./migrate";
 export { DIAGNOSTIC_LIMIT, SessionRepository } from "./repository";
 export type {
   CaptureRow, ChannelAggregate, EventLike, NewResult, ResultRow, EventRow, InsertOutcome, NewSession, RecordRow, SampleRow, SessionRow, SessionState, SessionSummary,
-  SyncStateRow, SyncStatus, UserRow,
+  SyncStateRow, SyncStatus, UserRow, AssistantExchangeRow, NewAssistantExchange,
 } from "./repository";
 export { DEFAULT_WRITE_QUEUE_OPTIONS, WriteQueue } from "./write-queue";
 export type { WriteQueueOptions, WriteQueueStats } from "./write-queue";

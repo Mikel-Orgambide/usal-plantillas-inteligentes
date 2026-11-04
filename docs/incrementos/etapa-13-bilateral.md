@@ -33,6 +33,15 @@ Resultado: 148 pruebas en verde (contract 25, simulator 16, storage 26, metrics 
 
 **Esto comprueba la lógica, no el enlace físico.** No acredita conexión simultánea real de dos ESP32, tasa sostenida con dos enlaces ni el desfase real.
 
+## Esquema remoto (migración 0003, 2026-11-04)
+
+Hasta la etapa 11 el servidor guardaba una sola configuración por sesión (`session.configuration`). Con dos módulos, cada captura pertenece a un dispositivo distinto y el servidor necesita las dos para interpretar los registros sin la base local.
+
+- `supabase/migrations/0003_session_configurations.sql`: tabla `session_configuration` (una fila por dispositivo: posición, `device_id`, `configuration_id`, pie deducido de los códigos de canal, procedencia, canales y configuración completa), RLS por titular, privilegios para `authenticated` (lección de 0002), sin borrado; `sync_session_begin` acepta `configurations` en la cabecera (si falta, usa `configuration` como único módulo: compatible con apps anteriores); `sync_session_finish` devuelve también `configurations`; `session_summary` suma `module_count`. Las sesiones ya subidas reciben su único módulo al aplicar la migración.
+- `packages/sync`: la cabecera lleva `configurations` (todas, el primer módulo primero) y la sesión sólo se confirma si el servidor informa la misma cantidad de configuraciones; contra un servidor sin la migración queda **pendiente**, no confirmada (prueba `sesión bilateral … confirma por su cantidad`). `scripts/remote-check.mjs` actualizado.
+- Probado en PostgreSQL 16 local con `supabase/tests/auth-shim.sql`: `tests/check-bilateral.sql` (dos configuraciones, repetición sin duplicar, cabecera antigua, cuenta B sin acceso, anónimo rechazado) y `tests/check-rls.sql` después de 0003 → `test-data/remote/check-bilateral-2026-11-04.txt` y `check-rls-tras-0003-2026-11-04.txt`.
+- **Pendiente (Mikel):** aplicar `0003_session_configurations.sql` en el SQL Editor del proyecto de Supabase antes de sincronizar sesiones con la app 0.14.0; sin ella, las sesiones quedan «pendientes» con el detalle «configuraciones 0 de N».
+
 ## Pendiente para la validación física (6/11/2026)
 
 1. Cablear el segundo banco de tres divisores (FSR406 2,2 kΩ; FSR402 4,7 kΩ ×2) y cargar `pio run -e esp32-analog-right -t upload`; confirmar `info` con `ESP32-FSR-R-001`.

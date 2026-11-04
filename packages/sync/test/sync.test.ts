@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIMULATED_CONFIGURATION, normalizeRecord, validateSourceRecord, type NormalizedRecord } from "@plantillas/contract";
+import { LEFT_MODULE_CONFIGURATION, RIGHT_MODULE_CONFIGURATION, SIMULATED_CONFIGURATION, normalizeRecord, validateSourceRecord, type ChannelCode, type NormalizedRecord } from "@plantillas/contract";
 import { SCENARIOS, SimulatedGenerator, take } from "@plantillas/simulator";
 import { NodeSqliteDriver } from "@plantillas/storage/node";
 import { SessionRepository, migrate } from "@plantillas/storage";
@@ -55,7 +55,8 @@ describe("sincronización de sesiones (etapa 11, 03 §14 y 05 §5)", () => {
     const o = await syncSession({ db, gateway: remote, ownerRemoteId: "uuid-A", chunkSize: 8, sleep: noSleep, onProgress: (p) => progress.push(p.recordsSent) }, "S1");
     expect(o.status).toBe("confirmed");
     if (o.status !== "confirmed") return;
-    expect(o.counts).toEqual({ captures: 1, records: 30, events: 2, results: 2 });
+    expect(o.counts).toEqual({ configurations: 1, captures: 1, records: 30, events: 2, results: 2 });
+    expect(remote.sessions.get("S1")?.header.configurations).toHaveLength(1);
     expect(o.counts).toEqual(await localCounts(repo, "S1"));
     expect(remote.calls.filter((c) => c === "records")).toHaveLength(4);
     expect(progress.at(-1)).toBe(30);
@@ -156,6 +157,47 @@ describe("sincronización de sesiones (etapa 11, 03 §14 y 05 §5)", () => {
     expect(await syncSession(opts, "S9")).toEqual({ status: "skipped", reason: "la sesión no tiene capturas" });
     expect(await syncSession(opts, "NO")).toEqual({ status: "skipped", reason: "la sesión no existe" });
     expect(remote.calls).toEqual([]);
+    await db.close();
+  });
+
+  it("sesión bilateral (ADR 0011): envía las dos configuraciones y confirma por su cantidad", async () => {
+    const db = new NodeSqliteDriver();
+    await migrate(db);
+    const repo = new SessionRepository(db);
+    await repo.ensureLocalUser();
+    await repo.linkRemoteUser("uuid-A", "a@ejemplo.com");
+    const left = LEFT_MODULE_CONFIGURATION, right = RIGHT_MODULE_CONFIGURATION;
+    await repo.ensureConfiguration(left);
+    await repo.ensureConfiguration(right);
+    await repo.createSession({ id: "BIL", user_id: "local", activity: "caminata", source: "physical", started_at: RECEIVED_AT });
+    const capL = await repo.openCapture("BIL", left, "ESP32-L-B1-C1", RECEIVED_AT);
+    const capR = await repo.openCapture("BIL", right, "ESP32-R-B1-C1", RECEIVED_AT);
+    const sample = (code: ChannelCode, i: number) => ({ channel_id: code, time_us: i * 50_000, raw_value: 1000 + i, unit: "adc_count" as const, status: "ok" as const });
+    const rec = (captureId: string, cfg: { device_id: string; configuration_id: string }, codes: ChannelCode[], i: number): NormalizedRecord => ({
+      session_id: "BIL", capture_id: captureId, device_id: cfg.device_id, configuration_id: cfg.configuration_id, source: "physical",
+      received_at: RECEIVED_AT, sequence: i, format_version: "1.0", samples: codes.map((c) => sample(c, i)),
+    });
+    await repo.insertRecords(capL.id, Array.from({ length: 5 }, (_, i) => rec("ESP32-L-B1-C1", left, ["L_HEEL", "L_MEDIAL", "L_LATERAL"], i)));
+    await repo.insertRecords(capR.id, Array.from({ length: 4 }, (_, i) => rec("ESP32-R-B1-C1", right, ["R_HEEL", "R_MEDIAL", "R_LATERAL"], i)));
+    await repo.addEvent("BIL", null, { type: "session_stopped", state: "completed" }, RECEIVED_AT);
+    await repo.closeSession("BIL", RECEIVED_AT, 250, "completed");
+
+    const remote = new FakeRemote();
+    const o = await syncSession({ db, gateway: remote, ownerRemoteId: "uuid-A", sleep: noSleep }, "BIL");
+    expect(o.status).toBe("confirmed");
+    if (o.status !== "confirmed") return;
+    expect(o.counts).toEqual({ configurations: 2, captures: 2, records: 9, events: 1, results: 0 });
+    const header = remote.sessions.get("BIL")!.header;
+    expect(header.configurations.map((c) => c.configuration_id)).toEqual(["ESP32-FSR-L-001", "ESP32-FSR-R-001"]);
+    expect(header.configuration.configuration_id).toBe("ESP32-FSR-L-001");
+    expect(remote.records.get("2")?.get(3)?.samples.map((s) => s.channel_id).sort()).toEqual(["R_HEEL", "R_LATERAL", "R_MEDIAL"]);
+
+    // Un servidor sin la migración 0003 no informa configuraciones: la sesión queda pendiente, no confirmada.
+    const old = new FakeRemote();
+    old.reportOverride = { configurations: 0 };
+    const p = await syncSession({ db, gateway: old, ownerRemoteId: "uuid-A", sleep: noSleep }, "BIL");
+    expect(p.status).toBe("pending");
+    if (p.status === "pending") expect(p.error).toContain("configuraciones 0 de 2");
     await db.close();
   });
 });

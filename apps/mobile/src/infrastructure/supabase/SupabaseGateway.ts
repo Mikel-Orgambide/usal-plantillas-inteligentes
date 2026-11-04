@@ -57,6 +57,7 @@ export class SupabaseGateway implements RemoteGateway {
     if (error) throw toError(error, "cierre de la sesión");
     const c = data as Partial<Record<keyof EntityCounts, number | string>> | null;
     if (!c) throw new SyncRejectedError("cierre de la sesión: el servidor no devolvió cantidades");
-    return { captures: Number(c.captures ?? 0), records: Number(c.records ?? 0), events: Number(c.events ?? 0), results: Number(c.results ?? 0) };
+    // `configurations` existe desde la migración 0003; un servidor sin ella devuelve 0 y la sesión queda pendiente (no confirmada).
+    return { configurations: Number(c.configurations ?? 0), captures: Number(c.captures ?? 0), records: Number(c.records ?? 0), events: Number(c.events ?? 0), results: Number(c.results ?? 0) };
   }
 }
