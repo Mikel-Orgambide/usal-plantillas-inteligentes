@@ -9,6 +9,10 @@
 
   ```
   supabase secrets set ASSISTANT_API_KEY=sk-or-... ASSISTANT_BASE_URL=https://openrouter.ai/api/v1 ASSISTANT_MODEL=qwen/qwen3-14b
+
+(`qwen/qwen3-32b` es una alternativa con mejores respuestas a costo algo mayor; las pruebas locales usan Qwen3 14B.)
+
+El prompt de sistema y los parámetros de generación de la función viven en `functions/_shared/assistant-prompt.ts`, **generado** desde `packages/assistant` con `node scripts/sync-assistant-prompt.mjs`. Después de cambiar el prompt o la ficha de conocimiento: regenerar, `npm test` y volver a desplegar con `supabase functions deploy assistant`.
   supabase functions deploy assistant
   ```
 

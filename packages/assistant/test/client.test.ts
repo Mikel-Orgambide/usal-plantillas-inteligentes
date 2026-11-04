@@ -21,7 +21,8 @@ describe("createAssistantClient · transporte direct (servidor compatible con Op
     const msgs = calls[0]!.body.messages;
     expect(msgs[0].role).toBe("system");
     expect(msgs[0].content).toContain("CONTEXTO…");
-    expect(msgs[0].content).toMatch(/Nunca diagnosticás/);
+    expect(msgs[0].content).toMatch(/No diagnosticás/);
+    expect(msgs[0].content).toMatch(/FICHA DE CONOCIMIENTO/);
     expect(msgs.map((m: any) => m.role)).toEqual(["system", "user", "assistant", "user"]);
     expect(msgs[3].content).toBe("¿Cuál fue el máximo del talón?\n/no_think");
     expect(calls[0]!.body.model).toBe("qwen3-14b");

@@ -39,3 +39,16 @@ Al 4/11/2026 el núcleo está cerrado (etapas 0–13): sesiones físicas con FSR
 ## Nota (2026-11-04): tráfico sin cifrar en el modo «Servidor propio»
 
 Las builds de producción de Android rechazan por defecto las conexiones `http://`. LM Studio sirve en `http://<ip-local>:1234`, por lo que la app habilita el tráfico sin cifrar (`expo-build-properties` → `android.usesCleartextTraffic: true`, versión 0.14.2). Supabase y el modo nube siguen usando HTTPS; la única conexión en claro es la del servidor propio dentro de la red privada del usuario. Riesgo residual: en una red compartida, el contexto enviado (indicadores, sin correo ni registros crudos) podría observarse; por eso el modo propio se documenta sólo para redes privadas y la demo usa el modo nube.
+
+## Ajuste del 4/11/2026: tres niveles, ficha, comparaciones precalculadas y prompt compartido
+
+Las primeras pruebas con el modelo mostraron que la regla «respondé sólo con lo que figura en el contexto» lo volvía inútil para lo que más se le pregunta: «¿esto qué significa?» después de una comparación se contestaba con «no tengo ese dato… no interpreto significados». Se ajusta sin mover el límite clínico:
+
+1. **Tres niveles.** (1) Medición: cita los números y la sesión. (2) Lectura descriptiva y educativa: puede explicar qué significa un indicador o un cambio en términos del apoyo y mencionar, como posibilidades, causas no clínicas (tarea, postura, calzado, colocación, deriva, saturación, configuración, duración) y cómo comparar mejor. (3) Lo clínico (diagnóstico, lesión, dolor, tratamiento, fatiga como estado del cuerpo, rendimiento, rangos «normales») sigue fuera, con filtro previo en el teléfono.
+2. **Ficha de conocimiento** fija en el prompt (`knowledge.ts`), tomada de la documentación del repositorio, sin cifras clínicas.
+3. **Comparaciones precalculadas** en el contexto: el modelo lee diferencias ya calculadas en lugar de restar por su cuenta.
+4. **Horas en la zona del teléfono** en el contexto, con la zona declarada.
+5. **Prompt compartido**: la función gestionada importa `supabase/functions/_shared/assistant-prompt.ts`, generado desde el paquete; una prueba impide que se desincronicen. El cliente sigue sin poder reemplazar el prompt de la función.
+6. Parámetros: `temperature` 0,4 y `max_tokens` 600; últimos 6 turnos. Para la nube, `qwen/qwen3-32b` queda documentado como opción de mejor calidad a costo algo mayor (secreto `ASSISTANT_MODEL`); las pruebas locales siguen con Qwen3 14B.
+
+Estas reglas siguen siendo instrucciones a un modelo: la evidencia de la etapa 14 debe incluir preguntas de los tres niveles y revisar que la lectura descriptiva no derive en interpretaciones clínicas.

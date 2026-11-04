@@ -9,7 +9,8 @@
 // Secretos (supabase secrets set …):
 //   ASSISTANT_API_KEY   clave del proveedor (obligatoria)
 //   ASSISTANT_BASE_URL  base de la API, por defecto https://openrouter.ai/api/v1
-//   ASSISTANT_MODEL     modelo, por defecto qwen/qwen3-14b (el mismo que las pruebas locales)
+//   ASSISTANT_MODEL     modelo, por defecto qwen/qwen3-14b (el mismo que las pruebas locales);
+//                       qwen/qwen3-32b es una opción con mejores respuestas a costo algo mayor
 //   ASSISTANT_HOURLY_LIMIT  preguntas por usuario y hora, por defecto 30
 //   ASSISTANT_REFERER / ASSISTANT_TITLE  cabeceras opcionales de OpenRouter
 //
@@ -22,6 +23,7 @@
 // modelo, longitudes y tiempo; nunca el texto de la pregunta ni del contexto.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { GENERATION_DEFAULTS, MAX_HISTORY_TURNS, SYSTEM_PROMPT } from "../_shared/assistant-prompt.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -35,21 +37,12 @@ const TITLE = Deno.env.get("ASSISTANT_TITLE") ?? "NSL · Plantillas inteligentes
 
 const MAX_QUESTION_CHARS = 1_000;
 const MAX_CONTEXT_CHARS = 12_000;
-const MAX_HISTORY_TURNS = 8;
 const MAX_HISTORY_CHARS = 4_000;
 const PROVIDER_TIMEOUT_MS = 55_000;
 
-// Mismas instrucciones que `packages/assistant/src/prompt.ts`. Si cambia allí, cambia acá.
-const SYSTEM_PROMPT = `Sos el asistente de NSL · Plantillas inteligentes, una app que registra señales de sensores de presión (FSR) bajo el pie y las organiza en sesiones.
-
-Reglas:
-1. Respondé sólo con lo que figura en el CONTEXTO. Si un dato no está, decí «no tengo ese dato en la app» y no lo inventes.
-2. Explicás mediciones ya calculadas: sesiones, duración, calidad del registro, indicadores (media, máximo, reparto antepié/talón, izquierda/derecha, asimetría), eventos y comparaciones. No calculás números nuevos ni promediás por tu cuenta.
-3. Las unidades son cuentas ADC (0–4095) de la señal cruda: no son newtons, kilos ni presión; no las conviertas. Un valor mayor significa más lectura del sensor, no más fuerza medida.
-4. Nunca diagnosticás, no recomendás tratamientos ni ejercicios, no hablás de lesiones, fatiga ni rendimiento como conclusión. Si la pregunta va por ahí, decí que eso corresponde a un profesional y volvé a lo que sí podés explicar.
-5. Citá siempre la sesión y la fecha de la que hablás (por ejemplo «en la sesión del 3/11 a las 17:44»). Si la señal es simulada, aclaralo: no es una medición real.
-6. Las posiciones «no disponible» no son cero: no estaban instrumentadas en esa sesión. Los huecos o desconexiones no significan ausencia de apoyo.
-7. Respondé en español rioplatense neutro (vos), breve: dos a cinco oraciones, sin listas largas ni encabezados. Sin emojis.`;
+// Prompt de sistema (reglas en tres niveles + ficha de conocimiento) y parámetros de
+// generación: los mismos que el cliente, generados desde packages/assistant por
+// `node scripts/sync-assistant-prompt.mjs`. El cliente no puede reemplazarlos.
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -93,8 +86,8 @@ function parsePayload(raw: unknown): Payload | Response {
       }
     }
   }
-  const temperature = typeof o.temperature === "number" && o.temperature >= 0 && o.temperature <= 1 ? o.temperature : 0.2;
-  const max_tokens = typeof o.max_tokens === "number" && o.max_tokens > 0 && o.max_tokens <= 800 ? Math.floor(o.max_tokens) : 400;
+  const temperature = typeof o.temperature === "number" && o.temperature >= 0 && o.temperature <= 1 ? o.temperature : GENERATION_DEFAULTS.temperature;
+  const max_tokens = typeof o.max_tokens === "number" && o.max_tokens > 0 && o.max_tokens <= 800 ? Math.floor(o.max_tokens) : GENERATION_DEFAULTS.max_tokens;
   return { question, context, history, temperature, max_tokens };
 }
 

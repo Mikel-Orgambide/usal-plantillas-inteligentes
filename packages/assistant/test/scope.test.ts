@@ -12,6 +12,24 @@ describe("classifyQuestion", () => {
     ]) expect(classifyQuestion(q), q).toBe("in_scope");
   });
 
+  it("deja pasar las preguntas de lectura y las de consejo sobre el registro (ajuste 4/11)", () => {
+    for (const q of [
+      "¿Esto qué significa?",
+      "Esto que significa?",
+      "¿Qué cambió respecto de la anterior?",
+      "¿Por qué bajó el talón?",
+      "¿Qué puedo mejorar para comparar las sesiones?",
+      "¿Qué me recomendás para registrar mejor?",
+      "¿Cómo puedo mejorar la calidad de la señal?",
+    ]) expect(classifyQuestion(q), q).toBe("in_scope");
+  });
+
+  it("los consejos que no hablan del registro siguen siendo clínicos", () => {
+    for (const q of ["¿Qué puedo mejorar en mi pisada?", "¿Qué me recomendás hacer?", "¿Es normal este valor?", "¿Cuál es el rango normal del talón?"]) {
+      expect(classifyQuestion(q), q).toBe("out_of_scope_clinical");
+    }
+  });
+
   it("deriva lo clínico a una respuesta fija sin consultar al modelo", () => {
     for (const q of [
       "¿Tengo fascitis plantar?",

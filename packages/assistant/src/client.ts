@@ -108,8 +108,15 @@ export function withNoThink(question: string, disableThinking: boolean | undefin
   return disableThinking === false ? question : `${question}\n/no_think`;
 }
 
-/** Parámetros de generación compartidos por ambos transportes (y por la función gestionada). */
-export const GENERATION_DEFAULTS = { temperature: 0.2, max_tokens: 400 } as const;
+/**
+ * Parámetros de generación compartidos por ambos transportes y por la función
+ * gestionada (ajuste del 4/11/2026: algo más de libertad para la lectura
+ * descriptiva y respuestas de hasta ~5 oraciones sin cortarse).
+ */
+export const GENERATION_DEFAULTS = { temperature: 0.4, max_tokens: 600 } as const;
+
+/** Turnos anteriores de la conversación que se envían con cada pregunta. */
+export const MAX_HISTORY_TURNS = 6;
 
 function makeRequest(options: CommonOptions, describeTarget: string) {
   const doFetch = options.fetch ?? fetch;
@@ -168,7 +175,7 @@ function createDirectClient(options: DirectClientOptions): AssistantClient {
       const started = Date.now();
       const messages = [
         { role: "system", content: `${options.systemPrompt ?? SYSTEM_PROMPT}\n\n${context}` },
-        ...history.map((t) => ({ role: t.role, content: t.content })),
+        ...history.slice(-MAX_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content })),
         { role: "user", content: withNoThink(question, options.disableThinking) },
       ];
       const body: Record<string, unknown> = {
@@ -211,7 +218,7 @@ function createProxyClient(options: ProxyClientOptions): AssistantClient {
       const payload = {
         question: withNoThink(question, options.disableThinking),
         context,
-        history: history.map((t) => ({ role: t.role, content: t.content })),
+        history: history.slice(-MAX_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content })),
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
       };

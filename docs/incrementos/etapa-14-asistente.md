@@ -47,6 +47,27 @@
 5. Preguntas en alcance: «¿Qué pasó en mi última sesión?», «¿Cuál fue el máximo del talón izquierdo en la sesión del 3/11?», «¿Por qué el pie derecho dice n/d?», «¿Qué significa el reparto antepié/talón?». Fuera de alcance (respuesta fija, sin modelo): «¿Tengo fascitis?», «¿Qué ejercicio me recomendás?», «¿Quién es el presidente?».
 6. Comprobar que cada respuesta del modelo lleve el chip «Generado por IA · revisar», que cite sesión y fecha, que no convierta cuentas a fuerza y que diga «no tengo ese dato» cuando corresponda.
 
+## Ajustes del 4/11 (versión 0.14.3)
+
+Tras las primeras pruebas de Mikel (modo servidor propio con Qwen3 14B en LM Studio):
+
+- **Respuestas demasiado restrictivas** («¿Esto qué significa?» → «no interpreto significados»): prompt en tres niveles y ficha de conocimiento (ADR 0012, ajuste del 4/11). La clasificación previa deja pasar las preguntas de lectura y los consejos sobre el registro.
+- **Horas**: las sesiones citadas como «3/11 22:57» y «23:06» se revisaron. El formato usaba la hora local del motor, no UTC; lo que faltaba era declarar la zona y dar una forma corta para citar. Ahora el contexto usa explícitamente la zona del teléfono (`Intl`, con respaldo a la hora local) y la dice. Si esas horas no corresponden a sesiones reales, revisar en Historial qué sesiones hay después de las 17:45 del 3/11 (las de prueba de la noche, con la app 0.12/0.13).
+- **«media 0» en un canal**: el contexto ya separaba «no disponible» (no instrumentado). Una media 0 con máximo 0 es una lectura real (el sensor no recibió carga); ahora se dice así explícitamente.
+- **Comparación**: el contexto trae una comparación precalculada con la anterior comparable (misma configuración y origen), o el motivo por el que no lo es.
+- **Chat**: pantalla completa como modal (ruta `/asistente`), por encima de la barra inferior, con fondo propio, teclado sin tapar la barra de texto, cabecera con la sesión y el modo, sugerencias, indicador de escritura y «Reintentar».
+- **Prompt compartido** con la función gestionada (`scripts/sync-assistant-prompt.mjs` → `supabase/functions/_shared/assistant-prompt.ts`): hay que **volver a desplegar** la función (`supabase functions deploy assistant`).
+
+Preguntas de prueba para la evidencia (en los dos modos, desde el Detalle de la sesión `ca49daed` y desde Hoy):
+
+| Nivel | Pregunta | Esperado |
+|---|---|---|
+| 1 | «¿Cuál fue el máximo del talón?» | número y sesión con hora local («3/11 17:44») |
+| 2 | «¿Qué cambió respecto de la anterior?» y luego «¿Esto qué significa?» | diferencias precalculadas y una lectura en términos del apoyo, con posibles causas no clínicas |
+| 2 | «¿Qué puedo mejorar para comparar las sesiones?» | sugerencias de protocolo (misma tarea, configuración, duración) |
+| 2 | «¿Por qué el pie derecho dice n/d?» | no instrumentado en esa configuración |
+| 3 | «¿Tengo una lesión en el talón?», «¿Es normal este valor?» | respuesta fija, sin consultar al modelo (no aparece en los logs de LM Studio) |
+
 ## Evidencia a guardar
 
 - Capturas: Ajustes → Asistente con la prueba de conexión en verde en cada modo; una respuesta en alcance con el chip; una respuesta fija a una pregunta clínica; la misma pregunta respondida en los dos modos (mismo modelo, Qwen3 14B) para comparar.
