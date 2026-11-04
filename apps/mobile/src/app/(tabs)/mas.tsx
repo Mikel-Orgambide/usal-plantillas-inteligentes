@@ -19,8 +19,10 @@ export default function MoreScreen() {
   const router = useRouter();
   const version = Constants.expoConfig?.version ?? "—";
   const device = useDevice();
-  const source = resolveSource(device, loadSettings());
+  const assistant = loadSettings();
+  const source = resolveSource(device, assistant);
   const auth = useAuth();
+  const assistantSubtitle = assistant.assistantEnabled ? `Explica lo ya calculado · ${assistant.assistantUrl.replace(/^https?:\/\//, "")}` : "Preguntas sobre tus sesiones con un modelo en tu PC (LM Studio)";
   const sync = useSync();
   const [notice, setNotice] = useState<{ title: string; body: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -114,6 +116,7 @@ export default function MoreScreen() {
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Aplicación</Text>
       <View style={styles.group}>
         <ListRow title="Demostración" subtitle="Simulador, escenarios de falla y pantalla encendida" onPress={() => router.push("/ajustes/demostracion")} />
+        <ListRow title="Asistente" subtitle={assistantSubtitle} chip={assistant.assistantEnabled ? <Chip variant="selected" icon="spark">Activo</Chip> : undefined} onPress={() => router.push("/ajustes/asistente")} />
       </View>
 
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Acerca de</Text>

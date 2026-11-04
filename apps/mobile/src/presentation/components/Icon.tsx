@@ -4,7 +4,7 @@ import { colors, size } from "../theme/tokens";
 /** Los 14 iconos del sistema: retícula 24, trazo 1.5, extremos redondeados, sin relleno (salvo play). */
 export type IconName =
   | "bluetooth" | "bluetooth-off" | "play" | "stop" | "history" | "compare" | "settings"
-  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user" | "chevron-left" | "close" | "more";
+  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user" | "chevron-left" | "close" | "more" | "spark" | "send";
 
 const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]; rect?: boolean; fill?: boolean }> = {
   bluetooth: { d: "M6.5 6.5l11 11-5.5 5.5V1l5.5 5.5-11 11" },
@@ -20,6 +20,8 @@ const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]
   "chevron-left": { d: "M15 6l-6 6 6 6" },
   close: { d: "M6 6l12 12M18 6L6 18" },
   more: { d: "M4 7h16M4 12h16M4 17h10" },
+  spark: { d: "M12 3c.6 3.9 2.3 5.9 6.5 6.5-4.2.6-5.9 2.6-6.5 6.5-.6-3.9-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.6 6.5-6.5zM18.5 15c.3 1.7 1 2.5 2.5 2.8-1.5.3-2.2 1.1-2.5 2.7-.3-1.6-1-2.4-2.5-2.7 1.5-.3 2.2-1.1 2.5-2.8z" },
+  send: { d: "M4 12l16-8-6 16-2.5-6.5z" },
   export: { d: "M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   import: { d: "M12 4v12M7 11l5 5 5-5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   "chevron-down": { d: "M6 9l6 6 6-6" },

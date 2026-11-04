@@ -21,8 +21,9 @@ Fuente de verdad: `docs/especificacion/` (bases de desarrollo del 13/10/2026) y 
 
 - `packages/contract`: tipos, configuración y validador en ejecución; sin dependencias de React Native.
 - `packages/metrics`: descriptores por canal (media, máximo, σ poblacional, cantidades) con versión de algoritmo; cero válidas ⇒ no disponible, nunca cero.
-- `packages/sync`: transferencia de una sesión cerrada al remoto sobre una interfaz `RemoteGateway`; confirmada sólo si el servidor devuelve las mismas cantidades; reintentos ante fallas transitorias, nunca ante rechazos.
-- `apps/mobile/src`: `app` (rutas de Expo Router) → `presentation` → `application` → paquetes de dominio (`contract`, `session`, `simulator`, `storage`, `metrics`, `ble`, `sync`) ← `infrastructure` (`sqlite`, `ble`, `backup`, `supabase`). El dominio no importa UI, BLE ni Supabase.
+- `packages/sync`: transferencia de una sesión cerrada al remoto sobre una interfaz `RemoteGateway`; confirmada sólo si el servidor devuelve las mismas cantidades (configuraciones, capturas, registros, eventos, resultados); reintentos ante fallas transitorias, nunca ante rechazos.
+- `packages/assistant` (ADR 0012): contexto armado localmente con lo ya calculado, filtro previo de preguntas clínicas o ajenas (respuesta fija sin modelo) y cliente de un servidor compatible con OpenAI (LM Studio). Explica; no calcula, no convierte unidades, no diagnostica. Toda respuesta del modelo se muestra «Generado por IA · revisar» y queda registrada en `assistant_exchange`.
+- `apps/mobile/src`: `app` (rutas de Expo Router) → `presentation` → `application` → paquetes de dominio (`contract`, `session`, `simulator`, `storage`, `metrics`, `ble`, `sync`, `report`, `assistant`) ← `infrastructure` (`sqlite`, `ble`, `backup`, `supabase`). El dominio no importa UI, BLE ni Supabase.
 - Offline-first: SQLite local es la fuente primaria; Supabase sincroniza (ADR 0008). El esquema remoto vive en `supabase/migrations` y se prueba en `supabase/tests` con PostgreSQL local.
 
 ## Forma de trabajo

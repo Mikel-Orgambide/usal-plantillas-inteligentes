@@ -17,9 +17,15 @@ export interface Settings {
   /** Escenario del simulador para demostraciones y verificación. */
   scenario: ScenarioName;
   seed: number;
+  /** Asistente explicativo (ADR 0012): botón flotante y servidor compatible con OpenAI (LM Studio). */
+  assistantEnabled: boolean;
+  /** Base del servidor, p. ej. `http://192.168.0.140:1234`. Los datos del contexto salen del teléfono hacia esta dirección. */
+  assistantUrl: string;
+  /** Nombre del modelo cargado; vacío = el que tenga cargado el servidor. */
+  assistantModel: string;
 }
 
-const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, bigNumbers: false, scenario: "normal", seed: 1, simulatorBilateral: false };
+const DEFAULTS: Settings = { simulatorMode: true, keepAwake: true, bigNumbers: false, scenario: "normal", seed: 1, simulatorBilateral: false, assistantEnabled: false, assistantUrl: "http://192.168.0.140:1234", assistantModel: "" };
 const KEY = "settings.v1";
 
 export function loadSettings(): Settings {

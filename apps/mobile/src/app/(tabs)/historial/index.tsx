@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { Button, Chip, DayCard, Halo, Header, Icon, ListRow, Screen, StatusBanner, Text, TextButton } from "../../../presentation/components";
+import { AssistantFab, Button, Chip, DayCard, Halo, Header, Icon, ListRow, Screen, StatusBanner, Text, TextButton } from "../../../presentation/components";
 import { colors, formatDuration, formatNumber, space } from "../../../presentation/theme/tokens";
 import { useSessionList } from "../../../application/useSessions";
 import { useAuth } from "../../../application/authStore";
@@ -54,6 +54,7 @@ export default function HistoryScreen() {
     s.state === "incomplete" ? <Chip variant="alert">Incompleta</Chip> : s.source === "simulated" ? <Chip variant="sim" icon="foot">Simulada</Chip> : <Chip>Física</Chip>;
 
   return (
+    <>
     <Screen
       tabbed
       footer={
@@ -146,6 +147,8 @@ export default function HistoryScreen() {
         </>
       )}
     </Screen>
+    <AssistantFab bottomOffset={selected.length === 2 ? 96 : 16} />
+    </>
   );
 }
 

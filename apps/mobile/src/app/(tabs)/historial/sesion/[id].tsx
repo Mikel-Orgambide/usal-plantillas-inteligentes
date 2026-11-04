@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
 import { isInstrumented, type ChannelMetrics } from "@plantillas/metrics";
-import { Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
+import { AssistantFab, Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
 import { colors, formatDate, formatDuration, formatNumber, space } from "../../../../presentation/theme/tokens";
 import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
@@ -130,6 +130,7 @@ export default function SessionDetailScreen() {
       : <Chip>Sólo en este teléfono</Chip>;
 
   return (
+    <>
     <Screen tabbed footer={<View style={{ gap: space[2] }}><Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>{closed && captures.length > 0 ? <Button icon="export" disabled={reportBusy} onPress={() => void exportReport(session.id)}>{reportBusy ? "Generando informe…" : "Exportar informe (PDF)"}</Button> : null}{closed && captures.length > 0 ? <Button icon="export" disabled={csvBusy} onPress={() => void exportCsv(session.id)}>{csvBusy ? "Generando CSV…" : "Exportar sesión (CSV)"}</Button> : null}</View>}>
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
@@ -278,6 +279,8 @@ export default function SessionDetailScreen() {
         </Card>
       </View>
     </Screen>
+    <AssistantFab sessionId={session.id} bottomOffset={closed && captures.length > 0 ? 200 : 96} />
+    </>
   );
 }
 

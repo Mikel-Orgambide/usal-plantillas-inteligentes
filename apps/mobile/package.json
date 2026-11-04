@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
+    "@plantillas/assistant": "0.1.0",
     "@plantillas/ble": "0.1.0",
     "@plantillas/contract": "1.0.0",
     "@plantillas/metrics": "0.1.0",

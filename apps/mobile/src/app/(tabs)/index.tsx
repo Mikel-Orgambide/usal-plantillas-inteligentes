@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
 import { isInstrumented } from "@plantillas/metrics";
-import { Button, Card, Chip, Halo, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
+import { AssistantFab, Button, Card, Chip, Halo, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
 import { colors, formatDuration, formatNumber, radius, size, space } from "../../presentation/theme/tokens";
 import { useSessionList } from "../../application/useSessions";
 import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../application/sessionStore";
@@ -145,6 +145,7 @@ export default function HomeScreen() {
         </TextButton>
       ) : null}
     </Screen>
+    <AssistantFab bottomOffset={96} />
 
     {/* Desglose del indicador elegido. */}
     <Sheet visible={panel !== null} onDismiss={() => setPanel(null)} floating title={panel === "balance" ? "Izquierda / derecha" : panel === "zones" ? "Antepié / talón" : "Calidad de los datos"}>
