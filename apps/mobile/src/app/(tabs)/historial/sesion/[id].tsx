@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
@@ -9,6 +9,7 @@ import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
 import { shareSessionCsv, shareSessionReport } from "../../../../infrastructure/report/report";
+import { sessionLinkInfo, unlinkSession, useTrainingVersion, type SessionLinkInfo } from "../../../../application/trainingStore";
 import { useAuth } from "../../../../application/authStore";
 import { describeOutcome, syncOne, useSessionSyncState, useSync } from "../../../../application/syncStore";
 
@@ -70,6 +71,10 @@ export default function SessionDetailScreen() {
   // Acciones (comparar, informe, CSV, paquete) en una hoja que abre el ícono de compartir de la cabecera (ajuste 4/11):
   // la pantalla queda entera para los datos, sin barra fija inferior.
   const [actionsOpen, setActionsOpen] = useState(false);
+  // Vínculo con un entrenamiento (ADR 0013): «Vinculada a Sentadilla · serie 3».
+  const trainingVersion = useTrainingVersion();
+  const [link, setLink] = useState<SessionLinkInfo | undefined>();
+  useEffect(() => { if (id) sessionLinkInfo(id).then(setLink).catch(() => undefined); }, [id, trainingVersion]);
   const auth = useAuth();
   const sync = useSync();
   const syncRow = useSessionSyncState(id);
@@ -144,6 +149,14 @@ export default function SessionDetailScreen() {
         onAction={() => setActionsOpen(true)}
       />
       {exportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[3] }}>No se pudo exportar: {exportError}</Text> : null}
+      {link ? (
+        <View style={styles.linkRow}>
+          <Icon name="dumbbell" size={16} color={colors.accent} />
+          <Text variant="caption" color={colors.textSecondary} style={{ flex: 1 }}>Vinculada a <Text variant="label" color={colors.textPrimary}>{link.label}</Text>{link.routine_name && link.entry ? ` · ${link.routine_name}` : ""}</Text>
+          <TextButton onPress={() => router.push({ pathname: "/entrenamiento", params: { id: link.workout.id } })}>Ver</TextButton>
+          <TextButton onPress={() => void unlinkSession(session.id)}>Quitar</TextButton>
+        </View>
+      ) : null}
       <View style={styles.metaRow}>
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>
         <Text variant="caption" color={colors.textSecondary} style={{ flexShrink: 1 }}>{multi ? modules.map((m) => `${m.foot === "left" ? "izq" : m.foot === "right" ? "der" : ""} ${m.device_id}`.trim()).join(" + ") : `${captures[0]?.device_id ?? "—"} · ${captures[0]?.configuration_id ?? "—"}`} · {multi ? `${modules.reduce((n, m) => n + (m.captures[0] ? 1 : 0), 0) * 3} posiciones · dos módulos` : window ? `${POSITION_ORDER.filter((c) => isInstrumented(window.metrics[c])).length} posiciones` : "posiciones"} · cuentas ADC 0–4095</Text>
@@ -306,6 +319,7 @@ function ActionRow({ icon, title, subtitle, onPress, disabled, last }: { icon: "
 }
 
 const styles = StyleSheet.create({
+  linkRow: { flexDirection: "row", alignItems: "center", gap: space[2], marginBottom: space[3] },
   actionRow: { flexDirection: "row", alignItems: "center", gap: space[3], borderBottomWidth: size.hairline, borderBottomColor: colors.line },
   actionIcon: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: space[3] },

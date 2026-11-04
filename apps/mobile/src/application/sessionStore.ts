@@ -9,6 +9,7 @@ import { ensureSessionMetrics } from "./sessionMetrics";
 import { loadSettings } from "../infrastructure/settings/settings";
 import { getDevice, reconnectLink } from "../infrastructure/ble/deviceStore";
 import { resolveSource } from "./activeSource";
+import { applyPendingLink } from "./trainingStore";
 import { resolveLocalUserId } from "./authStore";
 import { syncAfterClose } from "./syncStore";
 
@@ -144,6 +145,8 @@ export async function startSession(activity: Activity, context: string | undefin
   });
   emit();
   await coordinator.start();
+  // Sesión iniciada desde un ejercicio (ADR 0013): el vínculo con el entrenamiento se guarda apenas existe la sesión.
+  await applyPendingLink(coordinator.sessionId).catch(() => undefined);
   emit();
 }
 

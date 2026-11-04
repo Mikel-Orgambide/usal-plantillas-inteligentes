@@ -13,3 +13,5 @@ export { DEFAULT_WRITE_QUEUE_OPTIONS, WriteQueue } from "./write-queue";
 export type { WriteQueueOptions, WriteQueueStats } from "./write-queue";
 export { BUNDLE_FORMAT, bundleConfigurations, countEntities, exportSessionBundle, restoreSessionBundle, validateBundle } from "./backup";
 export type { RestoreReport, SessionBundle } from "./backup";
+export { TrainingRepository } from "./training-repository";
+export type { ItemKind as TrainingItemKind, RoutineItemRow, RoutineRow, SessionLinkRow, WorkoutEntryRow, WorkoutRow } from "./training-repository";

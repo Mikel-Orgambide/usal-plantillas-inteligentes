@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { CHANNEL_CODES, CHANNEL_POSITIONS } from "@plantillas/contract";
 import { Button, Card, Chip, Header, Icon, Screen, Text } from "../presentation/components";
 import { colors, fonts, radius, size, space } from "../presentation/theme/tokens";
@@ -12,8 +12,10 @@ const ZONE_LABEL = { heel: "Talón", forefoot_medial: "Medial", forefoot_lateral
 /** Preparación: actividad, contexto y las posiciones reconocidas de la configuración (las no instrumentadas se muestran como n/d). */
 export default function PrepareScreen() {
   const router = useRouter();
-  const [activity, setActivity] = useState<Activity>("caminata");
-  const [context, setContext] = useState("");
+  // Desde un ejercicio de la rutina (ADR 0013) llegan precargados el contexto («sentadilla · serie 3») y la actividad.
+  const params = useLocalSearchParams<{ context?: string; activity?: string }>();
+  const [activity, setActivity] = useState<Activity>(params.activity && params.activity in ACTIVITY_LABEL ? (params.activity as Activity) : "caminata");
+  const [context, setContext] = useState(params.context ?? "");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | undefined>();
 

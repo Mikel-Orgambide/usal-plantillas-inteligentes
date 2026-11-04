@@ -98,3 +98,24 @@ describe("informe de sesión", () => {
     expect(bad).toContain("no disponible en ambas sesiones");
   });
 });
+
+describe("entrenamiento asociado (ADR 0013)", () => {
+  it("una sesión vinculada muestra la sección 7b marcada como declarada; sin vínculo no aparece", () => {
+    const linked: SessionBundle = {
+      ...physical,
+      training: {
+        workout: { id: "W1", routine_id: "R1", date: "2026-11-04", started_at: "2026-11-04T20:00:00Z", ended_at: null, state: "in_progress", notes: null },
+        routine_name: "Pierna",
+        entry: { id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z" },
+        entries: [{ id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z" }],
+      },
+    };
+    const html = buildSessionReportHtml(linked);
+    expect(html).toContain("7b. Entrenamiento asociado");
+    expect(html).toContain("declarado por el usuario");
+    expect(html).toContain("Sentadilla · serie 3 · 8 × 45 kg · RPE 8");
+    expect(html).toContain("molestia leve en el talón");
+    expect(html).toContain("sin interpretación");
+    expect(buildSessionReportHtml(physical)).not.toContain("Entrenamiento asociado");
+  });
+});

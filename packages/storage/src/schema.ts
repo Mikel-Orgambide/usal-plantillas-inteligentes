@@ -217,6 +217,73 @@ CREATE INDEX assistant_exchange_user_idx ON assistant_exchange(user_id, asked_at
 ALTER TABLE assistant_exchange ADD COLUMN mode TEXT NOT NULL DEFAULT 'local' CHECK (mode IN ('cloud','local'));
 `,
   },
+  {
+    version: 6,
+    description: "Rutinas y entrenamiento (ADR 0013, etapa 15): rutinas con ejercicios objetivo, entrenamientos con entradas declaradas por serie y vínculo sesión↔entrenamiento; lo declarado nunca se mezcla con lo medido",
+    sql: `
+CREATE TABLE routine (
+  id                TEXT PRIMARY KEY,
+  user_id           TEXT NOT NULL REFERENCES user(id),
+  name              TEXT NOT NULL,
+  goal              TEXT,
+  origin            TEXT NOT NULL CHECK (origin IN ('own','professional')),
+  professional_note TEXT,
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL,
+  archived          INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0,1))
+);
+CREATE INDEX routine_user_idx ON routine(user_id, archived, updated_at DESC);
+
+CREATE TABLE routine_item (
+  id            TEXT PRIMARY KEY,
+  routine_id    TEXT NOT NULL REFERENCES routine(id) ON DELETE CASCADE,
+  item_order    INTEGER NOT NULL CHECK (item_order >= 0),
+  kind          TEXT NOT NULL CHECK (kind IN ('strength','walk_run','other')),
+  name          TEXT NOT NULL,
+  target        TEXT NOT NULL,
+  instructions  TEXT,
+  rest_sec      INTEGER CHECK (rest_sec IS NULL OR rest_sec >= 0)
+);
+CREATE INDEX routine_item_routine_idx ON routine_item(routine_id, item_order);
+
+CREATE TABLE workout (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES user(id),
+  routine_id  TEXT REFERENCES routine(id),
+  date        TEXT NOT NULL,
+  started_at  TEXT,
+  ended_at    TEXT,
+  state       TEXT NOT NULL CHECK (state IN ('planned','in_progress','completed')),
+  notes       TEXT
+);
+CREATE INDEX workout_user_date_idx ON workout(user_id, date DESC);
+
+CREATE TABLE workout_entry (
+  id              TEXT PRIMARY KEY,
+  workout_id      TEXT NOT NULL REFERENCES workout(id) ON DELETE CASCADE,
+  item_id         TEXT REFERENCES routine_item(id) ON DELETE SET NULL,
+  item_name       TEXT NOT NULL,
+  kind            TEXT NOT NULL CHECK (kind IN ('strength','walk_run','other')),
+  set_index       INTEGER CHECK (set_index IS NULL OR set_index >= 1),
+  reps            INTEGER CHECK (reps IS NULL OR reps >= 0),
+  weight_kg       REAL CHECK (weight_kg IS NULL OR weight_kg >= 0),
+  duration_s      INTEGER CHECK (duration_s IS NULL OR duration_s >= 0),
+  distance_m      REAL CHECK (distance_m IS NULL OR distance_m >= 0),
+  rpe             INTEGER CHECK (rpe IS NULL OR (rpe BETWEEN 1 AND 10)),
+  discomfort_note TEXT,
+  notes           TEXT,
+  recorded_at     TEXT NOT NULL
+);
+CREATE INDEX workout_entry_workout_idx ON workout_entry(workout_id, recorded_at);
+
+CREATE TABLE session_link (
+  session_id  TEXT PRIMARY KEY REFERENCES session(id),
+  workout_id  TEXT NOT NULL REFERENCES workout(id) ON DELETE CASCADE,
+  entry_id    TEXT REFERENCES workout_entry(id) ON DELETE SET NULL
+);
+CREATE INDEX session_link_workout_idx ON session_link(workout_id);
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

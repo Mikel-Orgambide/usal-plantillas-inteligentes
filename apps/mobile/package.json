@@ -13,6 +13,7 @@
     "@plantillas/simulator": "0.1.0",
     "@plantillas/storage": "0.1.0",
     "@plantillas/sync": "0.1.0",
+    "@plantillas/training": "0.1.0",
     "@supabase/supabase-js": "^2.118.0",
     "expo": "~57.0.31",
     "expo-build-properties": "~57.0.22",

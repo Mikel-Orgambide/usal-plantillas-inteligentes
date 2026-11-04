@@ -331,6 +331,29 @@ function sectionComparability(b: SessionBundle, o: ReportOptions): string {
 <p>Las cuentas ADC no son newtons ni presión: no se dispone de calibración de fuerza, y la misma lectura en dos sensores de distinto modelo o ubicación no implica la misma carga.</p>`;
 }
 
+/** Entrenamiento asociado (ADR 0013): lo declarado por la persona que acompaña a esta sesión medida. */
+function sectionTraining(b: SessionBundle): string {
+  const t = b.training;
+  if (!t) return "";
+  const e = t.entry;
+  const fmtEntry = (x: NonNullable<SessionBundle["training"]>["entries"][number]) => {
+    const parts = [esc(x.item_name)];
+    if (x.set_index !== null) parts.push(`serie ${x.set_index}`);
+    if (x.kind === "strength" && (x.reps !== null || x.weight_kg !== null)) parts.push(`${x.reps ?? ""}${x.weight_kg !== null ? ` × ${x.weight_kg} kg` : ""}`.trim());
+    if (x.duration_s !== null) parts.push(`${Math.round(x.duration_s / 60)} min`);
+    if (x.distance_m !== null) parts.push(`${(x.distance_m / 1000).toFixed(1)} km`);
+    if (x.rpe !== null) parts.push(`RPE ${x.rpe}`);
+    return parts.join(" · ");
+  };
+  const rows = t.entries.map((x) => `<tr><td>${fmtEntry(x)}${e && x.id === e.id ? ' <span class="tag">esta sesión</span>' : ""}</td><td>${x.discomfort_note ? `<em>${esc(x.discomfort_note)}</em>` : '<span class="nd">—</span>'}</td><td>${x.notes ? esc(x.notes) : '<span class="nd">—</span>'}</td></tr>`).join("");
+  return `<h2>7b. Entrenamiento asociado <span class="tag">declarado por el usuario</span></h2>
+<table class="kv"><tr><td>Rutina</td><td>${t.routine_name ? esc(t.routine_name) : '<span class="nd">sin rutina</span>'}</td></tr>
+<tr><td>Entrenamiento</td><td>${esc(t.workout.date)} · ${t.workout.state === "completed" ? "terminado" : t.workout.state === "in_progress" ? "en curso" : "planificado"}</td></tr>
+<tr><td>Vinculada a</td><td>${e ? fmtEntry(e) : "el entrenamiento completo (sin serie)"}</td></tr></table>
+<table><thead><tr><th>Serie declarada</th><th>Molestia (texto del usuario)</th><th>Notas</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="nd">sin series registradas</td></tr>'}</tbody></table>
+<p class="muted">Repeticiones, pesos, duraciones y esfuerzo percibido son declarados por la persona y no se miden con los sensores; las notas de molestia se transcriben sin interpretación.</p>`;
+}
+
 function sectionLimits(): string {
   return `<h2>8. Limitaciones y lectura</h2><div class="note">
 <p>Los valores son unidades digitales del conversor sin calibración de fuerza ni de presión. Los sensores resistivos presentan deriva bajo carga constante y su respuesta depende de la colocación y del soporte, por lo que cambios entre sesiones pueden deberse al montaje y no a la persona. Tres posiciones por pie no constituyen un mapa de presión ni una medida de la carga total del pie, y los intervalos sin datos no se interpretan como ausencia de apoyo.</p>
@@ -342,7 +365,7 @@ export function buildSessionReportHtml(bundle: SessionBundle, options: ReportOpt
   const a = analyse(bundle);
   const body = [
     sectionIdentification(bundle, options), sectionMount(bundle, a), sectionSource(bundle, options),
-    sectionQuality(a), sectionIndicators(a), sectionCharts(a), sectionComparability(bundle, options), sectionLimits(),
+    sectionQuality(a), sectionIndicators(a), sectionCharts(a), sectionComparability(bundle, options), sectionTraining(bundle), sectionLimits(),
   ].join("\n");
   return page("Informe de sesión para revisión profesional", body, options);
 }

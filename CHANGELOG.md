@@ -6,6 +6,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 - Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
 
+## [0.15.0] - 2026-11-04 — etapa 15 (implementada; validación en el teléfono pendiente)
+
+### Añadido
+- Rutinas y entrenamiento (ADR 0013): paquete `@plantillas/training`; rutinas con ejercicios de fuerza, caminata/carrera u otro y valores objetivo; entrenamientos con series declaradas (reps, peso, duración, distancia, RPE, molestia como nota); vínculo sesión↔serie («Medir con plantillas» desde el ejercicio); tarjeta «Entrenamiento del día» en Hoy, fila en Historial, chip en Detalle, sección «Entrenamiento asociado» en el PDF; Ajustes → Rutinas.
+- Asistente: contexto con el entrenamiento declarado y carga asistida de series por conversación con tarjeta de confirmación (modo `log_entry`, prompt compartido con la función gestionada).
+- Asistente: sugerencias de seguimiento tras cada respuesta y «Nueva conversación»; la conversación se conserva mientras la app está abierta.
+- Persistencia local v6 y respaldo con entrenamiento; esquema remoto preparado (`0005_training.sql`, transferencia pendiente).
+- `docs/especificacion/08_Alcance_Final_del_Prototipo.md`: alcance completo al cierre del desarrollo.
+
+### Cambiado
+- Detalle de sesión y Comparación: las acciones (comparar, PDF, CSV) pasan al menú de la cabecera; el contenido ocupa toda la pantalla.
+
 ## [0.14.3] - 2026-11-04 — ajustes del asistente
 
 ### Corregido

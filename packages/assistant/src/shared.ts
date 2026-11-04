@@ -1,5 +1,5 @@
 import { GENERATION_DEFAULTS, MAX_HISTORY_TURNS } from "./client";
-import { SYSTEM_PROMPT } from "./prompt";
+import { LOG_ENTRY_PROMPT, SYSTEM_PROMPT } from "./prompt";
 
 /** Ruta del módulo compartido con la función gestionada, relativa a la raíz del repositorio. */
 export const SHARED_PROMPT_PATH = "supabase/functions/_shared/assistant-prompt.ts";
@@ -13,9 +13,11 @@ export const SHARED_PROMPT_PATH = "supabase/functions/_shared/assistant-prompt.t
 export function renderSharedPromptModule(): string {
   return [
     "// GENERADO por `node scripts/sync-assistant-prompt.mjs` a partir de packages/assistant/src",
-    "// (prompt.ts, knowledge.ts, client.ts). No editar a mano: cambiar el origen y regenerar.",
+    "// (prompt.ts, knowledge.ts, client.ts; LOG_ENTRY_SCHEMA_DESCRIPTION de packages/training). No editar a mano: cambiar el origen y regenerar.",
     "",
     `export const SYSTEM_PROMPT = ${JSON.stringify(SYSTEM_PROMPT)};`,
+    "",
+    `export const LOG_ENTRY_PROMPT = ${JSON.stringify(LOG_ENTRY_PROMPT)};`,
     "",
     `export const GENERATION_DEFAULTS = { temperature: ${GENERATION_DEFAULTS.temperature}, max_tokens: ${GENERATION_DEFAULTS.max_tokens} } as const;`,
     "",

@@ -50,6 +50,13 @@ Qué puede explicar una diferencia entre sesiones (siempre como posibilidades, n
 Cómo comparar mejor
 - Mismo protocolo (misma tarea, mismo orden, duración parecida), misma configuración y mismos sensores en el mismo lugar, mismo calzado. Repetir la sesión en las mismas condiciones para ver si la diferencia se mantiene.
 
+Entrenamiento (rutinas y registro de lo declarado)
+- La app permite cargar una rutina (propia o indicada por un profesional) con ejercicios de fuerza (series × repeticiones × peso), caminata/carrera (tiempo o distancia) u otros, y registrar en cada entrenamiento lo que la persona hizo por serie: repeticiones, peso, duración, esfuerzo percibido (RPE 1–10) y notas. Esos datos los declara la persona; la app no los mide.
+- Volumen = suma de repeticiones × kilos de las series con peso; es un total declarado, no una medida de los sensores. RPE es la sensación de esfuerzo de la persona, de 1 (muy liviano) a 10 (máximo).
+- Una sesión de plantillas puede estar vinculada a un ejercicio o a una serie: ahí lo medido (la lectura de los sensores) y lo declarado (reps, peso) se leen juntos, pero siguen siendo cosas distintas.
+- Si la persona anota una molestia o dolor, se guarda como nota suya: no se interpreta, no se mide y no se saca ninguna conclusión; eso es del profesional.
+- La app no arma rutinas ni ajusta cargas: eso lo decide la persona o su profesional.
+
 Límites del prototipo
 - Es un módulo en banco (protoboard) con tres sensores por pie, sin calibración de fuerza y sin validación con usuarios.
 - No mide fatiga, dolor, lesiones ni rendimiento, y no reemplaza a un profesional: describe cómo se comportaron los sensores.`;

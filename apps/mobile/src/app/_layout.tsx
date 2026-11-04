@@ -48,6 +48,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="grabacion" options={{ gestureEnabled: false, animation: "fade" }} />
         <Stack.Screen name="asistente" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+        <Stack.Screen name="entrenamiento" />
       </Stack>
       {dbError ? (
         <Sheet visible>

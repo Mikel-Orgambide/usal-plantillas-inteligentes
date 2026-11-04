@@ -3,7 +3,8 @@ import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleS
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { followUpSuggestions } from "@plantillas/assistant";
-import { askAssistant, clearAssistantChat, retryLastQuestion, sessionChipLabel, useAssistantChat, type ChatMessage } from "../application/assistantStore";
+import { MISSING_LABEL, proposalMissing, type LogEntryProposal } from "@plantillas/training";
+import { askAssistant, clearAssistantChat, resolveProposal, retryLastQuestion, sessionChipLabel, useAssistantChat, type ChatMessage } from "../application/assistantStore";
 import { loadSettings } from "../infrastructure/settings/settings";
 import { Chip, Icon, Text } from "../presentation/components";
 import { colors, fonts, radius, size, space } from "../presentation/theme/tokens";
@@ -40,14 +41,16 @@ export default function AssistantScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  const send = (q: string) => {
+  const send = (q: string, logEntry = false) => {
     if (!q.trim() || chat.busy) return;
     setText("");
-    void askAssistant(q, options);
+    void askAssistant(q, { ...options, ...(logEntry ? { logEntry: true } : {}) });
   };
+  // «Registrar ejercicio»: el próximo mensaje se interpreta como una serie declarada (ADR 0013).
+  const [logMode, setLogMode] = useState(false);
   const suggestions = sessionId
     ? ["¿Cómo se repartió la carga?", "¿Hubo problemas en el registro?", "¿Qué cambió respecto de la anterior?", "¿Qué significa el desvío?"]
-    : ["¿Cómo vienen mis últimas sesiones?", "¿Qué cambió entre las dos últimas?", "¿Qué significa el reparto antepié / talón?", "¿Cómo puedo comparar mejor mis sesiones?"];
+    : ["¿Cómo vienen mis últimas sesiones?", "¿Qué cambió entre las dos últimas?", "¿Cómo fue el entrenamiento de hoy?", "¿Cómo puedo comparar mejor mis sesiones?"];
   const last = chat.messages[chat.messages.length - 1];
   const lastIsError = last?.error === true;
   // Seguimiento: sólo después de una respuesta del asistente que no sea un error.
@@ -95,9 +98,15 @@ export default function AssistantScreen() {
                   <Icon name="chevron-right" size={16} color={colors.textSecondary} />
                 </Pressable>
               ))}
+              <Pressable onPress={() => setLogMode(true)} accessibilityRole="button" style={({ pressed }) => [styles.suggestion, logMode && { borderColor: colors.accent }, pressed && { opacity: 0.7 }]}>
+                <Icon name="plus" size={16} color={colors.accent} />
+                <Text variant="label" color={colors.textPrimary} style={{ flex: 1 }}>Registrar ejercicio</Text>
+                <Text variant="caption" color={colors.textSecondary}>«sentadilla serie 2, 10 × 40 kg»</Text>
+              </Pressable>
             </View>
           </View>
         ) : chat.messages.map((m) => <Bubble key={m.id} m={m} />)}
+        {chat.messages.filter((m) => m.proposal && !m.resolved).map((m) => <ProposalCard key={`p${m.id}`} messageId={m.id} proposal={m.proposal!} />)}
         {chat.busy ? <Typing /> : null}
         {followUps.length > 0 ? (
           <View style={styles.followUps} accessibilityLabel="Preguntas de seguimiento">
@@ -116,17 +125,23 @@ export default function AssistantScreen() {
       </ScrollView>
 
       <View style={[styles.inputBar, { paddingBottom: (keyboard ? 0 : insets.bottom) + space[3] }]}>
+        {logMode ? (
+          <Pressable onPress={() => setLogMode(false)} accessibilityRole="button" accessibilityLabel="Salir del modo registro" style={styles.logChip}>
+            <Icon name="plus" size={14} color={colors.accent} />
+            <Text variant="caption" color={colors.accent}>Registro</Text>
+          </Pressable>
+        ) : null}
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Preguntá sobre tus sesiones"
+          placeholder={logMode ? "Ej.: sentadilla serie 2, 10 repeticiones con 40 kg" : "Preguntá sobre tus sesiones"}
           placeholderTextColor={colors.textSecondary}
           style={styles.input}
           multiline
           maxLength={1000}
           editable={!chat.busy}
         />
-        <Pressable onPress={() => send(text)} disabled={chat.busy || !text.trim()} accessibilityRole="button" accessibilityLabel="Enviar" style={({ pressed }) => [styles.send, (chat.busy || !text.trim()) && { opacity: 0.4 }, pressed && { opacity: 0.7 }]}>
+        <Pressable onPress={() => { send(text, logMode); setLogMode(false); }} disabled={chat.busy || !text.trim()} accessibilityRole="button" accessibilityLabel="Enviar" style={({ pressed }) => [styles.send, (chat.busy || !text.trim()) && { opacity: 0.4 }, pressed && { opacity: 0.7 }]}>
           <Icon name="send" color={colors.onAccent} size={20} />
         </Pressable>
       </View>
@@ -148,6 +163,45 @@ function Bubble({ m }: { m: ChatMessage }) {
             <Text variant="caption" color={colors.textSecondary}>Generado por IA · revisar</Text>
           </View>
         ) : null}
+      </View>
+    </View>
+  );
+}
+
+const FIELD_LABEL: Record<string, string> = { set_index: "Serie", reps: "Repeticiones", weight_kg: "Peso (kg)", duration_s: "Duración (s)", distance_m: "Distancia (m)", rpe: "RPE (1–10)" };
+
+/** Tarjeta de confirmación de una serie propuesta por el asistente: editable, nada se guarda sin «Guardar» (ADR 0013). */
+function ProposalCard({ messageId, proposal }: { messageId: number; proposal: LogEntryProposal }) {
+  const [p, setP] = useState<LogEntryProposal>(proposal);
+  const [busy, setBusy] = useState(false);
+  const missing = proposalMissing(p);
+  const num = (k: keyof LogEntryProposal, v: string) => setP({ ...p, [k]: v.trim() === "" ? null : Number(v.replace(",", ".")) });
+  const fields: (keyof LogEntryProposal)[] = p.kind === "walk_run" ? ["duration_s", "distance_m", "rpe"] : ["set_index", "reps", "weight_kg", "rpe"];
+  return (
+    <View style={styles.card} accessibilityLabel="Serie propuesta para confirmar">
+      <View style={styles.cardHead}>
+        <Icon name="plus" size={16} color={colors.accent} />
+        <Text variant="label" color={colors.textPrimary} style={{ flex: 1 }}>Serie a registrar</Text>
+        <Text variant="caption" color={colors.textSecondary}>{p.kind === "walk_run" ? "caminata / carrera" : p.kind === "other" ? "otro" : "fuerza"}</Text>
+      </View>
+      <TextInput value={p.item_name ?? ""} onChangeText={(v) => setP({ ...p, item_name: v || null })} placeholder="Ejercicio" placeholderTextColor={colors.textSecondary} style={styles.field} />
+      <View style={styles.fieldRow}>
+        {fields.map((k) => (
+          <View key={k} style={{ flex: 1, gap: 4 }}>
+            <Text variant="caption" color={colors.textSecondary}>{FIELD_LABEL[k]}</Text>
+            <TextInput value={p[k] === null || p[k] === undefined ? "" : String(p[k])} onChangeText={(v) => num(k, v)} keyboardType="decimal-pad" placeholder="—" placeholderTextColor={colors.textSecondary} style={styles.field} />
+          </View>
+        ))}
+      </View>
+      {p.discomfort_note ? <Text variant="caption" color={colors.textSecondary}>Molestia anotada (texto tuyo, sin interpretar): {p.discomfort_note}</Text> : null}
+      {missing.length ? <Text variant="caption" color={colors.alert}>Falta: {missing.map((m) => MISSING_LABEL[m] ?? m).join(", ")}</Text> : null}
+      <View style={styles.cardActions}>
+        <Pressable onPress={() => void resolveProposal(messageId, "discard")} accessibilityRole="button" style={({ pressed }) => [styles.cardBtn, pressed && { opacity: 0.7 }]}>
+          <Text variant="label" color={colors.textSecondary}>Descartar</Text>
+        </Pressable>
+        <Pressable disabled={busy || missing.length > 0} onPress={() => { setBusy(true); void resolveProposal(messageId, "save", p).finally(() => setBusy(false)); }} accessibilityRole="button" style={({ pressed }) => [styles.cardBtn, styles.cardBtnPrimary, (busy || missing.length > 0) && { opacity: 0.4 }, pressed && { opacity: 0.7 }]}>
+          <Text variant="label" color={colors.onAccent}>{busy ? "Guardando…" : "Guardar"}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -194,6 +248,14 @@ const styles = StyleSheet.create({
   tag: { flexDirection: "row", alignItems: "center", gap: space[1], paddingLeft: space[1] },
   typing: { flexDirection: "row", gap: 6, paddingVertical: space[3] },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.textSecondary },
+  card: { gap: space[3], padding: space[4], borderRadius: radius.md, backgroundColor: colors.surfaceElevated, borderWidth: size.hairline, borderColor: colors.accent },
+  cardHead: { flexDirection: "row", alignItems: "center", gap: space[2] },
+  field: { minHeight: 40, borderRadius: radius.sm, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[3], fontFamily: fonts.regular, fontSize: 15 },
+  fieldRow: { flexDirection: "row", gap: space[2] },
+  cardActions: { flexDirection: "row", justifyContent: "flex-end", gap: space[2] },
+  cardBtn: { paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.pill, backgroundColor: colors.surface },
+  cardBtnPrimary: { backgroundColor: colors.accent },
+  logChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: space[2], height: size.controlHeight, borderRadius: radius.pill, backgroundColor: colors.accentSoft },
   followUps: { flexDirection: "row", flexWrap: "wrap", gap: space[2], paddingTop: space[1] },
   followUp: { paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill, backgroundColor: colors.accentSoft, borderWidth: size.hairline, borderColor: colors.line },
   retry: { alignSelf: "flex-start", paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.pill, backgroundColor: colors.accentSoft },

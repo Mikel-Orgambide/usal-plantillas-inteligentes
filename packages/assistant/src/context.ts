@@ -43,9 +43,29 @@ export interface AssistantComparisonInput {
   readonly differences?: readonly { readonly channel: ChannelCode; readonly mean_a: number | null; readonly mean_b: number | null; readonly delta: number | null }[];
 }
 
+/** Resumen de entrenamiento (ADR 0013) para el contexto: lo declarado por la persona, ya resumido por la app. */
+export interface AssistantTrainingInput {
+  readonly active_routine?: { readonly name: string; readonly origin: "own" | "professional"; readonly goal: string | null; readonly items: readonly string[] };
+  /** Entrenamiento de hoy, si hay (en curso o terminado). */
+  readonly today?: AssistantWorkoutInput;
+  /** Último entrenamiento terminado anterior a hoy. */
+  readonly last?: AssistantWorkoutInput;
+}
+export interface AssistantWorkoutInput {
+  readonly date: string;
+  readonly state: "planned" | "in_progress" | "completed";
+  readonly routine_name: string | null;
+  /** Entradas ya descritas («Sentadilla · serie 2 · 10 × 40 kg · RPE 7»). */
+  readonly entries: readonly string[];
+  readonly summary: { readonly strength_sets: number; readonly volume_kg: number; readonly walk_run_duration_s: number; readonly rpe_mean: number | null; readonly with_discomfort_note: number };
+  /** Sesiones de plantillas vinculadas, por etiqueta corta («3/11 17:44 → Sentadilla serie 3»). */
+  readonly linked_sessions: readonly string[];
+}
+
 export interface AssistantContextInput {
   readonly user: { readonly alias?: string };
   readonly sessions: readonly AssistantSessionInput[];
+  readonly training?: AssistantTrainingInput;
   readonly selectedSessionId?: string;
   readonly comparison?: AssistantComparisonInput;
   /** Sesiones recientes incluidas además de la seleccionada (por defecto 8). */
@@ -241,6 +261,10 @@ export function buildAssistantContext(input: AssistantContextInput): string {
     const auto = target ? describeAutoComparison(sorted, target, tz) : null;
     if (auto) blocks.push(auto);
   }
+  if (input.training) {
+    const t = describeTraining(input.training);
+    if (t) blocks.push(t);
+  }
   const recentBlocks = recent.map((s) => describeSession(s, false, tz));
 
   let out = `${head.join("\n")}${blocks.length ? `\n\n${blocks.join("\n\n")}` : ""}`;
@@ -254,6 +278,26 @@ export function buildAssistantContext(input: AssistantContextInput): string {
   if (included < recentBlocks.length) out += `\n(… ${recentBlocks.length - included} sesión(es) anterior(es) omitida(s) por espacio)`;
   if (!selected && recentBlocks.length === 0) out += "\n\nNo hay sesiones registradas todavía.";
   return out;
+}
+
+function describeWorkout(label: string, w: AssistantWorkoutInput): string {
+  const st = w.state === "in_progress" ? "en curso" : w.state === "completed" ? "terminado" : "planificado";
+  const lines = [`${label}: ${w.date}${w.routine_name ? ` · rutina «${w.routine_name}»` : ""} · ${st}.`];
+  if (w.entries.length) lines.push(`Series declaradas: ${w.entries.join("; ")}.`);
+  const s = w.summary;
+  lines.push(`Totales declarados: ${s.strength_sets} series de fuerza, volumen ${s.volume_kg} kg·rep, caminata/carrera ${Math.round(s.walk_run_duration_s / 60)} min${s.rpe_mean !== null ? `, RPE medio ${s.rpe_mean}` : ""}${s.with_discomfort_note ? `, ${s.with_discomfort_note} nota(s) de molestia (texto de la persona, no interpretar)` : ""}.`);
+  if (w.linked_sessions.length) lines.push(`Sesiones de plantillas vinculadas: ${w.linked_sessions.join("; ")}.`);
+  return lines.join("\n");
+}
+
+/** Bloque ENTRENAMIENTO: rutina activa, entrenamiento de hoy y último terminado. Todo declarado por la persona. */
+export function describeTraining(t: AssistantTrainingInput): string | null {
+  const parts: string[] = [];
+  if (t.active_routine) parts.push(`Rutina activa «${t.active_routine.name}» (${t.active_routine.origin === "professional" ? "indicada por un profesional" : "propia"}${t.active_routine.goal ? `, objetivo: ${t.active_routine.goal}` : ""}): ${t.active_routine.items.join("; ") || "sin ejercicios"}.`);
+  if (t.today) parts.push(describeWorkout("Entrenamiento de hoy", t.today));
+  if (t.last) parts.push(describeWorkout("Último entrenamiento", t.last));
+  if (!parts.length) return null;
+  return `ENTRENAMIENTO (declarado por la persona; la app no mide repeticiones, pesos ni esfuerzo)\n${parts.join("\n")}`;
 }
 
 /** Posición → etiqueta en español, para la app. */

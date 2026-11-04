@@ -77,7 +77,7 @@ describe("createAssistantClient · transporte proxy (función gestionada de Supa
     expect(calls[0]!.method).toBe("POST");
     expect(calls[0]!.headers.Authorization).toBe("Bearer jwt-123");
     expect(calls[0]!.headers.apikey).toBe("pk_test");
-    expect(calls[0]!.body).toEqual({ question: "¿Cuál fue el máximo?\n/no_think", context: "CONTEXTO…", history: [{ role: "user", content: "hola" }] });
+    expect(calls[0]!.body).toEqual({ question: "¿Cuál fue el máximo?\n/no_think", context: "CONTEXTO…", mode: "chat", history: [{ role: "user", content: "hola" }] });
     expect(calls[0]!.body.messages).toBeUndefined();
     expect(out).toEqual({ answer: "En la sesión del 3/11 el talón llegó a 3812 cuentas.", model: "qwen/qwen3-14b", elapsed_ms: 2100, prompt_tokens: 950, completion_tokens: 28 });
   });

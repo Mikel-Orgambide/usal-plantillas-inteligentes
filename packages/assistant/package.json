@@ -10,7 +10,8 @@
   "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
   "dependencies": {
     "@plantillas/contract": "1.0.0",
-    "@plantillas/metrics": "0.1.0"
+    "@plantillas/metrics": "0.1.0",
+    "@plantillas/training": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

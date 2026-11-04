@@ -13,6 +13,8 @@ import {
   type AssistantSessionInput,
   type ChatTurn,
 } from "@plantillas/assistant";
+import { askForMissing, isLogIntent, parseLogEntryProposal, proposalMissing, type LogEntryProposal } from "@plantillas/training";
+import { saveProposal, trainingContext } from "./trainingStore";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { loadSettings, type Settings } from "../infrastructure/settings/settings";
 import { getSupabase, remoteConfigured, supabaseAnonKey, supabaseUrl } from "../infrastructure/supabase/client";
@@ -39,6 +41,10 @@ export interface ChatMessage {
   readonly generated?: boolean;
   readonly error?: boolean;
   readonly model?: string;
+  /** Propuesta de registro de una serie (ADR 0013) pendiente de confirmación; nada se guarda sin tocar «Guardar». */
+  readonly proposal?: LogEntryProposal;
+  /** La propuesta ya fue guardada o descartada. */
+  readonly resolved?: "saved" | "discarded";
 }
 
 interface ChatState {
@@ -123,7 +129,8 @@ export async function buildContext(selectedSessionId?: string): Promise<{ text: 
     if (s) sessions.push(s);
   }
   const alias = aliasOf(userId);
-  const input: AssistantContextInput = { user: alias ? { alias } : {}, sessions, ...(selectedSessionId ? { selectedSessionId } : {}), maxSessions: RECENT };
+  const training = await trainingContext(async (sid) => { const s = await repository.getSession(sid); return s ? shortSessionLabel(s.started_at) : undefined; }).catch(() => undefined);
+  const input: AssistantContextInput = { user: alias ? { alias } : {}, sessions, ...(selectedSessionId ? { selectedSessionId } : {}), ...(training ? { training } : {}), maxSessions: RECENT };
   // El total declarado al modelo es el de todas las sesiones del usuario, aunque sólo se describan las recientes.
   const text = buildAssistantContext({ ...input, sessions }).replace(`Sesiones registradas: ${sessions.length}.`, `Sesiones registradas: ${all.length}.`);
   const summary = `${all.length} sesión(es); ${sessions.length} descritas${selectedSessionId ? `; seleccionada ${selectedSessionId.slice(0, 8)}` : ""}`;
@@ -135,7 +142,24 @@ function aliasOf(id: string): string | undefined {
   return id === "local" ? undefined : `usuario ${id.slice(0, 8)}`;
 }
 
-export interface AskOptions { readonly selectedSessionId?: string }
+export interface AskOptions { readonly selectedSessionId?: string; /** Fuerza el modo de registro de una serie aunque el texto no lo delate. */ readonly logEntry?: boolean }
+
+/** Guarda la propuesta de un mensaje (tras «Guardar») o la descarta; el mensaje queda marcado. */
+export async function resolveProposal(messageId: number, action: "save" | "discard", edited?: LogEntryProposal): Promise<void> {
+  const msg = state.messages.find((m) => m.id === messageId);
+  if (!msg?.proposal || msg.resolved) return;
+  if (action === "discard") {
+    set({ messages: state.messages.map((m): ChatMessage => (m.id === messageId ? { ...m, resolved: "discarded" } : m)), busy: false });
+    return;
+  }
+  const r = await saveProposal(edited ?? msg.proposal);
+  if (r.ok) {
+    const saved: ChatMessage = { id: nextId++, role: "assistant", text: `Guardado en el entrenamiento de hoy: ${r.entry.text}.`, generated: false };
+    set({ messages: [...state.messages.map((m): ChatMessage => (m.id === messageId ? { ...m, ...(edited ? { proposal: edited } : {}), resolved: "saved" } : m)), saved], busy: false });
+  } else {
+    set({ messages: [...state.messages, { id: nextId++, role: "assistant", text: `No se pudo guardar: ${r.errors.join("; ")}.`, error: true }], busy: false });
+  }
+}
 
 export class AssistantUnavailable extends Error {
   override readonly name = "AssistantUnavailable";
@@ -168,10 +192,32 @@ export async function askAssistant(question: string, options: AskOptions = {}): 
   set({ messages: [...state.messages, userMsg], busy: true });
   // Los últimos turnos de esta conversación (sin la pregunta nueva ni los errores).
   const history: ChatTurn[] = state.messages.filter((m) => !m.error).slice(-(MAX_HISTORY_TURNS + 1), -1).map((m) => ({ role: m.role, content: m.text }));
-  const scope = classifyQuestion(q);
   const { repository } = await getDatabase();
   const userId = await resolveLocalUserId();
 
+  // Carga asistida (ADR 0013): «estoy en sentadilla serie 2, 10 reps con 40 kg» → el modelo extrae un JSON, la app valida y pide confirmación.
+  if (options.logEntry || isLogIntent(q)) {
+    let contextText = "", contextSummary = "";
+    try {
+      const ctx = await buildContext(options.selectedSessionId);
+      contextText = ctx.text; contextSummary = ctx.summary;
+      const client = await clientFor(settings, 60_000);
+      const out = await client.ask(q, contextText, [], "log_entry");
+      const parsed = parseLogEntryProposal(out.answer);
+      if (!parsed.ok) throw new AssistantError("invalid_response", parsed.error);
+      const missing = proposalMissing(parsed.proposal);
+      const text = missing.length ? `Entendí esto, pero falta algo. ${askForMissing(missing)}` : "¿Guardo esta serie en el entrenamiento de hoy?";
+      set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, generated: true, model: out.model, proposal: parsed.proposal }], busy: false });
+      await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope: "in_scope", context_chars: contextText.length, context_summary: `${contextSummary}; modo registro`, server_url: serverLabel(settings), model: out.model, answer: out.answer, error: null, elapsed_ms: out.elapsed_ms, mode: settings.assistantMode }).catch(() => undefined);
+    } catch (e) {
+      const text = describeError(e, settings);
+      set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, error: true }], busy: false });
+      await repository.addAssistantExchange({ user_id: userId, session_id: options.selectedSessionId ?? null, asked_at: askedAt, question: q, scope: "in_scope", context_chars: contextText.length, context_summary: `${contextSummary || "sin contexto"}; modo registro`, server_url: serverLabel(settings), model: null, answer: null, error: e instanceof Error ? e.message : String(e), elapsed_ms: Date.now() - Date.parse(askedAt), mode: settings.assistantMode }).catch(() => undefined);
+    }
+    return;
+  }
+
+  const scope = classifyQuestion(q);
   if (scope !== "in_scope") {
     const text = FIXED_ANSWERS[scope];
     set({ messages: [...state.messages, { id: nextId++, role: "assistant", text, generated: false }], busy: false });

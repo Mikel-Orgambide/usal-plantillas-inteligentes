@@ -15,7 +15,8 @@
 //   ASSISTANT_REFERER / ASSISTANT_TITLE  cabeceras opcionales de OpenRouter
 //
 // GET  → { model }                      (prueba de conexión desde Ajustes)
-// POST { question, context, history?, temperature?, max_tokens? }
+// POST { question, context, mode?: "chat" | "log_entry", history?, temperature?, max_tokens? }
+// En modo `log_entry` (ADR 0013) el modelo sólo extrae una serie declarada a JSON con esquema fijo; el teléfono valida y pide confirmación.
 //      → { answer, model, elapsed_ms, prompt_tokens?, completion_tokens? }
 // Errores: { error: { code, message } } con 400/401/413/429/502/504.
 //
@@ -23,7 +24,7 @@
 // modelo, longitudes y tiempo; nunca el texto de la pregunta ni del contexto.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GENERATION_DEFAULTS, MAX_HISTORY_TURNS, SYSTEM_PROMPT } from "../_shared/assistant-prompt.ts";
+import { GENERATION_DEFAULTS, LOG_ENTRY_PROMPT, MAX_HISTORY_TURNS, SYSTEM_PROMPT } from "../_shared/assistant-prompt.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -62,6 +63,7 @@ interface Turn { role: "user" | "assistant"; content: string }
 
 interface Payload {
   question: string;
+  mode: "chat" | "log_entry";
   context: string;
   history: Turn[];
   temperature: number;
@@ -76,8 +78,9 @@ function parsePayload(raw: unknown): Payload | Response {
   if (!question) return fail(400, "bad_request", "falta la pregunta");
   if (question.length > MAX_QUESTION_CHARS) return fail(413, "question_too_long", `la pregunta supera ${MAX_QUESTION_CHARS} caracteres`);
   if (context.length > MAX_CONTEXT_CHARS) return fail(413, "context_too_long", `el contexto supera ${MAX_CONTEXT_CHARS} caracteres`);
+  const mode: "chat" | "log_entry" = o.mode === "log_entry" ? "log_entry" : "chat";
   const history: Turn[] = [];
-  if (Array.isArray(o.history)) {
+  if (mode === "chat" && Array.isArray(o.history)) {
     for (const t of o.history.slice(-MAX_HISTORY_TURNS)) {
       if (typeof t !== "object" || t === null) continue;
       const turn = t as Record<string, unknown>;
@@ -88,7 +91,7 @@ function parsePayload(raw: unknown): Payload | Response {
   }
   const temperature = typeof o.temperature === "number" && o.temperature >= 0 && o.temperature <= 1 ? o.temperature : GENERATION_DEFAULTS.temperature;
   const max_tokens = typeof o.max_tokens === "number" && o.max_tokens > 0 && o.max_tokens <= 800 ? Math.floor(o.max_tokens) : GENERATION_DEFAULTS.max_tokens;
-  return { question, context, history, temperature, max_tokens };
+  return { question, context, mode, history, temperature: mode === "log_entry" ? 0 : temperature, max_tokens };
 }
 
 /** Quita los bloques de razonamiento que algunos modelos (Qwen3) incluyen en la respuesta. */
@@ -173,7 +176,7 @@ Deno.serve(async (req) => {
   }
 
   const messages = [
-    { role: "system", content: `${SYSTEM_PROMPT}\n\n${payload.context}` },
+    { role: "system", content: `${payload.mode === "log_entry" ? LOG_ENTRY_PROMPT : SYSTEM_PROMPT}\n\n${payload.context}` },
     ...payload.history,
     { role: "user", content: payload.question },
   ];
@@ -190,7 +193,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers,
       signal: controller.signal,
-      body: JSON.stringify({ model: MODEL, messages, temperature: payload.temperature, max_tokens: payload.max_tokens, stream: false }),
+      body: JSON.stringify({ model: MODEL, messages, temperature: payload.temperature, max_tokens: payload.max_tokens, stream: false, ...(payload.mode === "log_entry" ? { response_format: { type: "json_object" } } : {}) }),
     });
   } catch {
     clearTimeout(timer);

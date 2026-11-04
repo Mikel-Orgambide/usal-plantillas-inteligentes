@@ -4,7 +4,7 @@ import { colors, size } from "../theme/tokens";
 /** Los 14 iconos del sistema: retícula 24, trazo 1.5, extremos redondeados, sin relleno (salvo play). */
 export type IconName =
   | "bluetooth" | "bluetooth-off" | "play" | "stop" | "history" | "compare" | "settings"
-  | "check" | "alert" | "chevron-right" | "chevron-down" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user" | "chevron-left" | "close" | "more" | "spark" | "send";
+  | "check" | "alert" | "chevron-right" | "chevron-down" | "chevron-up" | "dumbbell" | "plus" | "search" | "foot" | "export" | "import" | "cloud" | "user" | "chevron-left" | "close" | "more" | "spark" | "send";
 
 const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]; rect?: boolean; fill?: boolean }> = {
   bluetooth: { d: "M6.5 6.5l11 11-5.5 5.5V1l5.5 5.5-11 11" },
@@ -25,6 +25,9 @@ const PATHS: Record<IconName, { d?: string; circles?: [number, number, number][]
   export: { d: "M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   import: { d: "M12 4v12M7 11l5 5 5-5M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4" },
   "chevron-down": { d: "M6 9l6 6 6-6" },
+  "chevron-up": { d: "M6 15l6-6 6 6" },
+  /** Rutinas y entrenamiento (ADR 0013): barra con discos. */
+  dumbbell: { d: "M3 10v4M6 8v8M9 11h6M18 8v8M21 10v4M6 12h3M15 12h3" },
   cloud: { d: "M7 18.5a4.5 4.5 0 01-.6-8.96A6 6 0 0117.7 9.5 4.25 4.25 0 0117 18.5H7z" },
   user: { d: "M4.5 20a7.5 7.5 0 0115 0", circles: [[12, 8, 4]] },
   plus: { d: "M12 5v14M5 12h14" },

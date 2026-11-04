@@ -111,6 +111,7 @@ export default function MoreScreen() {
 
       <Text variant="label" color={colors.textSecondary} style={styles.sectionLabel}>Datos</Text>
       <View style={styles.group}>
+        <ListRow title="Rutinas" subtitle="Ejercicios indicados por tu profesional o propios · se registran, no se miden" onPress={() => router.push("/ajustes/rutinas")} />
         <ListRow title="Respaldo" subtitle="Exportar e importar sesiones · copia completa de la base" onPress={() => router.push("/ajustes/respaldo")} />
         <ListRow title="Unidad" subtitle="cuentas ADC (0–4095) · sin calibración" value="cuentas" chevron={false} />
       </View>

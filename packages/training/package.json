@@ -1,0 +1,16 @@
+{
+  "name": "@plantillas/training",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rutinas y entrenamiento (ADR 0013): tipos, validación, resúmenes y parseo de la carga asistida; registra lo declarado por el usuario, no prescribe ni ajusta cargas",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

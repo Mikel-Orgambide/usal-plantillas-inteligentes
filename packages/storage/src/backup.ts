@@ -1,6 +1,7 @@
 import { CHANNEL_POSITIONS, type AcquisitionConfiguration, type ChannelCode, type DataSourceKind, type NormalizedRecord, type SensorModel } from "@plantillas/contract";
 import type { SqlDriver } from "./driver";
 import { SessionRepository, type CaptureRow, type EventRow, type ResultRow, type SessionRow } from "./repository";
+import { TrainingRepository, type RoutineRow, type WorkoutEntryRow, type WorkoutRow } from "./training-repository";
 
 /**
  * Respaldo por sesión (etapa 10): un paquete JSON autocontenido con todo lo
@@ -32,6 +33,17 @@ export interface SessionBundle {
   }[];
   readonly events: readonly Omit<EventRow, "id" | "session_id" | "capture_id">[] & readonly { capture_id?: string | null }[];
   readonly results: readonly (Omit<ResultRow, "id" | "capture_id"> & { capture_id: string })[];
+  /**
+   * Entrenamiento vinculado (ADR 0013): lo declarado por el usuario que acompaña
+   * a esta sesión medida. Ausente si la sesión no está vinculada o en paquetes anteriores.
+   */
+  readonly training?: {
+    readonly workout: Omit<WorkoutRow, "user_id">;
+    readonly routine_name: string | null;
+    readonly entry: WorkoutEntryRow | null;
+    /** Todas las entradas del entrenamiento, para restaurarlo entero si no existe. */
+    readonly entries: readonly WorkoutEntryRow[];
+  };
 }
 
 export interface RestoreReport {
@@ -42,6 +54,7 @@ export interface RestoreReport {
   readonly records_rejected: number;
   readonly events: number;
   readonly results: number;
+  readonly training?: "linked" | "exists" | "none";
 }
 
 export async function exportSessionBundle(db: SqlDriver, sessionId: string, now = () => new Date().toISOString()): Promise<SessionBundle | null> {
@@ -76,12 +89,28 @@ export async function exportSessionBundle(db: SqlDriver, sessionId: string, now 
     for (const { id: _id, capture_id: _c, ...rest } of await repo.getResults(c.id)) results.push({ ...rest, capture_id: c.external_capture_id });
   }
   const version = await db.get<{ user_version: number }>("PRAGMA user_version");
+  const training = await exportTraining(db, sessionId);
   return {
     format: BUNDLE_FORMAT, exported_at: now(), schema_version: version?.user_version ?? 0,
     configuration, configurations, session,
     captures: captures.map(({ id: _id, session_id: _s, ...rest }) => rest),
     records, events, results,
+    ...(training ? { training } : {}),
   };
+}
+
+async function exportTraining(db: SqlDriver, sessionId: string): Promise<SessionBundle["training"] | null> {
+  const version = (await db.get<{ user_version: number }>("PRAGMA user_version"))?.user_version ?? 0;
+  if (version < 6) return null;
+  const tr = new TrainingRepository(db);
+  const link = await tr.getSessionLink(sessionId);
+  if (!link) return null;
+  const workout = await tr.getWorkout(link.workout_id);
+  if (!workout) return null;
+  const { user_id: _u, ...w } = workout;
+  const routine: RoutineRow | undefined = workout.routine_id ? await tr.getRoutine(workout.routine_id) : undefined;
+  const entries = await tr.getEntries(workout.id);
+  return { workout: w, routine_name: routine?.name ?? null, entry: link.entry_id ? entries.find((e) => e.id === link.entry_id) ?? null : null, entries };
 }
 
 async function readConfiguration(db: SqlDriver, id: string): Promise<AcquisitionConfiguration | null> {
@@ -159,7 +188,25 @@ export async function restoreSessionBundle(db: SqlDriver, bundle: SessionBundle,
     const rows = b.results.filter((r) => r.capture_id === external).map(({ capture_id: _c, ...rest }) => rest);
     if (rows.length > 0) { await repo.saveResults(rowId, rows); results += rows.length; }
   }
-  return { session: "inserted", captures: captureIds.size, records_inserted: inserted, records_duplicate: duplicate, records_rejected: rejected, events: b.events.length, results };
+  const training = await restoreTraining(db, b, userId);
+  return { session: "inserted", captures: captureIds.size, records_inserted: inserted, records_duplicate: duplicate, records_rejected: rejected, events: b.events.length, results, training };
+}
+
+/** Restaura el entrenamiento vinculado: crea el entrenamiento y sus entradas si no existen (sin rutina) y rehace el vínculo. */
+async function restoreTraining(db: SqlDriver, b: SessionBundle, userId: string): Promise<"linked" | "exists" | "none"> {
+  if (!b.training) return "none";
+  const version = (await db.get<{ user_version: number }>("PRAGMA user_version"))?.user_version ?? 0;
+  if (version < 6) return "none";
+  const tr = new TrainingRepository(db);
+  const t = b.training;
+  const exists = await tr.getWorkout(t.workout.id);
+  if (!exists) {
+    // La rutina no viaja en el paquete (puede no existir en la base destino): el entrenamiento queda sin rutina.
+    await tr.saveWorkout({ ...t.workout, user_id: userId, routine_id: null });
+    for (const e of t.entries) await tr.saveEntry({ ...e, item_id: null });
+  }
+  await tr.linkSession({ session_id: b.session.id, workout_id: t.workout.id, entry_id: t.entry ? t.entry.id : null });
+  return exists ? "exists" : "linked";
 }
 
 /** Cantidades por entidad de una base, para comparar original y copia restaurada (P05). */

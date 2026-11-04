@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT } from "./prompt";
+import { LOG_ENTRY_PROMPT, SYSTEM_PROMPT } from "./prompt";
 
 /**
  * Cliente del asistente (ADR 0012). Dos transportes con la misma interfaz:
@@ -68,12 +68,15 @@ export interface AssistantAnswer {
   readonly completion_tokens?: number;
 }
 
+/** `chat`: explicación; `log_entry`: extracción a JSON de una serie declarada (ADR 0013), que la app valida y confirma. */
+export type AskMode = "chat" | "log_entry";
+
 export interface AssistantClient {
   readonly transport: AssistantTransport;
   /** Modelos disponibles: los del servidor (`direct`) o el configurado en el backend (`proxy`). */
   listModels(): Promise<string[]>;
   /** Una pregunta con el contexto armado localmente y, opcionalmente, los turnos anteriores de esta conversación. */
-  ask(question: string, context: string, history?: readonly ChatTurn[]): Promise<AssistantAnswer>;
+  ask(question: string, context: string, history?: readonly ChatTurn[], mode?: AskMode): Promise<AssistantAnswer>;
 }
 
 interface ChatCompletion {
@@ -171,19 +174,21 @@ function createDirectClient(options: DirectClientOptions): AssistantClient {
       if (ids.length === 0) throw new AssistantError("no_model", "el servidor no tiene ningún modelo cargado");
       return ids;
     },
-    async ask(question, context, history = []) {
+    async ask(question, context, history = [], mode = "chat") {
       const started = Date.now();
+      const system = mode === "log_entry" ? LOG_ENTRY_PROMPT : options.systemPrompt ?? SYSTEM_PROMPT;
       const messages = [
-        { role: "system", content: `${options.systemPrompt ?? SYSTEM_PROMPT}\n\n${context}` },
-        ...history.slice(-MAX_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content })),
+        { role: "system", content: `${system}\n\n${context}` },
+        ...(mode === "log_entry" ? [] : history.slice(-MAX_HISTORY_TURNS)).map((t) => ({ role: t.role, content: t.content })),
         { role: "user", content: withNoThink(question, options.disableThinking) },
       ];
       const body: Record<string, unknown> = {
         messages,
-        temperature: options.temperature ?? GENERATION_DEFAULTS.temperature,
+        temperature: mode === "log_entry" ? 0 : options.temperature ?? GENERATION_DEFAULTS.temperature,
         max_tokens: options.maxTokens ?? GENERATION_DEFAULTS.max_tokens,
         stream: false,
       };
+      if (mode === "log_entry") body.response_format = { type: "json_object" };
       if (options.model) body.model = options.model;
       const res = await request(`${base}/v1/chat/completions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, "respuesta");
       const data = res.body as ChatCompletion | null;
@@ -212,13 +217,14 @@ function createProxyClient(options: ProxyClientOptions): AssistantClient {
       if (ids.length === 0) throw new AssistantError("no_model", "el servicio no tiene un modelo configurado");
       return ids;
     },
-    async ask(question, context, history = []) {
+    async ask(question, context, history = [], mode = "chat") {
       const started = Date.now();
-      // El prompt de sistema y los parámetros los fija la función; el teléfono manda sólo los datos.
+      // El prompt de sistema y los parámetros los fija la función; el teléfono manda sólo los datos (y el modo).
       const payload = {
         question: withNoThink(question, options.disableThinking),
         context,
-        history: history.slice(-MAX_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content })),
+        mode,
+        history: (mode === "log_entry" ? [] : history.slice(-MAX_HISTORY_TURNS)).map((t) => ({ role: t.role, content: t.content })),
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
       };

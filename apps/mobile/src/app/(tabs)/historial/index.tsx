@@ -7,6 +7,8 @@ import { useSessionList } from "../../../application/useSessions";
 import { useAuth } from "../../../application/authStore";
 import { ACTIVITY_LABEL, type Activity } from "../../../application/sessionStore";
 import { dayShort, groupByDay } from "../../../application/daySummary";
+import { listWorkouts, useTrainingVersion } from "../../../application/trainingStore";
+import type { Workout } from "@plantillas/training";
 
 type Filter = "all" | Activity | "simulated";
 
@@ -37,6 +39,11 @@ export default function HistoryScreen() {
   // «Comparar con…» desde el detalle llega con la sesión ya marcada.
   useEffect(() => { if (select) setSelected([select]); }, [select]);
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
+  // Entrenamientos (ADR 0013): una fila propia en el día, junto a las sesiones medidas.
+  const trainingVersion = useTrainingVersion();
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  useFocusEffect(useCallback(() => { listWorkouts(300).then(setWorkouts).catch(() => undefined); }, [trainingVersion]));
+  const workoutsByDay = useMemo(() => { const m = new Map<string, Workout[]>(); for (const w of workouts) m.set(w.date, [...(m.get(w.date) ?? []), w]); return m; }, [workouts]);
 
   const toggle = (id: string) => {
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 2 ? [...cur, id] : [cur[1]!, id]));
@@ -122,6 +129,9 @@ export default function HistoryScreen() {
           <View style={{ marginTop: space[4], gap: space[3] }}>
             {visible.map((g) => (
               <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={`${g.sessions.length} ${g.sessions.length === 1 ? "sesión" : "sesiones"} · ${formatDuration(g.durationMs)} min`}>
+                {(workoutsByDay.get(g.day) ?? []).map((w) => (
+                  <ListRow key={w.id} inset lead={w.started_at ? timeOf(w.started_at) : "—"} title="Entrenamiento" subtitle={w.state === "in_progress" ? "en curso · lo declarado por vos" : "terminado · lo declarado por vos"} chip={<Chip icon="dumbbell">{w.state === "in_progress" ? "En curso" : "Rutina"}</Chip>} onPress={() => router.push({ pathname: "/entrenamiento", params: { id: w.id } })} />
+                ))}
                 {g.sessions.map((s, i) => (
                   <ListRow
                     key={s.id}
