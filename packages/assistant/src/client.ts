@@ -24,6 +24,8 @@ export interface AssistantClientOptions {
   readonly timeoutMs?: number;
   readonly temperature?: number;
   readonly maxTokens?: number;
+  /** Agrega `/no_think` a la pregunta (modo sin razonamiento de Qwen3). Por defecto `true`. */
+  readonly disableThinking?: boolean;
   readonly fetch?: typeof fetch;
   readonly systemPrompt?: string;
 }
@@ -103,7 +105,9 @@ export function createAssistantClient(options: AssistantClientOptions): Assistan
       const messages = [
         { role: "system", content: `${options.systemPrompt ?? SYSTEM_PROMPT}\n\n${context}` },
         ...history.map((t) => ({ role: t.role, content: t.content })),
-        { role: "user", content: question },
+        // Qwen3 razona antes de responder salvo que se le pida lo contrario; `/no_think` lo desactiva
+        // (los demás modelos lo ignoran). Ahorra 5–15 s por respuesta y tokens de `max_tokens`.
+        { role: "user", content: options.disableThinking === false ? question : `${question}\n/no_think` },
       ];
       const body: Record<string, unknown> = { messages, temperature: options.temperature ?? 0.2, max_tokens: options.maxTokens ?? 400, stream: false };
       if (options.model) body.model = options.model;
