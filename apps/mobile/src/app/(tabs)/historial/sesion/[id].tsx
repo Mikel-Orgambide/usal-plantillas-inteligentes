@@ -3,8 +3,8 @@ import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
 import { isInstrumented, type ChannelMetrics } from "@plantillas/metrics";
-import { AssistantFab, Button, Card, Chip, FootMap, Header, LineChart, ListRow, Screen, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
-import { colors, formatDate, formatDuration, formatNumber, space } from "../../../../presentation/theme/tokens";
+import { AssistantFab, Button, Card, Chip, FootMap, Header, Icon, LineChart, ListRow, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../../../presentation/components";
+import { colors, formatDate, formatDuration, formatNumber, radius, size, space } from "../../../../presentation/theme/tokens";
 import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
@@ -67,6 +67,9 @@ export default function SessionDetailScreen() {
   const [showEvents, setShowEvents] = useState(false);
   const [captureIndex, setCaptureIndex] = useState(0);
   const [exportError, setExportError] = useState<string | undefined>();
+  // Acciones (comparar, informe, CSV, paquete) en una hoja que abre el ícono de compartir de la cabecera (ajuste 4/11):
+  // la pantalla queda entera para los datos, sin barra fija inferior.
+  const [actionsOpen, setActionsOpen] = useState(false);
   const auth = useAuth();
   const sync = useSync();
   const syncRow = useSessionSyncState(id);
@@ -131,14 +134,14 @@ export default function SessionDetailScreen() {
 
   return (
     <>
-    <Screen tabbed footer={<View style={{ gap: space[2] }}><Button icon="compare" onPress={() => router.navigate({ pathname: "/historial", params: { select: session.id } })}>Comparar con…</Button>{closed && captures.length > 0 ? <Button icon="export" disabled={reportBusy} onPress={() => void exportReport(session.id)}>{reportBusy ? "Generando informe…" : "Exportar informe (PDF)"}</Button> : null}{closed && captures.length > 0 ? <Button icon="export" disabled={csvBusy} onPress={() => void exportCsv(session.id)}>{csvBusy ? "Generando CSV…" : "Exportar sesión (CSV)"}</Button> : null}</View>}>
+    <Screen tabbed>
       <Header
         title={ACTIVITY_LABEL[session.activity as Activity] ?? session.activity}
         context={`${formatDate(session.started_at)} · ${formatDuration(duration)} min · ${session.state === "completed" ? "completa" : session.state === "incomplete" ? "incompleta" : session.state}`}
         onBack={() => router.back()}
         action="export"
-        actionLabel="Exportar sesión"
-        onAction={() => void exportSession(session.id)}
+        actionLabel="Comparar o exportar"
+        onAction={() => setActionsOpen(true)}
       />
       {exportError ? <Text variant="caption" color={colors.alert} style={{ marginBottom: space[3] }}>No se pudo exportar: {exportError}</Text> : null}
       <View style={styles.metaRow}>
@@ -279,12 +282,32 @@ export default function SessionDetailScreen() {
         </Card>
       </View>
     </Screen>
-    <AssistantFab sessionId={session.id} bottomOffset={closed && captures.length > 0 ? 200 : 96} />
+    <AssistantFab sessionId={session.id} bottomOffset={96} />
+    <Sheet visible={actionsOpen} onDismiss={() => setActionsOpen(false)} title="Comparar o exportar">
+      <ActionRow icon="compare" title="Comparar con…" subtitle="Elegí otra sesión compatible en Historial" onPress={() => { setActionsOpen(false); router.navigate({ pathname: "/historial", params: { select: session.id } }); }} />
+      {closed && captures.length > 0 ? <ActionRow icon="export" title={reportBusy ? "Generando informe…" : "Exportar informe (PDF)"} subtitle="Para revisión profesional" disabled={reportBusy} onPress={() => { setActionsOpen(false); void exportReport(session.id); }} /> : null}
+      {closed && captures.length > 0 ? <ActionRow icon="export" title={csvBusy ? "Generando CSV…" : "Exportar sesión (CSV)"} subtitle="Una fila por muestra" disabled={csvBusy} onPress={() => { setActionsOpen(false); void exportCsv(session.id); }} /> : null}
+      <ActionRow icon="export" title="Exportar paquete (.plantillas.json)" subtitle="Respaldo completo de la sesión" last onPress={() => { setActionsOpen(false); void exportSession(session.id); }} />
+    </Sheet>
     </>
   );
 }
 
+/** Fila de acción dentro de la hoja: ícono en accent-soft, título y subtítulo. */
+function ActionRow({ icon, title, subtitle, onPress, disabled, last }: { icon: "compare" | "export"; title: string; subtitle: string; onPress: () => void; disabled?: boolean; last?: boolean }) {
+  return (
+    <View style={[styles.actionRow, last && { borderBottomWidth: 0 }]}>
+      <View style={styles.actionIcon}><Icon name={icon} size={20} color={colors.accent} /></View>
+      <View style={{ flex: 1 }}>
+        <ListRow title={title} subtitle={subtitle} chevron onPress={disabled ? undefined : onPress} last />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  actionRow: { flexDirection: "row", alignItems: "center", gap: space[3], borderBottomWidth: size.hairline, borderBottomColor: colors.line },
+  actionIcon: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: space[3] },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space[3], marginTop: space[3] },
   half: { width: "47%", flexGrow: 1 },
