@@ -35,3 +35,7 @@ Al 4/11/2026 el núcleo está cerrado (etapas 0–13): sesiones físicas con FSR
 - Costo del modo nube: pago por uso en el proveedor (del orden de centavos por pregunta con `qwen/qwen3-14b`); el límite por hora acota el gasto. La clave se rota desde los secretos del proyecto sin tocar la app.
 - La evaluación del asistente es independiente de la exactitud de los algoritmos numéricos: se mide si explica correctamente lo que figura en el contexto y si rechaza lo clínico, con el registro de intercambios como evidencia.
 - Evolución futura: streaming de la respuesta, historial de chat persistente, herramientas de consulta a la base (que el modelo pida datos puntuales en lugar de recibir un resumen fijo), uso del informe PDF como contexto del profesional.
+
+## Nota (2026-11-04): tráfico sin cifrar en el modo «Servidor propio»
+
+Las builds de producción de Android rechazan por defecto las conexiones `http://`. LM Studio sirve en `http://<ip-local>:1234`, por lo que la app habilita el tráfico sin cifrar (`expo-build-properties` → `android.usesCleartextTraffic: true`, versión 0.14.2). Supabase y el modo nube siguen usando HTTPS; la única conexión en claro es la del servidor propio dentro de la red privada del usuario. Riesgo residual: en una red compartida, el contexto enviado (indicadores, sin correo ni registros crudos) podría observarse; por eso el modo propio se documenta sólo para redes privadas y la demo usa el modo nube.

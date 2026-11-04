@@ -2,7 +2,7 @@
   "expo": {
     "name": "NSL",
     "slug": "plantillas-inteligentes",
-    "version": "0.14.1",
+    "version": "0.14.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -50,7 +50,15 @@
           "imageWidth": 200
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "backgroundColor": "#0c0d10"
   }
