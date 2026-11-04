@@ -39,3 +39,6 @@ npm-debug.*
 firmware/.pio/
 firmware/.vscode/
 firmware/logs/
+
+# APKs descargados de EAS (no se versionan; pesan cientos de MB)
+docs/Deploys/
