@@ -23,6 +23,7 @@ Las instrucciones actuales del usuario y del proyecto prevalecen sobre documento
 5. 05_Pruebas_y_Criterios_de_Cierre.md: casos, resultados esperados y evidencia que debe conservarse.
 6. 06_Sintesis_Continuidad_y_Uso_IA.md: síntesis del capítulo, resumen del proyecto y contexto para otro chat.
 7. 07_Referencias_Marcadores_y_Decisiones.md: citas, títulos de tablas y figuras, decisiones pendientes y fuentes.
+8. 08_Alcance_Final_del_Prototipo.md: qué hace realmente la plataforma al cierre del desarrollo (4/11/2026), con estado validado/simulado/diseñado por punto. Referencia para reescribir la tesis.
 
 ## Documentos de origen
 
