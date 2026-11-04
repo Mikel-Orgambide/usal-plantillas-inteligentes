@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { describeValues, notInstrumented, computeDistribution } from "@plantillas/metrics";
 import type { ChannelCode } from "@plantillas/contract";
-import { buildAssistantContext, type AssistantSessionInput } from "../src/index";
+import { buildAssistantContext, shortSessionLabel, type AssistantSessionInput } from "../src/index";
 
 const ok = (values: number[]) => describeValues(values.map((raw_value) => ({ raw_value, status: "ok" as const })));
 
@@ -69,6 +69,46 @@ describe("buildAssistantContext", () => {
     expect(ctx).toContain("desfase estimado 42 ms, tramo con ambos módulos 93 %");
     expect(ctx).toContain("asimetría (izq−der)/(izq+der): heel 0.04, lateral -0.02");
     expect(ctx).toContain("no comparables (configuración distinta)");
+  });
+
+  it("muestra las horas en la zona del teléfono, no en UTC (ajuste 4/11)", () => {
+    // 20:44 UTC del 3/11 = 17:44 en Buenos Aires; 02:30 UTC del 4/11 = 23:30 del 3/11.
+    const late = { ...LEFT, id: "dddddddd-0000-0000-0000-000000000000", started_at: "2026-11-04T02:30:00.000Z" };
+    const ctx = buildAssistantContext({ user: {}, sessions: [LEFT, late], selectedSessionId: LEFT.id, timeZone: "America/Argentina/Buenos_Aires", now: "2026-11-04T22:13:00.000Z" });
+    expect(ctx).toContain("03/11/2026 17:44");
+    expect(ctx).toContain("«3/11 17:44»");
+    expect(ctx).toContain("03/11/2026 23:30");
+    expect(ctx).not.toContain("20:44");
+    expect(ctx).toContain("generado 04/11/2026 19:13");
+    expect(ctx).toContain("hora local del teléfono (America/Argentina/Buenos_Aires)");
+    expect(shortSessionLabel("2026-11-03T20:39:12.667Z", "America/Argentina/Buenos_Aires")).toBe("3/11 17:39");
+  });
+
+  it("un sensor instrumentado sin carga figura como 0 medido, distinto de «no disponible»", () => {
+    const zero = { ...leftMetrics(), L_MEDIAL: ok([0, 0, 0, 0]) };
+    const s: AssistantSessionInput = { ...LEFT, metrics: zero, distribution: computeDistribution(zero) };
+    const ctx = buildAssistantContext({ user: {}, sessions: [s], selectedSessionId: s.id, timeZone: "UTC" });
+    expect(ctx).toContain("antepié medial izq: 0 en toda la sesión (instrumentado, sin carga registrada; n 4)");
+    expect(ctx).toContain("no disponible: talón der, antepié medial der, antepié lateral der");
+  });
+
+  it("precalcula la comparación con la anterior comparable y salta las que no lo son", () => {
+    const prevMetrics = { ...leftMetrics(), L_HEEL: ok([2000, 2026]), L_MEDIAL: ok([1300, 1454]), L_LATERAL: ok([800, 838]) };
+    const prev: AssistantSessionInput = { ...LEFT, id: "18763da6-244a-4bcf-851c-2efc12810432", started_at: "2026-11-03T20:39:12.667Z", duration_ms: 23416, metrics: prevMetrics, distribution: computeDistribution(prevMetrics) };
+    const simBetween: AssistantSessionInput = { ...SIM, started_at: "2026-11-03T20:42:00.000Z", metrics: leftMetrics(), distribution: computeDistribution(leftMetrics()) };
+    const ctx = buildAssistantContext({ user: {}, sessions: [simBetween, prev, LEFT], selectedSessionId: LEFT.id, timeZone: "America/Argentina/Buenos_Aires" });
+    expect(ctx).toContain("COMPARACIÓN PRECALCULADA: B = ca49daed del 3/11 17:44 frente a A = 18763da6 del 3/11 17:39");
+    expect(ctx).toContain("no es comparable y se omitió");
+    // talón: 2013 → 3801 = +1788 (+89 %)
+    expect(ctx).toContain("talón izq: media 2013 → 3801, +1788 (+89 %); máx 2026 → 3812");
+    expect(ctx).toMatch(/Reparto antepié\/talón: \d+ %\/\d+ % → \d+ %\/\d+ % \(antepié [+−]\d+ puntos porcentuales\)/);
+    expect(ctx).toContain("misma actividad (caminata); duración 23 s vs 32 s");
+  });
+
+  it("si la anterior no es comparable lo dice", () => {
+    const simOlder: AssistantSessionInput = { ...SIM, started_at: "2026-11-03T20:30:00.000Z", metrics: leftMetrics(), distribution: computeDistribution(leftMetrics()) };
+    const ctx = buildAssistantContext({ user: {}, sessions: [simOlder, LEFT], selectedSessionId: LEFT.id, timeZone: "UTC" });
+    expect(ctx).toMatch(/NO es comparable con ca49daed .*origen de señal distinto/);
   });
 
   it("sin sesiones lo dice en lugar de inventar", () => {
