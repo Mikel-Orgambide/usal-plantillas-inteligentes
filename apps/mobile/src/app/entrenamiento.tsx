@@ -27,6 +27,9 @@ export default function WorkoutScreen() {
   const [editing, setEditing] = useState<{ item: RoutineItem | null; draft: EntryDraft } | null>(null);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [notes, setNotes] = useState("");
+  // Todos los hooks antes del primer `return`: un hook declarado después de la salida temprana
+  // («Cargando…») cambiaba la cantidad de hooks entre renders y cerraba la app al abrir un entrenamiento.
+  const [entryErrors, setEntryErrors] = useState<string[]>([]);
   const active = useActiveSession();
   const source = useActiveSource();
   const reload = useCallback(() => { if (id) getWorkout(id).then(setDetail).catch((e) => setError(e instanceof Error ? e.message : String(e))); }, [id]);
@@ -58,7 +61,6 @@ export default function WorkoutScreen() {
       },
     });
   };
-  const [entryErrors, setEntryErrors] = useState<string[]>([]);
   const saveEntry = async () => {
     if (!editing) return;
     const r = await addEntry(workout.id, editing.draft);

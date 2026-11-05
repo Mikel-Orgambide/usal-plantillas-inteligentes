@@ -67,3 +67,19 @@ describe("carga asistida", () => {
     expect(parseLogEntryProposal('{"intent":"answer"}').ok).toBe(false);
   });
 });
+
+describe("entrenamiento libre (sin rutina)", () => {
+  it("resumen y progreso vacíos sin ejercicios ni series: nada es null ni falla", () => {
+    const s = summarizeWorkout([]);
+    expect(s.entries).toBe(0);
+    expect(s.strength_sets).toBe(0);
+    expect(s.volume_kg).toBe(0);
+    expect(s.walk_run_duration_s).toBe(0);
+    expect(s.rpe_mean).toBeNull();
+    expect(s.items).toEqual([]);
+    expect(routineProgress([], [])).toEqual([]);
+    // Series cargadas fuera de una rutina: progreso vacío igual; el resumen las cuenta.
+    expect(routineProgress([], [entry({ item_id: null })])).toEqual([]);
+    expect(summarizeWorkout([entry({ item_id: null })]).strength_sets).toBe(1);
+  });
+});
