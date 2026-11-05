@@ -284,6 +284,14 @@ CREATE TABLE session_link (
 CREATE INDEX session_link_workout_idx ON session_link(workout_id);
 `,
   },
+  {
+    version: 7,
+    description: "Actividad unificada (ADR 0013, ajuste 4/11): cada serie declarada puede guardar la sesión de plantillas durante la que se hizo (session_id), además del vínculo sesión↔entrenamiento",
+    sql: `
+ALTER TABLE workout_entry ADD COLUMN session_id TEXT REFERENCES session(id) ON DELETE SET NULL;
+CREATE INDEX workout_entry_session_idx ON workout_entry(session_id);
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

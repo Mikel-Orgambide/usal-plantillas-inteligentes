@@ -106,8 +106,8 @@ describe("entrenamiento asociado (ADR 0013)", () => {
       training: {
         workout: { id: "W1", routine_id: "R1", date: "2026-11-04", started_at: "2026-11-04T20:00:00Z", ended_at: null, state: "in_progress", notes: null },
         routine_name: "Pierna",
-        entry: { id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z" },
-        entries: [{ id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z" }],
+        entry: { id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z", session_id: null },
+        entries: [{ id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve en el talón", notes: null, recorded_at: "2026-11-04T20:05:00Z", session_id: null }],
       },
     };
     const html = buildSessionReportHtml(linked);
@@ -117,5 +117,17 @@ describe("entrenamiento asociado (ADR 0013)", () => {
     expect(html).toContain("molestia leve en el talón");
     expect(html).toContain("sin interpretación");
     expect(buildSessionReportHtml(physical)).not.toContain("Entrenamiento asociado");
+  });
+
+  it("actividad unificada: las series declaradas durante la sesión (session_id) se marcan sin necesidad de un vínculo por serie", () => {
+    const sid = physical.session.id;
+    const mk = (id: string, set: number, session_id: string | null) => ({ id, workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength" as const, set_index: set, reps: 10, weight_kg: 40, duration_s: null, distance_m: null, rpe: null, discomfort_note: null, notes: null, recorded_at: "2026-11-04T20:05:00Z", session_id });
+    const bundle: SessionBundle = {
+      ...physical,
+      training: { workout: { id: "W1", routine_id: null, date: "2026-11-04", started_at: "2026-11-04T20:00:00Z", ended_at: null, state: "in_progress", notes: null }, routine_name: null, entry: null, entries: [mk("E1", 1, sid), mk("E2", 2, sid), mk("E3", 3, null)] },
+    };
+    const html = buildSessionReportHtml(bundle);
+    expect(html).toContain("2 serie(s) declaradas durante la sesión");
+    expect(html.match(/esta sesión<\/span>/g)?.length).toBe(2);
   });
 });

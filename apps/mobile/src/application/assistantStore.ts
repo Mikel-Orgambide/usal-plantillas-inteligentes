@@ -15,6 +15,7 @@ import {
 } from "@plantillas/assistant";
 import { askForMissing, isLogIntent, parseLogEntryProposal, proposalMissing, type LogEntryProposal } from "@plantillas/training";
 import { saveProposal, trainingContext } from "./trainingStore";
+import { refreshActivity } from "./activityStore";
 import { getDatabase } from "../infrastructure/sqlite/database";
 import { loadSettings, type Settings } from "../infrastructure/settings/settings";
 import { getSupabase, remoteConfigured, supabaseAnonKey, supabaseUrl } from "../infrastructure/supabase/client";
@@ -154,6 +155,8 @@ export async function resolveProposal(messageId: number, action: "save" | "disca
   }
   const r = await saveProposal(edited ?? msg.proposal);
   if (r.ok) {
+    // La actividad en curso avanza el cursor con la serie cargada por el asistente.
+    await refreshActivity().catch(() => undefined);
     const saved: ChatMessage = { id: nextId++, role: "assistant", text: `Guardado en el entrenamiento de hoy: ${r.entry.text}.`, generated: false };
     set({ messages: [...state.messages.map((m): ChatMessage => (m.id === messageId ? { ...m, ...(edited ? { proposal: edited } : {}), resolved: "saved" } : m)), saved], busy: false });
   } else {

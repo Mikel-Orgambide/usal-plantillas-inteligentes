@@ -6,6 +6,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 - Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
 
+## [0.15.1] - 2026-11-04 — actividad unificada (ajuste de la etapa 15)
+
+### Corregido
+- La pantalla Entrenamiento cerraba la app al abrirse desde Hoy (hook declarado después de la salida temprana).
+
+### Añadido
+- Actividad unificada: rutina opcional al iniciar la sesión; pestañas Medición | Rutina; ejecución ejercicio por ejercicio con serie precargada y editable, descanso entre series (`rest_sec`, 90 s por defecto) con cuenta regresiva y «Saltar», cronómetro de caminata con cuenta regresiva al objetivo, progresión por ejercicio, «Fuera de la rutina», finalizar con nota.
+- Isla flotante con la actividad en curso (grabación, descanso, caminata) en todas las pantallas.
+- Hoy: tarjeta «Entrenamiento» como puerta (seguir, iniciar rutina sin plantillas, crear, ver rutinas). Historial: entrenamientos como entradas propias del día, también sin sesiones medidas. Detalle de sesión: series declaradas durante la sesión. PDF: series de la sesión marcadas.
+- `@plantillas/training/activity`: máquina de estados pura con pruebas; persistencia local v7 (`workout_entry.session_id`).
+- Asistente: contexto con el ejercicio y la serie en curso; la carga por conversación avanza la actividad.
+
+### Cambiado
+- Formularios: teclado en modo `resize`, desplazamiento ajustado al teclado, campos numéricos con selección al enfocar.
+
 ## [0.15.0] - 2026-11-04 — etapa 15 (implementada; validación en el teléfono pendiente)
 
 ### Añadido

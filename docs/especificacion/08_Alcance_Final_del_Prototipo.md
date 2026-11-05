@@ -30,6 +30,7 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 | Persistencia local SQLite (v6), respaldo y restauración, exportación de sesión (`.plantillas.json`) y CSV | **[H]** |
 | Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; migración 0003 para bilateral **[S]** |
 | Entrenamiento declarado: rutinas (propias o del profesional), ejercicios objetivo, entrenamientos, series (reps, peso, duración, distancia, RPE, molestia como nota), vínculo sesión↔serie (ADR 0013, etapa 15) | **[S]** (local; remoto preparado **[D]**) |
+| Actividad unificada (ajuste 4/11): rutina ejercicio por ejercicio dentro de la sesión de plantillas, serie precargada y corregible, descanso entre series con cuenta regresiva, cronómetro de caminata, isla flotante con la actividad en curso, entrenamientos en Historial también sin sesión medida | **[S]** |
 
 ## 4. Qué calcula (métricas)
 

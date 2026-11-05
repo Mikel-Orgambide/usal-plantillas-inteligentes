@@ -7,6 +7,7 @@ import { colors, fonts, radius, size, space } from "../presentation/theme/tokens
 import { addEntry, deleteEntry, finishWorkout, getWorkout, nextSetIndex, setPendingLink, useTrainingVersion, type EntryDraft, type WorkoutDetail } from "../application/trainingStore";
 import { useActiveSession } from "../application/sessionStore";
 import { useActiveSource } from "../application/activeSource";
+import { useActivity } from "../application/activityStore";
 
 const KIND_LABEL: Record<ItemKind, string> = { strength: "Fuerza", walk_run: "Caminata / carrera", other: "Otro" };
 const numOrNull = (v: string): number | null => (v.trim() === "" ? null : Number(v.replace(",", ".")));
@@ -32,6 +33,7 @@ export default function WorkoutScreen() {
   const [entryErrors, setEntryErrors] = useState<string[]>([]);
   const active = useActiveSession();
   const source = useActiveSource();
+  const run = useActivity();
   const reload = useCallback(() => { if (id) getWorkout(id).then(setDetail).catch((e) => setError(e instanceof Error ? e.message : String(e))); }, [id]);
   useFocusEffect(useCallback(() => { reload(); }, [reload, version]));
   useEffect(() => { reload(); }, [reload, version]);
@@ -78,7 +80,9 @@ export default function WorkoutScreen() {
     <>
     <Screen footer={done ? <Button onPress={() => router.back()}>Volver</Button> : <Button variant="primary" icon="check" onPress={() => setConfirmFinish(true)}>Finalizar entrenamiento</Button>}>
       <Header title={routine?.routine.name ?? "Entrenamiento libre"} context={`${workout.date} · ${done ? "terminado" : "en curso"}${routine?.routine.origin === "professional" ? " · indicada por un profesional" : ""}`} onBack={() => router.back()} />
-      {recording ? <StatusBanner icon="play" actionLabel="Ver" onAction={() => router.push("/grabacion")}>Hay una sesión de plantillas grabando</StatusBanner> : null}
+      {run && run.detail.workout.id === workout.id ? (
+        <StatusBanner icon="play" actionLabel="Seguir" onAction={() => router.push("/grabacion")}>Este entrenamiento está en curso: se sigue ejercicio por ejercicio desde la actividad</StatusBanner>
+      ) : recording ? <StatusBanner icon="play" actionLabel="Ver" onAction={() => router.push("/grabacion")}>Hay una sesión de plantillas grabando</StatusBanner> : null}
       {routine?.routine.professional_note ? <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>Indicaciones: {routine.routine.professional_note}</Text> : null}
 
       <View style={styles.grid}>

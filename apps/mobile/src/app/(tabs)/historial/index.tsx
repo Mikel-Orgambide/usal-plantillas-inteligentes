@@ -7,8 +7,8 @@ import { useSessionList } from "../../../application/useSessions";
 import { useAuth } from "../../../application/authStore";
 import { ACTIVITY_LABEL, type Activity } from "../../../application/sessionStore";
 import { dayShort, groupByDay } from "../../../application/daySummary";
-import { listWorkouts, useTrainingVersion } from "../../../application/trainingStore";
-import type { Workout } from "@plantillas/training";
+import { listWorkoutsDetailed, useTrainingVersion, type WorkoutListItem } from "../../../application/trainingStore";
+import { useActivity } from "../../../application/activityStore";
 
 type Filter = "all" | Activity | "simulated";
 
@@ -41,9 +41,10 @@ export default function HistoryScreen() {
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
   // Entrenamientos (ADR 0013): una fila propia en el día, junto a las sesiones medidas.
   const trainingVersion = useTrainingVersion();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  useFocusEffect(useCallback(() => { listWorkouts(300).then(setWorkouts).catch(() => undefined); }, [trainingVersion]));
-  const workoutsByDay = useMemo(() => { const m = new Map<string, Workout[]>(); for (const w of workouts) m.set(w.date, [...(m.get(w.date) ?? []), w]); return m; }, [workouts]);
+  const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
+  const run = useActivity();
+  useFocusEffect(useCallback(() => { listWorkoutsDetailed(300).then(setWorkouts).catch(() => undefined); }, [trainingVersion]));
+  const workoutsByDay = useMemo(() => { const m = new Map<string, WorkoutListItem[]>(); for (const w of workouts) m.set(w.workout.date, [...(m.get(w.workout.date) ?? []), w]); return m; }, [workouts]);
 
   const toggle = (id: string) => {
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 2 ? [...cur, id] : [cur[1]!, id]));
@@ -53,7 +54,14 @@ export default function HistoryScreen() {
   const physical = (sessions ?? []).filter((s) => s.source === "physical").length;
   const simulated = (sessions ?? []).filter((s) => s.source === "simulated").length;
   const total = totalDuration((sessions ?? []).reduce((n, s) => n + (s.duration_ms ?? 0), 0));
-  const groups = useMemo(() => groupByDay(list), [list]);
+  // Días con entrenamiento pero sin sesiones medidas también aparecen (ajuste 4/11), salvo con un filtro activo.
+  const groups = useMemo(() => {
+    const g = groupByDay(list);
+    if (filter !== "all") return g;
+    const known = new Set(g.map((x) => x.day));
+    const extra = [...workoutsByDay.keys()].filter((d) => !known.has(d)).map((day) => ({ day, sessions: [], durationMs: 0 }));
+    return [...g, ...extra].sort((a, b) => (a.day < b.day ? 1 : -1));
+  }, [list, filter, workoutsByDay]);
   const visible = showAll ? groups : groups.slice(0, RECENT_DAYS);
   const hiddenDays = groups.length - visible.length;
 
@@ -113,7 +121,7 @@ export default function HistoryScreen() {
         </View>
       ) : sessions === null ? (
         <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[4] }}>Cargando sesiones…</Text>
-      ) : list.length === 0 ? (
+      ) : groups.length === 0 ? (
         <View style={styles.empty}>
           <Icon name="history" size={32} />
           <Text variant="heading">{sessions.length === 0 ? "Todavía no hay sesiones" : "Nada con este filtro"}</Text>
@@ -128,10 +136,14 @@ export default function HistoryScreen() {
           </Text>
           <View style={{ marginTop: space[4], gap: space[3] }}>
             {visible.map((g) => (
-              <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={`${g.sessions.length} ${g.sessions.length === 1 ? "sesión" : "sesiones"} · ${formatDuration(g.durationMs)} min`}>
-                {(workoutsByDay.get(g.day) ?? []).map((w) => (
-                  <ListRow key={w.id} inset lead={w.started_at ? timeOf(w.started_at) : "—"} title="Entrenamiento" subtitle={w.state === "in_progress" ? "en curso · lo declarado por vos" : "terminado · lo declarado por vos"} chip={<Chip icon="dumbbell">{w.state === "in_progress" ? "En curso" : "Rutina"}</Chip>} onPress={() => router.push({ pathname: "/entrenamiento", params: { id: w.id } })} />
-                ))}
+              <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={g.sessions.length ? `${g.sessions.length} ${g.sessions.length === 1 ? "sesión" : "sesiones"} · ${formatDuration(g.durationMs)} min` : "entrenamiento"}>
+                {(workoutsByDay.get(g.day) ?? []).map((w, wi, arr) => {
+                  const live = run?.detail.workout.id === w.workout.id;
+                  const sum = `${w.summary.strength_sets} series${w.summary.volume_kg ? ` · ${w.summary.volume_kg} kg·rep` : ""}${w.summary.walk_run_duration_s ? ` · ${Math.round(w.summary.walk_run_duration_s / 60)} min caminata` : ""}${w.links ? ` · ${w.links} sesión(es)` : ""}`;
+                  return (
+                    <ListRow key={w.workout.id} inset last={g.sessions.length === 0 && wi === arr.length - 1} lead={w.workout.started_at ? timeOf(w.workout.started_at) : "—"} title={w.routine_name ?? "Entrenamiento libre"} subtitle={`${w.workout.state === "in_progress" ? "en curso" : "terminado"} · ${sum} · declarado`} chip={<Chip variant={live ? "selected" : "neutral"} icon="dumbbell">{w.workout.state === "in_progress" ? "En curso" : "Entreno"}</Chip>} onPress={() => (live ? router.push("/grabacion") : router.push({ pathname: "/entrenamiento", params: { id: w.workout.id } }))} />
+                  );
+                })}
                 {g.sessions.map((s, i) => (
                   <ListRow
                     key={s.id}

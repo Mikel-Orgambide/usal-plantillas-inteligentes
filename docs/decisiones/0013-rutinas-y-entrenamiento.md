@@ -45,3 +45,15 @@ Hoy (tarjeta «Entrenamiento del día»: empezar desde una rutina o libre, progr
 - Meter todo en el campo «contexto» de la sesión: no permite rutinas, series ni totales, y mezcla lo declarado con la descripción de la sesión.
 - Que el asistente guarde directamente lo que entiende: una extracción equivocada quedaría como dato; la tarjeta de confirmación cuesta un toque y evita eso.
 - Que la app proponga progresiones de carga «según la literatura»: es prescripción; queda fuera del alcance de la tesis y de la app.
+
+## Ajuste 4/11 (tarde): actividad unificada
+
+Probado en el teléfono, el flujo «entrenamiento aparte, sesión aparte» separaba demasiado las dos cosas y perdía el enfoque de la app. Decisión de Mikel: la rutina se ejecuta **dentro de la misma actividad** que la medición.
+
+- **Inicio unificado.** Nueva sesión ofrece una rutina opcional (sólo activas) o «Sin rutina»; con rutina, el entrenamiento y la sesión arrancan juntos y quedan vinculados. Desde Hoy también se entrena sin plantillas (misma pantalla, sin fuente de datos).
+- **Una pantalla de actividad** (`/grabacion`) con pestañas **Medición | Rutina** cuando hay ambas en curso. La rutina se ejecuta **ejercicio por ejercicio**: la serie en curso llega precargada con el objetivo (y con el peso de la última serie declarada, si la persona lo bajó por cansancio), se corrige y se confirma con «Listo»; eso declara la serie, la vincula a la sesión que graba (`workout_entry.session_id`, migración local v7) y abre el **descanso** del ejercicio (`rest_sec`; 90 s por defecto; 0 = sin descanso), con «Saltar». Caminata/carrera corre con cronómetro y cuenta regresiva al objetivo; al terminar se guarda el tiempo real. La progresión (series hechas con su peso) queda debajo.
+- **Isla flotante.** Mientras hay sesión grabando o entrenamiento en curso, una pastilla arriba de todas las pantallas muestra el tiempo de grabación y el descanso o la caminata que corre; tocarla vuelve a la actividad. Los temporizadores viven en el store, no en la pantalla.
+- **Puerta en Hoy.** La tarjeta «Entrenamiento» continúa la actividad o permite iniciar una rutina, crear una o ver todas (archivar y restaurar en Ajustes → Rutinas, que se mantiene).
+- **Historial.** Los entrenamientos son entradas propias del día (también en días sin sesiones medidas), con nombre de rutina y resumen; su detalle muestra series con peso real y las sesiones vinculadas; desde el detalle de una sesión se listan las series declaradas durante ella.
+- **Máquina de estados pura** (`@plantillas/training/activity`: cursor, descanso, cronómetro, `now` inyectable) con pruebas; la app sólo persiste.
+- **Lo que no cambia:** la app sigue sin prescribir, sin ajustar cargas y sin interpretar molestias; la serie es declarada aunque esté vinculada a una sesión medida.

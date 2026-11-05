@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import type { ChannelCode } from "@plantillas/contract";
-import { BigNumbers, Button, Chip, FootMap, Icon, LineChart, Screen, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
-import { colors, formatDuration, formatNumber, radius, space } from "../presentation/theme/tokens";
-import { ACTIVITY_LABEL, clearSession, liveSeries, stopSession, useActiveSession } from "../application/sessionStore";
+import { BigNumbers, Button, Chip, FootMap, Icon, LineChart, RoutinePane, Screen, Segmented, Sheet, StatusBanner, Text, ValueCard } from "../presentation/components";
+import { colors, fonts, formatDuration, formatNumber, radius, size, space } from "../presentation/theme/tokens";
+import { ACTIVITY_LABEL, clearSession, liveSeries, stopSession, useActiveSession, type ActiveSession } from "../application/sessionStore";
 import { loadSettings, saveSettings } from "../infrastructure/settings/settings";
+import { cursorLabel, finishActivity, useActivity } from "../application/activityStore";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = {
@@ -26,35 +27,128 @@ function KeepAwake() {
   return null;
 }
 
-/** Grabación en vivo: duración, siluetas, gráfico de la ventana reciente y Finalizar. */
-export default function RecordingScreen() {
+type Pane = "measure" | "routine";
+
+/**
+ * Actividad (ajuste 4/11): una sola pantalla para la sesión de plantillas y
+ * la rutina. Con ambas en curso, pestañas Medición | Rutina; con una sola,
+ * sólo esa. La isla flotante trae de vuelta acá desde cualquier pantalla.
+ */
+export default function ActivityScreen() {
   const router = useRouter();
   const active = useActiveSession();
-  const [zone, setZone] = useState<Zone>("heel");
-  const [confirm, setConfirm] = useState(false);
+  const run = useActivity();
+  const recording = !!active && !active.result;
+  const [pane, setPane] = useState<Pane>(recording ? "measure" : "routine");
+  const [confirmFinishWorkout, setConfirmFinishWorkout] = useState(false);
+  const [notes, setNotes] = useState("");
   const [stopping, setStopping] = useState(false);
+  const [confirm, setConfirm] = useState(false);
   const [, tick] = useState(0);
-  const keepAwake = loadSettings().keepAwake;
-  const [bigNumbers, setBigNumbers] = useState(loadSettings().bigNumbers);
-  const toggleBigNumbers = () => setBigNumbers((b) => saveSettings({ bigNumbers: !b }).bigNumbers);
 
   // Refresco del reloj y del gráfico aunque no lleguen registros (huecos visibles).
   const finished = !!active?.result;
   useEffect(() => {
-    if (finished) return;
+    if (finished || !active) return;
     const id = setInterval(() => tick((n) => n + 1), 250);
     return () => clearInterval(id);
-  }, [finished]);
+  }, [finished, active]);
 
-  if (!active) {
+  const both = !!active && !!run;
+  const showPane: Pane = both ? pane : active ? "measure" : "routine";
+
+  if (!active && !run) {
     return (
       <Screen footer={<Button variant="primary" onPress={() => router.replace("/")}>Volver al inicio</Button>}>
-        <Text variant="heading">No hay una sesión en curso</Text>
+        <Text variant="heading">No hay una actividad en curso</Text>
+        <Text variant="body" color={colors.textSecondary} style={{ marginTop: space[2] }}>Iniciá una sesión o un entrenamiento desde Hoy.</Text>
       </Screen>
     );
   }
 
-  const { snapshot, live, result } = active;
+  const finish = async () => {
+    setConfirm(false);
+    setStopping(true);
+    await stopSession();
+    setStopping(false);
+  };
+  const close = () => {
+    const id = active!.coordinator.sessionId;
+    clearSession();
+    router.replace({ pathname: "/historial/sesion/[id]", params: { id } });
+  };
+
+  const footer = showPane === "measure" && active ? (
+    finished ? (
+      // key distinta: elemento nativo nuevo, no el de «Finalizar» reciclado tras pasar por disabled.
+      <Button key="ver" variant="primary" onPress={close}>Ver la sesión</Button>
+    ) : (
+      <Button key="finalizar" variant="primary" icon="stop" disabled={stopping} onPress={() => setConfirm(true)}>{stopping ? "Finalizando…" : "Finalizar sesión"}</Button>
+    )
+  ) : run ? (
+    <Button key="fin-entreno" variant="primary" icon="check" onPress={() => setConfirmFinishWorkout(true)}>Finalizar entrenamiento</Button>
+  ) : undefined;
+
+  return (
+    <>
+    <Screen footer={footer}>
+      {loadSettings().keepAwake && (recording || run) ? <KeepAwake /> : null}
+      <View style={styles.statusRow}>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Volver al inicio; la actividad sigue" hitSlop={8} style={styles.back}>
+          <Icon name="chevron-right" size={20} color={colors.textSecondary} />
+        </Pressable>
+        {active ? (
+          <>
+            <View style={[styles.dot, { backgroundColor: active.snapshot.state === "interrupted" ? colors.alert : finished ? colors.stale : colors.accent }]} />
+            <Text variant="caption" color={colors.textSecondary} style={{ flex: 1 }} numberOfLines={1}>
+              {STATE_LABEL[active.snapshot.state]} · {active.sourceTitle} · {active.sourceKind === "physical" ? "físicas" : "simuladas"} · {ACTIVITY_LABEL[active.activity]}
+            </Text>
+          </>
+        ) : run ? (
+          <>
+            <View style={[styles.dot, { backgroundColor: colors.alert }]} />
+            <Text variant="caption" color={colors.textSecondary} style={{ flex: 1 }} numberOfLines={1}>Entrenamiento · {run.detail.routine?.routine.name ?? "libre"} · {cursorLabel(run)}</Text>
+          </>
+        ) : null}
+      </View>
+      {both ? (
+        <View style={{ marginTop: space[3] }}>
+          <Segmented value={pane} options={[{ value: "measure", label: "Medición" }, { value: "routine", label: `Rutina${run?.detail.routine ? "" : " libre"}` }]} onChange={setPane} />
+        </View>
+      ) : null}
+      {showPane === "measure" && active ? <MeasurementPane active={active} /> : run ? <View style={{ marginTop: space[3] }}><RoutinePane run={run} /></View> : null}
+    </Screen>
+
+      {active ? (
+        <Sheet visible={confirm} onDismiss={() => setConfirm(false)}>
+          <Text variant="heading">Finalizar la sesión</Text>
+          <Text variant="body" color={colors.textSecondary}>
+            Se guardan <Text variant="body">{formatDuration(active.snapshot.durationMs)}</Text> min y <Text variant="body">{formatNumber(active.snapshot.stats.accepted)}</Text> registros. Una sesión finalizada no se puede reanudar{run ? "; el entrenamiento sigue abierto" : ""}.
+          </Text>
+          <View style={{ gap: space[3], marginTop: space[3] }}>
+            <Button variant="danger" icon="stop" onPress={() => void finish()}>Finalizar</Button>
+            <Button onPress={() => setConfirm(false)}>Seguir grabando</Button>
+          </View>
+        </Sheet>
+      ) : null}
+      {run ? (
+        <Sheet visible={confirmFinishWorkout} onDismiss={() => setConfirmFinishWorkout(false)} title="Finalizar entrenamiento">
+          <Text variant="body" color={colors.textSecondary}>{run.detail.summary.strength_sets} series · volumen {run.detail.summary.volume_kg} kg·rep · caminata {formatDuration(run.detail.summary.walk_run_duration_s * 1000)} · {run.detail.links.length} sesión(es) vinculada(s){recording ? ". La sesión de plantillas sigue grabando." : "."}</Text>
+          <TextInput value={notes} onChangeText={setNotes} placeholder="Notas del entrenamiento (opcional)" placeholderTextColor={colors.textSecondary} style={styles.input} />
+          <Button variant="primary" onPress={() => { setConfirmFinishWorkout(false); void finishActivity(notes).then(() => { if (!recording) router.replace("/"); }); }}>Finalizar</Button>
+        </Sheet>
+      ) : null}
+    </>
+  );
+}
+
+/** Medición en vivo: duración, siluetas o números grandes, gráfico de la ventana reciente y contadores. */
+function MeasurementPane({ active }: { active: ActiveSession }) {
+  const [zone, setZone] = useState<Zone>("heel");
+  const [bigNumbers, setBigNumbers] = useState(loadSettings().bigNumbers);
+  const toggleBigNumbers = () => setBigNumbers((b) => saveSettings({ bigNumbers: !b }).bigNumbers);
+  const { snapshot, result } = active;
+  const finished = !!result;
   const stale = snapshot.state === "interrupted";
   const v = snapshot.values;
   // Con dos módulos (ADR 0011): si uno se pierde la sesión sigue con el otro; el tramo queda incompleto.
@@ -67,49 +161,15 @@ export default function RecordingScreen() {
   const right = { heel: fv("R_HEEL"), medial: fv("R_MEDIAL"), lateral: fv("R_LATERAL") };
   const [lc, rc] = ZONE_CHANNELS[zone];
   const series = [
-    ...(v[lc].status !== "unavailable" ? [{ name: "Izquierdo", values: liveSeries(live, lc), stale }] : []),
-    ...(v[rc].status !== "unavailable" ? [{ name: "Derecho", values: liveSeries(live, rc), stale }] : []),
+    ...(v[lc].status !== "unavailable" ? [{ name: "Izquierdo", values: liveSeries(active.live, lc), stale }] : []),
+    ...(v[rc].status !== "unavailable" ? [{ name: "Derecho", values: liveSeries(active.live, rc), stale }] : []),
   ];
   const feetLabel = series.length === 2 ? "izquierdo y derecho" : v[lc].status !== "unavailable" ? "izquierdo · derecho no instrumentado" : "derecho · izquierdo no instrumentado";
   const rate = snapshot.durationMs > 0 ? snapshot.stats.accepted / (snapshot.durationMs / 1000) : 0;
 
-  const finish = async () => {
-    setConfirm(false);
-    setStopping(true);
-    await stopSession();
-    setStopping(false);
-  };
-
-  const close = () => {
-    const id = active.coordinator.sessionId;
-    clearSession();
-    router.replace({ pathname: "/historial/sesion/[id]", params: { id } });
-  };
-
   return (
     <>
-    <Screen
-      footer={
-        finished ? (
-          // key distinta: elemento nativo nuevo, no el de «Finalizar» reciclado tras pasar por disabled.
-          <Button key="ver" variant="primary" onPress={close}>Ver la sesión</Button>
-        ) : (
-          <Button key="finalizar" variant="primary" icon="stop" disabled={stopping} onPress={() => setConfirm(true)}>{stopping ? "Finalizando…" : "Finalizar"}</Button>
-        )
-      }
-    >
-      {keepAwake && !finished ? <KeepAwake /> : null}
-
-      <View style={styles.statusRow}>
-        {!finished ? (
-          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Volver al inicio; la sesión sigue grabando" hitSlop={8} style={styles.back}>
-            <Icon name="chevron-right" size={20} color={colors.textSecondary} />
-          </Pressable>
-        ) : null}
-        <View style={[styles.dot, { backgroundColor: stale ? colors.alert : finished ? colors.stale : colors.accent }]} />
-        <Text variant="caption" color={colors.textSecondary} style={{ flex: 1 }} numberOfLines={1}>
-          {STATE_LABEL[snapshot.state]} · {active.sourceTitle} · {active.sourceKind === "physical" ? "físicas" : "simuladas"} · {ACTIVITY_LABEL[active.activity]}
-        </Text>
+      <View style={[styles.statusRow, { justifyContent: "flex-end" }]}>
         <Pressable onPress={toggleBigNumbers} accessibilityRole="switch" accessibilityState={{ checked: bigNumbers }} accessibilityLabel={bigNumbers ? "Volver a las siluetas" : "Mostrar números grandes"} hitSlop={8} style={[styles.toggle, bigNumbers && styles.toggleOn]}>
           <Text variant="label" color={bigNumbers ? colors.accent : colors.textSecondary}>123</Text>
         </Pressable>
@@ -148,7 +208,7 @@ export default function RecordingScreen() {
         size="xl"
         live={!finished}
         sub={stale ? "La duración sigue; el hueco queda registrado" : undefined}
-        style={{ marginTop: space[6] }}
+        style={{ marginTop: space[4] }}
       />
 
       <View style={{ marginTop: space[6] }}>
@@ -174,18 +234,6 @@ export default function RecordingScreen() {
         <Text variant="caption" color={colors.textSecondary}>en cola {snapshot.stats.pending}</Text>
         <Text variant="caption" color={snapshot.stats.rejected ? colors.alert : colors.textSecondary}>rechazados {snapshot.stats.rejected}</Text>
       </View>
-    </Screen>
-
-      <Sheet visible={confirm} onDismiss={() => setConfirm(false)}>
-        <Text variant="heading">Finalizar la sesión</Text>
-        <Text variant="body" color={colors.textSecondary}>
-          Se guardan <Text variant="body">{formatDuration(snapshot.durationMs)}</Text> min y <Text variant="body">{formatNumber(snapshot.stats.accepted)}</Text> registros. Una sesión finalizada no se puede reanudar.
-        </Text>
-        <View style={{ gap: space[3], marginTop: space[3] }}>
-          <Button variant="danger" icon="stop" onPress={() => void finish()}>Finalizar</Button>
-          <Button onPress={() => setConfirm(false)}>Seguir grabando</Button>
-        </View>
-      </Sheet>
     </>
   );
 }
@@ -199,4 +247,5 @@ const styles = StyleSheet.create({
   toggleOn: { borderColor: colors.accent },
   chips: { flexDirection: "row", gap: space[2], marginTop: space[6] },
   counters: { flexDirection: "row", justifyContent: "space-between", marginTop: space[3] },
+  input: { minHeight: size.controlHeight, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], fontFamily: fonts.regular, fontSize: 16 },
 });

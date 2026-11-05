@@ -26,6 +26,8 @@ export interface WorkoutEntryRow {
   readonly id: string; readonly workout_id: string; readonly item_id: string | null; readonly item_name: string; readonly kind: ItemKind;
   readonly set_index: number | null; readonly reps: number | null; readonly weight_kg: number | null; readonly duration_s: number | null;
   readonly distance_m: number | null; readonly rpe: number | null; readonly discomfort_note: string | null; readonly notes: string | null; readonly recorded_at: string;
+  /** Sesión de plantillas durante la que se declaró la serie (actividad unificada), si hubo. */
+  readonly session_id: string | null;
 }
 export interface SessionLinkRow { readonly session_id: string; readonly workout_id: string; readonly entry_id: string | null }
 
@@ -106,11 +108,11 @@ export class TrainingRepository {
 
   async saveEntry(e: WorkoutEntryRow): Promise<void> {
     await this.db.run(
-      `INSERT INTO workout_entry (id, workout_id, item_id, item_name, kind, set_index, reps, weight_kg, duration_s, distance_m, rpe, discomfort_note, notes, recorded_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO workout_entry (id, workout_id, item_id, item_name, kind, set_index, reps, weight_kg, duration_s, distance_m, rpe, discomfort_note, notes, recorded_at, session_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET item_id = excluded.item_id, item_name = excluded.item_name, kind = excluded.kind, set_index = excluded.set_index, reps = excluded.reps, weight_kg = excluded.weight_kg,
-         duration_s = excluded.duration_s, distance_m = excluded.distance_m, rpe = excluded.rpe, discomfort_note = excluded.discomfort_note, notes = excluded.notes, recorded_at = excluded.recorded_at`,
-      [e.id, e.workout_id, e.item_id, e.item_name, e.kind, e.set_index, e.reps, e.weight_kg, e.duration_s, e.distance_m, e.rpe, e.discomfort_note, e.notes, e.recorded_at],
+         duration_s = excluded.duration_s, distance_m = excluded.distance_m, rpe = excluded.rpe, discomfort_note = excluded.discomfort_note, notes = excluded.notes, recorded_at = excluded.recorded_at, session_id = excluded.session_id`,
+      [e.id, e.workout_id, e.item_id, e.item_name, e.kind, e.set_index, e.reps, e.weight_kg, e.duration_s, e.distance_m, e.rpe, e.discomfort_note, e.notes, e.recorded_at, e.session_id ?? null],
     );
   }
   async getEntries(workoutId: string): Promise<WorkoutEntryRow[]> {
@@ -118,6 +120,10 @@ export class TrainingRepository {
   }
   async getEntry(id: string): Promise<WorkoutEntryRow | undefined> {
     return this.db.get<WorkoutEntryRow>("SELECT * FROM workout_entry WHERE id = ?", [id]);
+  }
+  /** Series declaradas durante una sesión de plantillas (actividad unificada). */
+  async getEntriesBySession(sessionId: string): Promise<WorkoutEntryRow[]> {
+    return this.db.all<WorkoutEntryRow>("SELECT * FROM workout_entry WHERE session_id = ? ORDER BY recorded_at, rowid", [sessionId]);
   }
   async deleteEntry(id: string): Promise<void> {
     await this.db.run("DELETE FROM workout_entry WHERE id = ?", [id]);

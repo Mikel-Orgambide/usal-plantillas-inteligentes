@@ -21,7 +21,7 @@ describe("rutinas y entrenamiento (ADR 0013)", () => {
 
     await tr.saveWorkout({ id: "W1", user_id: "local", routine_id: "R1", date: "2026-11-04", started_at: NOW, ended_at: null, state: "in_progress", notes: null });
     expect((await tr.openWorkout("local"))?.id).toBe("W1");
-    await tr.saveEntry({ id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 1, reps: 10, weight_kg: 40, duration_s: null, distance_m: null, rpe: 7, discomfort_note: null, notes: null, recorded_at: NOW });
+    await tr.saveEntry({ id: "E1", workout_id: "W1", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 1, reps: 10, weight_kg: 40, duration_s: null, distance_m: null, rpe: 7, discomfort_note: null, notes: null, recorded_at: NOW, session_id: null });
     const { session, capture } = await seededSession(repo, "S1");
     await repo.insertRecords(capture.id, simulatedRecords(5, session.id));
     await tr.linkSession({ session_id: "S1", workout_id: "W1", entry_id: "E1" });
@@ -43,7 +43,7 @@ describe("rutinas y entrenamiento (ADR 0013)", () => {
     await repo.closeSession("S2", NOW, 1000);
     await tr.saveRoutine({ id: "R2", user_id: "local", name: "Pierna", goal: null, origin: "own", professional_note: null, created_at: NOW, updated_at: NOW, archived: false });
     await tr.saveWorkout({ id: "W2", user_id: "local", routine_id: "R2", date: "2026-11-04", started_at: NOW, ended_at: NOW, state: "completed", notes: null });
-    await tr.saveEntry({ id: "E2", workout_id: "W2", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve", notes: null, recorded_at: NOW });
+    await tr.saveEntry({ id: "E2", workout_id: "W2", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 3, reps: 8, weight_kg: 45, duration_s: null, distance_m: null, rpe: 8, discomfort_note: "molestia leve", notes: null, recorded_at: NOW, session_id: null });
     await tr.linkSession({ session_id: "S2", workout_id: "W2", entry_id: "E2" });
     const bundle = await exportSessionBundle(db, "S2");
     expect(bundle?.training?.routine_name).toBe("Pierna");

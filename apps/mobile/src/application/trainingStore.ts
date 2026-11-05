@@ -151,6 +151,25 @@ export async function listWorkouts(limit = 100): Promise<Workout[]> {
   return tr.listWorkouts(await resolveLocalUserId(), { limit });
 }
 
+export interface WorkoutListItem { readonly workout: Workout; readonly routine_name: string | null; readonly summary: WorkoutSummary; readonly links: number }
+
+/** Entrenamientos con nombre de rutina y resumen, para Historial. */
+export async function listWorkoutsDetailed(limit = 300): Promise<WorkoutListItem[]> {
+  const tr = await repo();
+  const rows = await tr.listWorkouts(await resolveLocalUserId(), { limit });
+  const names = new Map<string, string>();
+  const out: WorkoutListItem[] = [];
+  for (const w of rows) {
+    let routineName: string | null = null;
+    if (w.routine_id) {
+      if (!names.has(w.routine_id)) names.set(w.routine_id, (await tr.getRoutine(w.routine_id))?.name ?? "");
+      routineName = names.get(w.routine_id) || null;
+    }
+    out.push({ workout: w, routine_name: routineName, summary: summarizeWorkout(await tr.getEntries(w.id)), links: (await tr.getWorkoutLinks(w.id)).length });
+  }
+  return out;
+}
+
 /** Inicia un entrenamiento (con rutina o libre). Si ya hay uno en curso, lo devuelve. */
 export async function startWorkout(routineId: string | null): Promise<string> {
   const tr = await repo();
@@ -192,14 +211,23 @@ export interface EntryDraft {
 }
 
 /** Agrega una serie declarada al entrenamiento. Devuelve el id o los errores. */
-export async function addEntry(workoutId: string, d: EntryDraft): Promise<{ id?: string; errors: string[] }> {
+export async function addEntry(workoutId: string, d: EntryDraft, sessionId: string | null = null): Promise<{ id?: string; errors: string[] }> {
   const errors = validateEntry(d);
   if (errors.length) return { errors };
   const tr = await repo();
   const id = Crypto.randomUUID();
-  await tr.saveEntry({ id, workout_id: workoutId, ...d, item_name: d.item_name.trim(), recorded_at: now() });
+  await tr.saveEntry({ id, workout_id: workoutId, ...d, item_name: d.item_name.trim(), recorded_at: now(), session_id: sessionId });
   bump();
   return { id, errors: [] };
+}
+
+/** Series declaradas durante una sesión de plantillas (actividad unificada), con su entrenamiento. */
+export async function entriesForSession(sessionId: string): Promise<{ entries: WorkoutEntry[]; workout: Workout | undefined; routine_name: string | null }> {
+  const tr = await repo();
+  const entries = await tr.getEntriesBySession(sessionId);
+  const workout = entries[0] ? await tr.getWorkout(entries[0].workout_id) : undefined;
+  const routine = workout?.routine_id ? await tr.getRoutine(workout.routine_id) : undefined;
+  return { entries, workout, routine_name: routine?.name ?? null };
 }
 
 export async function deleteEntry(id: string): Promise<void> {
@@ -291,9 +319,14 @@ export async function saveProposal(p: LogEntryProposal): Promise<{ ok: true; ent
 
 // ------------------------------------------------------------ contexto para el asistente
 
+/** La actividad en curso (activityStore) registra acá el texto del ejercicio y serie actuales, para el asistente. */
+let currentCursorText: string | undefined;
+export function setCurrentCursorText(text: string | undefined): void { currentCursorText = text; }
+
 function workoutInput(d: WorkoutDetail, linkedLabels: readonly string[]): AssistantWorkoutInput {
   return {
     date: d.workout.date, state: d.workout.state, routine_name: d.routine?.routine.name ?? null,
+    ...(d.workout.state === "in_progress" && currentCursorText ? { current: currentCursorText } : {}),
     entries: d.entries.map(describeEntry),
     summary: { strength_sets: d.summary.strength_sets, volume_kg: d.summary.volume_kg, walk_run_duration_s: d.summary.walk_run_duration_s, rpe_mean: d.summary.rpe_mean, with_discomfort_note: d.summary.with_discomfort_note },
     linked_sessions: linkedLabels,

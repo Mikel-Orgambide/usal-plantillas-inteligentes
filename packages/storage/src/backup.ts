@@ -203,7 +203,8 @@ async function restoreTraining(db: SqlDriver, b: SessionBundle, userId: string):
   if (!exists) {
     // La rutina no viaja en el paquete (puede no existir en la base destino): el entrenamiento queda sin rutina.
     await tr.saveWorkout({ ...t.workout, user_id: userId, routine_id: null });
-    for (const e of t.entries) await tr.saveEntry({ ...e, item_id: null });
+    // La serie conserva la sesión durante la que se declaró sólo si es la de este paquete (otras pueden no existir en destino).
+    for (const e of t.entries) await tr.saveEntry({ ...e, item_id: null, session_id: e.session_id === b.session.id ? e.session_id : null });
   }
   await tr.linkSession({ session_id: b.session.id, workout_id: t.workout.id, entry_id: t.entry ? t.entry.id : null });
   return exists ? "exists" : "linked";

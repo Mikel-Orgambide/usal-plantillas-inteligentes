@@ -9,7 +9,8 @@ import { useSessionDetail } from "../../../../application/useSessions";
 import { ACTIVITY_LABEL, type Activity } from "../../../../application/sessionStore";
 import { shareSessionBundle } from "../../../../infrastructure/backup/backup";
 import { shareSessionCsv, shareSessionReport } from "../../../../infrastructure/report/report";
-import { sessionLinkInfo, unlinkSession, useTrainingVersion, type SessionLinkInfo } from "../../../../application/trainingStore";
+import { entriesForSession, sessionLinkInfo, unlinkSession, useTrainingVersion, type SessionLinkInfo } from "../../../../application/trainingStore";
+import { describeEntry, type WorkoutEntry } from "@plantillas/training";
 import { useAuth } from "../../../../application/authStore";
 import { describeOutcome, syncOne, useSessionSyncState, useSync } from "../../../../application/syncStore";
 
@@ -75,6 +76,9 @@ export default function SessionDetailScreen() {
   const trainingVersion = useTrainingVersion();
   const [link, setLink] = useState<SessionLinkInfo | undefined>();
   useEffect(() => { if (id) sessionLinkInfo(id).then(setLink).catch(() => undefined); }, [id, trainingVersion]);
+  // Series declaradas durante esta sesión (actividad unificada, ajuste 4/11).
+  const [declared, setDeclared] = useState<WorkoutEntry[]>([]);
+  useEffect(() => { if (id) entriesForSession(id).then((r) => setDeclared(r.entries)).catch(() => undefined); }, [id, trainingVersion]);
   const auth = useAuth();
   const sync = useSync();
   const syncRow = useSessionSyncState(id);
@@ -156,6 +160,9 @@ export default function SessionDetailScreen() {
           <TextButton onPress={() => router.push({ pathname: "/entrenamiento", params: { id: link.workout.id } })}>Ver</TextButton>
           <TextButton onPress={() => void unlinkSession(session.id)}>Quitar</TextButton>
         </View>
+      ) : null}
+      {declared.length ? (
+        <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>Series declaradas durante la sesión: {declared.map(describeEntry).join(" · ")}.</Text>
       ) : null}
       <View style={styles.metaRow}>
         <Chip variant={session.source === "simulated" ? "sim" : "neutral"} icon={session.source === "simulated" ? "settings" : "bluetooth"}>{session.source === "simulated" ? "Simulada" : "Física"}</Chip>

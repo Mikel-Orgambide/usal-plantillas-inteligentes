@@ -80,6 +80,11 @@ export function useActiveSession(): ActiveSession | null {
   return useSyncExternalStore(subscribe, () => published, () => published);
 }
 
+/** Id de la sesión que está grabando ahora (sin resultado todavía), o undefined. */
+export function getRecordingSessionId(): string | undefined {
+  return active && !active.result ? active.coordinator.sessionId : undefined;
+}
+
 export async function startSession(activity: Activity, context: string | undefined): Promise<void> {
   if (active && !active.result) throw new Error("ya hay una sesión en curso");
   const settings = loadSettings();

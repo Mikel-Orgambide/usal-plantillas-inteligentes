@@ -108,7 +108,7 @@ export default function RoutineEditScreen() {
             <TextInput value={i.target.instructions} onChangeText={(v) => setTarget(i.key, { instructions: v })} placeholder="Qué hay que hacer" placeholderTextColor={colors.textSecondary} style={[styles.input, styles.multiline]} multiline maxLength={300} />
           )}
           <View style={styles.row}>
-            <Field label="Descanso (s)" value={i.rest_sec === null ? "" : String(i.rest_sec)} onChange={(v) => update(i.key, { rest_sec: v.trim() === "" ? null : Math.round(Number(v)) || 0 })} placeholder="—" />
+            <Field label="Descanso (s)" value={i.rest_sec === null ? "" : String(i.rest_sec)} onChange={(v) => update(i.key, { rest_sec: v.trim() === "" ? null : Math.round(Number(v)) || 0 })} placeholder="90" />
             <Field label="Indicaciones" value={i.instructions} onChange={(v) => update(i.key, { instructions: v })} placeholder="opcional" text grow />
           </View>
         </Card>

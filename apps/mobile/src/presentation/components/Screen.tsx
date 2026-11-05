@@ -11,7 +11,7 @@ export function Screen({ children, footer, scroll = true, tabbed = false, style 
   const insets = useSafeAreaInsets();
   const bottom = tabbed ? 0 : insets.bottom;
   const body = scroll ? (
-    <ScrollView contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+    <ScrollView contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">{children}</ScrollView>
   ) : (
     <View style={[styles.content, { flex: 1 }, style]}>{children}</View>
   );

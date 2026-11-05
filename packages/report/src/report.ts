@@ -345,11 +345,13 @@ function sectionTraining(b: SessionBundle): string {
     if (x.rpe !== null) parts.push(`RPE ${x.rpe}`);
     return parts.join(" · ");
   };
-  const rows = t.entries.map((x) => `<tr><td>${fmtEntry(x)}${e && x.id === e.id ? ' <span class="tag">esta sesión</span>' : ""}</td><td>${x.discomfort_note ? `<em>${esc(x.discomfort_note)}</em>` : '<span class="nd">—</span>'}</td><td>${x.notes ? esc(x.notes) : '<span class="nd">—</span>'}</td></tr>`).join("");
+  // Series declaradas durante esta sesión (actividad unificada): se marcan; el resto son del mismo entrenamiento.
+  const inSession = (x: { id: string; session_id?: string | null }) => (e && x.id === e.id) || x.session_id === b.session.id;
+  const rows = t.entries.map((x) => `<tr><td>${fmtEntry(x)}${inSession(x) ? ' <span class="tag">esta sesión</span>' : ""}</td><td>${x.discomfort_note ? `<em>${esc(x.discomfort_note)}</em>` : '<span class="nd">—</span>'}</td><td>${x.notes ? esc(x.notes) : '<span class="nd">—</span>'}</td></tr>`).join("");
   return `<h2>7b. Entrenamiento asociado <span class="tag">declarado por el usuario</span></h2>
 <table class="kv"><tr><td>Rutina</td><td>${t.routine_name ? esc(t.routine_name) : '<span class="nd">sin rutina</span>'}</td></tr>
 <tr><td>Entrenamiento</td><td>${esc(t.workout.date)} · ${t.workout.state === "completed" ? "terminado" : t.workout.state === "in_progress" ? "en curso" : "planificado"}</td></tr>
-<tr><td>Vinculada a</td><td>${e ? fmtEntry(e) : "el entrenamiento completo (sin serie)"}</td></tr></table>
+<tr><td>Vinculada a</td><td>${e ? fmtEntry(e) : t.entries.some((x) => x.session_id === b.session.id) ? `${t.entries.filter((x) => x.session_id === b.session.id).length} serie(s) declaradas durante la sesión` : "el entrenamiento completo (sin serie)"}</td></tr></table>
 <table><thead><tr><th>Serie declarada</th><th>Molestia (texto del usuario)</th><th>Notas</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="nd">sin series registradas</td></tr>'}</tbody></table>
 <p class="muted">Repeticiones, pesos, duraciones y esfuerzo percibido son declarados por la persona y no se miden con los sensores; las notas de molestia se transcriben sin interpretación.</p>`;
 }

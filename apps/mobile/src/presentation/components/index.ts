@@ -23,3 +23,6 @@ export { Halo } from "./Halo";
 export { DayCard } from "./DayCard";
 export { Brand } from "./Brand";
 export { AssistantFab } from "./AssistantFab";
+export { Segmented } from "./Segmented";
+export { ActivityIsland } from "./ActivityIsland";
+export { RoutinePane } from "./RoutinePane";

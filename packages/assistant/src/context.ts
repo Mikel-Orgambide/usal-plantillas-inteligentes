@@ -60,6 +60,8 @@ export interface AssistantWorkoutInput {
   readonly summary: { readonly strength_sets: number; readonly volume_kg: number; readonly walk_run_duration_s: number; readonly rpe_mean: number | null; readonly with_discomfort_note: number };
   /** Sesiones de plantillas vinculadas, por etiqueta corta («3/11 17:44 → Sentadilla serie 3»). */
   readonly linked_sessions: readonly string[];
+  /** Ejercicio y serie en curso durante la actividad («Ejercicio 2 de 5 · Sentadilla · serie 1 de 3»), si el entrenamiento está abierto. */
+  readonly current?: string;
 }
 
 export interface AssistantContextInput {
@@ -283,6 +285,7 @@ export function buildAssistantContext(input: AssistantContextInput): string {
 function describeWorkout(label: string, w: AssistantWorkoutInput): string {
   const st = w.state === "in_progress" ? "en curso" : w.state === "completed" ? "terminado" : "planificado";
   const lines = [`${label}: ${w.date}${w.routine_name ? ` · rutina «${w.routine_name}»` : ""} · ${st}.`];
+  if (w.current) lines.push(`Ahora: ${w.current}. Si la persona dice «listo», «hice la serie» o da reps y peso sin nombrar el ejercicio, se refiere a esta serie.`);
   if (w.entries.length) lines.push(`Series declaradas: ${w.entries.join("; ")}.`);
   const s = w.summary;
   lines.push(`Totales declarados: ${s.strength_sets} series de fuerza, volumen ${s.volume_kg} kg·rep, caminata/carrera ${Math.round(s.walk_run_duration_s / 60)} min${s.rpe_mean !== null ? `, RPE medio ${s.rpe_mean}` : ""}${s.with_discomfort_note ? `, ${s.with_discomfort_note} nota(s) de molestia (texto de la persona, no interpretar)` : ""}.`);

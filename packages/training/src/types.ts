@@ -72,6 +72,8 @@ export interface WorkoutEntry {
   readonly discomfort_note: string | null;
   readonly notes: string | null;
   readonly recorded_at: string;
+  /** Sesión de plantillas durante la que se declaró la serie (actividad unificada), si la hubo. */
+  readonly session_id: string | null;
 }
 
 /** Vínculo entre una sesión de plantillas (lo medido) y un entrenamiento (lo declarado), opcionalmente con una serie. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { askForMissing, describeEntry, isLogIntent, parseLogEntryProposal, proposalMissing, routineProgress, summarizeWorkout, validateEntry, validateItem, validateProposal, validateRoutine, type RoutineItem, type WorkoutEntry } from "../src/index";
 
-const entry = (over: Partial<WorkoutEntry>): WorkoutEntry => ({ id: "e", workout_id: "w", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 1, reps: 10, weight_kg: 40, duration_s: null, distance_m: null, rpe: 7, discomfort_note: null, notes: null, recorded_at: "2026-11-04T20:00:00Z", ...over });
+const entry = (over: Partial<WorkoutEntry>): WorkoutEntry => ({ id: "e", workout_id: "w", item_id: null, item_name: "Sentadilla", kind: "strength", set_index: 1, reps: 10, weight_kg: 40, duration_s: null, distance_m: null, rpe: 7, discomfort_note: null, notes: null, recorded_at: "2026-11-04T20:00:00Z", session_id: null, ...over });
 
 describe("validación", () => {
   it("rutina y ejercicio", () => {

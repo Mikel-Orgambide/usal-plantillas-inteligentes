@@ -36,3 +36,29 @@ Capturas de Rutinas, Entrenamiento, tarjeta de confirmación del asistente, Deta
 - El vínculo sesión↔serie lo establece la persona al iniciar la sesión desde el ejercicio; no se infiere.
 - La extracción del asistente depende del modelo: por eso nunca guarda sin confirmación y puede pedir datos que ya estaban.
 - Sin sincronización remota de rutinas y entrenamientos (esquema preparado); se conservan en el teléfono y en los respaldos.
+
+## Ajuste 4/11: actividad unificada (app 0.15.1)
+
+### Corrección
+- La pantalla Entrenamiento cerraba la app al abrirla desde Hoy («NSL continúa fallando»): un `useState` declarado después de la salida temprana «Cargando…» cambiaba la cantidad de hooks entre renders. Corregido; prueba del entrenamiento libre en `packages/training`.
+
+### Qué cambió
+- Nueva sesión: selector «Rutina (opcional)» con las rutinas activas; con rutina, la sesión y el entrenamiento arrancan juntos y quedan vinculados (`session_link` al entrenamiento; cada serie guarda además `session_id`, migración local **v7**).
+- Pantalla de actividad (`/grabacion`): pestañas **Medición | Rutina** cuando hay ambas; sólo una pestaña cuando hay sesión sin rutina o entrenamiento sin plantillas. Rutina ejercicio por ejercicio: cabecera «Ejercicio 2 de 5 · Sentadilla · serie 1 de 3», objetivo, campos precargados y editables, «Listo» → descanso con cuenta regresiva y «Saltar descanso», progresión debajo, chips por ejercicio para saltar; caminata con cronómetro, pausa y cuenta regresiva al objetivo; «Fuera de la rutina» para ejercicios extra o entrenamiento libre; «Finalizar entrenamiento» con nota (la sesión sigue grabando si estaba).
+- Isla flotante arriba de todas las pantallas con tiempo de grabación y descanso/caminata en curso; toca → vuelve a la actividad.
+- Hoy: tarjeta «Entrenamiento» (seguir / iniciar rutina / crear / ver rutinas); «Iniciar rutina» entrena sin plantillas.
+- Historial: entrenamientos como entradas propias del día (nombre de rutina, series, kg·rep, caminata, sesiones vinculadas), también en días sin sesiones; Detalle de sesión: «Series declaradas durante la sesión».
+- Informe PDF: las series con `session_id` de la sesión se marcan «esta sesión» y se cuentan en «Vinculada a».
+- Asistente: el contexto del entrenamiento en curso incluye «Ahora: Ejercicio … · serie …»; la carga por conversación avanza el cursor de la actividad.
+- Formularios: teclado en modo `resize`, la vista de desplazamiento se ajusta al teclado y los campos numéricos seleccionan su contenido al enfocarse; el descanso muestra «90» como valor por defecto.
+- Paquete `@plantillas/training`: `activity.ts` (cursor, `completeSet`, `jumpTo`, descanso, cronómetro de caminata, `describeCursor`) con 5 pruebas deterministas (`now` inyectado).
+
+### Cómo probar (Mikel, build 0.15.1)
+1. Ajustes → Rutinas → crear «Pierna» con Sentadilla (3 × 10 · 40 kg · descanso 60 s), Caminata (2 min) y Elongación (otro).
+2. Hoy → Nueva sesión → Rutina «Pierna» → Iniciar. Debe abrir la actividad con pestañas Medición | Rutina.
+3. Rutina: bajar el peso a 35, tocar «Listo · serie 1 de 3» → cuenta regresiva de 60 s; «Saltar descanso» → serie 2 precargada con 35 kg. Completar las 3 series.
+4. Caminata: Iniciar → la cuenta regresiva baja; salir a Hoy: la isla muestra «grabando · caminata 0:xx»; tocarla vuelve. «Terminé la caminata» guarda el tiempo real.
+5. Elongación: «Hecho» → «Rutina completa». Finalizar entrenamiento con una nota; la sesión sigue grabando; Finalizar sesión.
+6. Historial: el entrenamiento aparece en el día con «3 series · 315 kg·rep · 2 min caminata · 1 sesión(es)»; abrirlo muestra las series con 35 kg; el Detalle de la sesión lista las series declaradas y el PDF marca «esta sesión».
+7. Asistente desde la actividad: «hice 10 con 40» con la serie en curso → tarjeta con Sentadilla · serie n → Guardar avanza el cursor.
+8. Entrenar sin plantillas desde Hoy → «Iniciar rutina»: sólo la pestaña Rutina; cerrar la app y reabrirla: la isla y Hoy muestran el entrenamiento en curso.

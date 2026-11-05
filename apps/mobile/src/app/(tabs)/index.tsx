@@ -10,7 +10,8 @@ import { useActiveSession, ACTIVITY_LABEL, type Activity } from "../../applicati
 import { useActiveSource } from "../../application/activeSource";
 import { useAuth } from "../../application/authStore";
 import { availableDays, dayLabel, describeDistribution, todayKey, useDaySummary, type DaySummary } from "../../application/daySummary";
-import { listRoutines, startWorkout, useTrainingVersion, workoutForDay, type RoutineWithItems, type WorkoutDetail } from "../../application/trainingStore";
+import { listRoutines, useTrainingVersion, workoutForDay, type RoutineWithItems, type WorkoutDetail } from "../../application/trainingStore";
+import { cursorLabel, startActivity, useActivity } from "../../application/activityStore";
 
 /**
  * Inicio («Hoy»): un día navegable con tres indicadores del día (reparto
@@ -66,10 +67,12 @@ export default function HomeScreen() {
     })().catch(() => undefined);
     return () => { alive = false; };
   }, [day, trainingVersion]));
+  const run = useActivity();
+  // Entrenar sin plantillas (ajuste 4/11): abre la actividad con la rutina elegida (o libre) sin fuente de datos.
   const beginWorkout = async (routineId: string | null) => {
     setPickRoutine(false);
-    const id = await startWorkout(routineId);
-    router.push({ pathname: "/entrenamiento", params: { id } });
+    await startActivity(routineId);
+    router.push("/grabacion");
   };
 
   const days = availableDays(sessions ?? []);
@@ -137,25 +140,39 @@ export default function HomeScreen() {
         <ValueCard label="Huecos y fallas" value={ready ? `${summary.gaps} · ${summary.readErrors}` : "…"} sub="huecos · lecturas fallidas" style={styles.half} />
       </View>
 
-      {/* Entrenamiento del día (ADR 0013): lo declarado por la persona, separado de lo medido. */}
-      <Text variant="label" color={colors.textSecondary} style={[styles.sectionLabel, { marginTop: space[8] }]}>Entrenamiento del día</Text>
-      {workout ? (
+      {/* Entrenamiento (ADR 0013, ajuste 4/11): puerta a la actividad en curso, a iniciar una rutina o a gestionarlas. */}
+      <Text variant="label" color={colors.textSecondary} style={[styles.sectionLabel, { marginTop: space[8] }]}>Entrenamiento</Text>
+      {run && day === todayKey() ? (
+        <ListRow
+          lead="En curso"
+          title={run.detail.routine?.routine.name ?? "Entrenamiento libre"}
+          subtitle={`${cursorLabel(run)} · ${run.detail.summary.strength_sets} series · ${run.detail.links.length} sesión(es) vinculada(s)`}
+          chip={<Chip variant="selected" icon="dumbbell">Seguir</Chip>}
+          onPress={() => router.push("/grabacion")}
+        />
+      ) : workout ? (
         <ListRow
           lead={workout.workout.state === "in_progress" ? "En curso" : "Hecho"}
           title={workout.routine?.routine.name ?? "Entrenamiento libre"}
           subtitle={`${workout.summary.strength_sets} series · ${workout.summary.volume_kg} kg·rep · ${Math.round(workout.summary.walk_run_duration_s / 60)} min caminata · ${workout.links.length} sesión(es) vinculada(s)`}
-          chip={<Chip variant={workout.workout.state === "in_progress" ? "selected" : "neutral"} icon="dumbbell">{workout.workout.state === "in_progress" ? "Seguir" : "Ver"}</Chip>}
+          chip={<Chip variant="neutral" icon="dumbbell">Ver</Chip>}
           onPress={() => router.push({ pathname: "/entrenamiento", params: { id: workout.workout.id } })}
         />
       ) : day === todayKey() ? (
         <View style={styles.trainingEmpty}>
           <Icon name="dumbbell" size={24} />
-          <Text variant="body" color={colors.textSecondary} style={{ flex: 1 }}>{routines.length ? "Elegí una rutina y registrá lo que hacés; lo que midan las plantillas se vincula a cada ejercicio." : "Cargá una rutina en Ajustes → Rutinas, o empezá un entrenamiento libre."}</Text>
-          <TextButton onPress={() => (routines.length ? setPickRoutine(true) : void beginWorkout(null))}>Empezar</TextButton>
+          <Text variant="body" color={colors.textSecondary} style={{ flex: 1 }}>{routines.length ? "Iniciá una rutina o entrená libre; las series se vinculan a la sesión de plantillas si está grabando." : "Todavía no hay rutinas: creá una o empezá un entrenamiento libre."}</Text>
         </View>
       ) : (
         <Text variant="caption" color={colors.textSecondary}>Sin entrenamiento registrado este día.</Text>
       )}
+      {day === todayKey() ? (
+        <View style={styles.trainingActions}>
+          {!run ? <TextButton icon="play" onPress={() => (routines.length ? setPickRoutine(true) : void beginWorkout(null))}>{routines.length ? "Iniciar rutina" : "Entrenar libre"}</TextButton> : null}
+          <TextButton icon="plus" onPress={() => router.push("/ajustes/rutina")}>Crear rutina</TextButton>
+          {routines.length ? <TextButton icon="chevron-right" onPress={() => router.push("/ajustes/rutinas")}>Ver rutinas</TextButton> : null}
+        </View>
+      ) : null}
 
       {/* Sesiones del día. */}
       <Text variant="label" color={colors.textSecondary} style={[styles.sectionLabel, { marginTop: space[6] }]}>Sesiones del día</Text>
@@ -187,6 +204,7 @@ export default function HomeScreen() {
     </Screen>
     <AssistantFab bottomOffset={96} />
     <Sheet visible={pickRoutine} onDismiss={() => setPickRoutine(false)} title="¿Qué rutina?">
+      <Text variant="caption" color={colors.textSecondary}>Entrenás sin plantillas; si querés medir, iniciá la sesión desde «Nueva sesión» y elegí la rutina ahí.</Text>
       {routines.map((r, idx) => <ListRow key={r.routine.id} title={r.routine.name} subtitle={`${r.items.length} ejercicio(s)${r.routine.origin === "professional" ? " · profesional" : ""}`} onPress={() => void beginWorkout(r.routine.id)} last={idx === routines.length - 1} />)}
       <TextButton icon="plus" onPress={() => void beginWorkout(null)}>Entrenamiento libre (sin rutina)</TextButton>
     </Sheet>
@@ -275,6 +293,7 @@ function Breakdown({ panel, summary }: { panel: Panel; summary: DaySummary }) {
 const signedPct = (f: number | null): string => (f === null ? "—" : `${f > 0 ? "+" : f < 0 ? "−" : ""}${Math.round(Math.abs(f) * 100)} %`);
 
 const styles = StyleSheet.create({
+  trainingActions: { flexDirection: "row", flexWrap: "wrap", gap: space[4], marginTop: space[3] },
   trainingEmpty: { flexDirection: "row", alignItems: "center", gap: space[3], padding: space[3], borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: size.hairline, borderColor: colors.line },
   headerRow: { flexDirection: "row", alignItems: "center", gap: space[1] },
   sourceRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2], marginTop: space[2], marginBottom: space[6] },

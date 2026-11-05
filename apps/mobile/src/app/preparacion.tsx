@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CHANNEL_CODES, CHANNEL_POSITIONS } from "@plantillas/contract";
@@ -6,6 +6,8 @@ import { Button, Card, Chip, Header, Icon, Screen, Text } from "../presentation/
 import { colors, fonts, radius, size, space } from "../presentation/theme/tokens";
 import { ACTIVITY_LABEL, startSession, type Activity } from "../application/sessionStore";
 import { useActiveSource } from "../application/activeSource";
+import { listRoutines, type RoutineWithItems } from "../application/trainingStore";
+import { attachRecordingSession, startActivity, useActivity } from "../application/activityStore";
 
 const ZONE_LABEL = { heel: "Talón", forefoot_medial: "Medial", forefoot_lateral: "Lateral" } as const;
 
@@ -18,6 +20,11 @@ export default function PrepareScreen() {
   const [context, setContext] = useState(params.context ?? "");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  // Rutina opcional (ajuste 4/11): la sesión y el entrenamiento arrancan juntos y quedan vinculados.
+  const run = useActivity();
+  const [routines, setRoutines] = useState<RoutineWithItems[]>([]);
+  const [routineId, setRoutineId] = useState<string | null>(null);
+  useEffect(() => { listRoutines().then(setRoutines).catch(() => undefined); }, []);
 
   const source = useActiveSource();
   // Con dos módulos (ADR 0011) se reconocen las posiciones de ambas configuraciones.
@@ -31,7 +38,9 @@ export default function PrepareScreen() {
     setStarting(true);
     setError(undefined);
     try {
+      if (!run && routineId) await startActivity(routineId);
       await startSession(activity, context.trim() || undefined);
+      await attachRecordingSession();
       router.replace("/grabacion");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -49,6 +58,19 @@ export default function PrepareScreen() {
           <Chip key={a} variant={a === activity ? "selected" : "neutral"} icon={a === activity ? "check" : undefined} onPress={() => setActivity(a)}>{ACTIVITY_LABEL[a]}</Chip>
         ))}
       </View>
+
+      <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6], marginBottom: space[2] }}>Rutina (opcional)</Text>
+      {run ? (
+        <Text variant="caption" color={colors.textSecondary}>Se vincula al entrenamiento en curso{run.detail.routine ? ` «${run.detail.routine.routine.name}»` : " (libre)"}.</Text>
+      ) : (
+        <View style={styles.chips}>
+          <Chip variant={routineId === null ? "selected" : "neutral"} onPress={() => setRoutineId(null)}>Sin rutina</Chip>
+          {routines.map((r) => (
+            <Chip key={r.routine.id} variant={routineId === r.routine.id ? "selected" : "neutral"} icon="dumbbell" onPress={() => setRoutineId(r.routine.id)}>{r.routine.name}</Chip>
+          ))}
+        </View>
+      )}
+      {!run && routines.length === 0 ? <Text variant="caption" color={colors.textSecondary}>Sin rutinas activas. Se crean desde Hoy → Entrenamiento o Ajustes → Rutinas.</Text> : null}
 
       <Text variant="label" color={colors.textSecondary} style={{ marginTop: space[6], marginBottom: space[2] }}>Contexto (opcional)</Text>
       <TextInput
