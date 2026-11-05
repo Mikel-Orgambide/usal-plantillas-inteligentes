@@ -9,10 +9,13 @@ import type { SqlDriver } from "./driver";
  */
 
 export type ItemKind = "strength" | "walk_run" | "other";
+/** Tipo de rutina declarado (opcional). Mismos valores que `@plantillas/training` (validados allá al guardar). */
+export type RoutineCategoryRow = "legs" | "upper" | "full_body" | "core" | "cardio" | "mobility" | "rehab" | "other" | null;
 
 export interface RoutineRow {
   readonly id: string; readonly user_id: string; readonly name: string; readonly goal: string | null; readonly origin: "own" | "professional";
   readonly professional_note: string | null; readonly created_at: string; readonly updated_at: string; readonly archived: boolean;
+  readonly category?: RoutineCategoryRow;
 }
 export interface RoutineItemRow {
   readonly id: string; readonly routine_id: string; readonly order: number; readonly kind: ItemKind; readonly name: string;
@@ -21,6 +24,7 @@ export interface RoutineItemRow {
 export interface WorkoutRow {
   readonly id: string; readonly user_id: string; readonly routine_id: string | null; readonly date: string; readonly started_at: string | null;
   readonly ended_at: string | null; readonly state: "planned" | "in_progress" | "completed"; readonly notes: string | null;
+  readonly category?: RoutineCategoryRow;
 }
 export interface WorkoutEntryRow {
   readonly id: string; readonly workout_id: string; readonly item_id: string | null; readonly item_name: string; readonly kind: ItemKind;
@@ -40,9 +44,9 @@ export class TrainingRepository {
   // ------------------------------------------------------------ rutinas
   async saveRoutine(r: RoutineRow): Promise<void> {
     await this.db.run(
-      `INSERT INTO routine (id, user_id, name, goal, origin, professional_note, created_at, updated_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET name = excluded.name, goal = excluded.goal, origin = excluded.origin, professional_note = excluded.professional_note, updated_at = excluded.updated_at, archived = excluded.archived`,
-      [r.id, r.user_id, r.name, r.goal, r.origin, r.professional_note, r.created_at, r.updated_at, r.archived ? 1 : 0],
+      `INSERT INTO routine (id, user_id, name, goal, origin, professional_note, created_at, updated_at, archived, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET name = excluded.name, goal = excluded.goal, origin = excluded.origin, professional_note = excluded.professional_note, updated_at = excluded.updated_at, archived = excluded.archived, category = excluded.category`,
+      [r.id, r.user_id, r.name, r.goal, r.origin, r.professional_note, r.created_at, r.updated_at, r.archived ? 1 : 0, r.category ?? null],
     );
   }
   async getRoutine(id: string): Promise<RoutineRow | undefined> {
@@ -84,9 +88,9 @@ export class TrainingRepository {
   // ------------------------------------------------------------ entrenamientos
   async saveWorkout(w: WorkoutRow): Promise<void> {
     await this.db.run(
-      `INSERT INTO workout (id, user_id, routine_id, date, started_at, ended_at, state, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET routine_id = excluded.routine_id, date = excluded.date, started_at = excluded.started_at, ended_at = excluded.ended_at, state = excluded.state, notes = excluded.notes`,
-      [w.id, w.user_id, w.routine_id, w.date, w.started_at, w.ended_at, w.state, w.notes],
+      `INSERT INTO workout (id, user_id, routine_id, date, started_at, ended_at, state, notes, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET routine_id = excluded.routine_id, date = excluded.date, started_at = excluded.started_at, ended_at = excluded.ended_at, state = excluded.state, notes = excluded.notes, category = excluded.category`,
+      [w.id, w.user_id, w.routine_id, w.date, w.started_at, w.ended_at, w.state, w.notes, w.category ?? null],
     );
   }
   async getWorkout(id: string): Promise<WorkoutRow | undefined> {

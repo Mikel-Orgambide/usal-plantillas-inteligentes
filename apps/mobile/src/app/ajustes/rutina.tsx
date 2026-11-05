@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import type { ItemKind, ItemTarget, RoutineOrigin } from "@plantillas/training";
+import { ROUTINE_CATEGORIES, ROUTINE_CATEGORY_LABEL, type ItemKind, type ItemTarget, type RoutineCategory, type RoutineOrigin } from "@plantillas/training";
 import { Button, Card, Chip, Header, Icon, Screen, Text, TextButton } from "../../presentation/components";
 import { colors, fonts, radius, size, space } from "../../presentation/theme/tokens";
 import { getRoutine, saveRoutine, type RoutineDraft } from "../../application/trainingStore";
@@ -27,6 +27,7 @@ export default function RoutineEditScreen() {
   const [goal, setGoal] = useState("");
   const [origin, setOrigin] = useState<RoutineOrigin>("own");
   const [note, setNote] = useState("");
+  const [category, setCategory] = useState<RoutineCategory | null>(null);
   const [items, setItems] = useState<ItemDraft[]>([newItem()]);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -36,7 +37,7 @@ export default function RoutineEditScreen() {
     if (!id) return;
     void getRoutine(id).then((r) => {
       if (!r) return;
-      setName(r.routine.name); setGoal(r.routine.goal ?? ""); setOrigin(r.routine.origin); setNote(r.routine.professional_note ?? "");
+      setName(r.routine.name); setGoal(r.routine.goal ?? ""); setOrigin(r.routine.origin); setNote(r.routine.professional_note ?? ""); setCategory(r.routine.category ?? null);
       setItems(r.items.map((i) => ({ key: i.id, id: i.id, kind: i.kind, name: i.name, target: i.target, instructions: i.instructions ?? "", rest_sec: i.rest_sec })));
       setLoaded(true);
     });
@@ -51,8 +52,9 @@ export default function RoutineEditScreen() {
   });
 
   const save = async () => {
+    if (saving) return;
     setSaving(true);
-    const r = await saveRoutine({ ...(id ? { id } : {}), name, goal, origin, professional_note: note, items: items.map(({ key: _k, ...rest }) => rest) });
+    const r = await saveRoutine({ ...(id ? { id } : {}), name, goal, origin, professional_note: note, category, items: items.map(({ key: _k, ...rest }) => rest) });
     setSaving(false);
     if (r.errors.length) { setErrors(r.errors); return; }
     router.back();
@@ -65,6 +67,12 @@ export default function RoutineEditScreen() {
       <TextInput value={name} onChangeText={setName} placeholder="Ej.: Pierna · semana 1" placeholderTextColor={colors.textSecondary} style={styles.input} maxLength={80} />
       <Text variant="label" color={colors.textSecondary} style={styles.label}>Objetivo (opcional)</Text>
       <TextInput value={goal} onChangeText={setGoal} placeholder="Ej.: fuerza, volver a caminar 30 min" placeholderTextColor={colors.textSecondary} style={styles.input} maxLength={120} />
+      <Text variant="label" color={colors.textSecondary} style={styles.label}>Tipo (opcional)</Text>
+      <View style={styles.chips}>
+        {ROUTINE_CATEGORIES.map((c) => (
+          <Chip key={c} variant={category === c ? "selected" : "neutral"} onPress={() => setCategory(category === c ? null : c)}>{ROUTINE_CATEGORY_LABEL[c]}</Chip>
+        ))}
+      </View>
       <Text variant="label" color={colors.textSecondary} style={styles.label}>Origen</Text>
       <View style={styles.chips}>
         <Chip variant={origin === "own" ? "selected" : "neutral"} onPress={() => setOrigin("own")}>Propia</Chip>

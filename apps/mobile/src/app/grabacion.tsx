@@ -7,7 +7,7 @@ import { BigNumbers, Button, Chip, FootMap, Icon, LineChart, RoutinePane, Screen
 import { colors, fonts, formatDuration, formatNumber, radius, size, space } from "../presentation/theme/tokens";
 import { ACTIVITY_LABEL, clearSession, liveSeries, stopSession, useActiveSession, type ActiveSession } from "../application/sessionStore";
 import { loadSettings, saveSettings } from "../infrastructure/settings/settings";
-import { cursorLabel, finishActivity, useActivity } from "../application/activityStore";
+import { cursorLabel, finishActivity, isEmptyRun, useActivity } from "../application/activityStore";
 
 type Zone = "heel" | "medial" | "lateral";
 const ZONE_CHANNELS: Record<Zone, [ChannelCode, ChannelCode]> = {
@@ -66,17 +66,23 @@ export default function ActivityScreen() {
     );
   }
 
+  // Finalizar la sesión de plantillas termina toda la actividad (pulido 4/11): también el entrenamiento
+  // vinculado, que se descarta si no tiene ninguna serie. «Terminar rutina» cierra sólo el entrenamiento.
   const finish = async () => {
     setConfirm(false);
     setStopping(true);
     await stopSession();
+    if (run) await finishActivity();
     setStopping(false);
   };
+  // El detalle se abre dentro de la pila de Historial con su lista debajo (withAnchor):
+  // «atrás» vuelve a la lista y, al cambiar de pestaña, Historial vuelve a su raíz.
   const close = () => {
     const id = active!.coordinator.sessionId;
     clearSession();
-    router.replace({ pathname: "/historial/sesion/[id]", params: { id } });
+    router.replace({ pathname: "/historial/sesion/[id]", params: { id } }, { withAnchor: true });
   };
+  const emptyRun = isEmptyRun(run);
 
   const footer = showPane === "measure" && active ? (
     finished ? (
@@ -86,7 +92,7 @@ export default function ActivityScreen() {
       <Button key="finalizar" variant="primary" icon="stop" disabled={stopping} onPress={() => setConfirm(true)}>{stopping ? "Finalizando…" : "Finalizar sesión"}</Button>
     )
   ) : run ? (
-    <Button key="fin-entreno" variant="primary" icon="check" onPress={() => setConfirmFinishWorkout(true)}>Finalizar entrenamiento</Button>
+    <Button key="fin-entreno" variant={active ? "secondary" : "primary"} icon="check" onPress={() => setConfirmFinishWorkout(true)}>{active ? "Terminar rutina" : "Finalizar entrenamiento"}</Button>
   ) : undefined;
 
   return (
@@ -121,21 +127,29 @@ export default function ActivityScreen() {
 
       {active ? (
         <Sheet visible={confirm} onDismiss={() => setConfirm(false)}>
-          <Text variant="heading">Finalizar la sesión</Text>
+          <Text variant="heading">{run ? "Finalizar sesión y entrenamiento" : "Finalizar la sesión"}</Text>
           <Text variant="body" color={colors.textSecondary}>
-            Se guardan <Text variant="body">{formatDuration(active.snapshot.durationMs)}</Text> min y <Text variant="body">{formatNumber(active.snapshot.stats.accepted)}</Text> registros. Una sesión finalizada no se puede reanudar{run ? "; el entrenamiento sigue abierto" : ""}.
+            Se guardan <Text variant="body">{formatDuration(active.snapshot.durationMs)}</Text> min y <Text variant="body">{formatNumber(active.snapshot.stats.accepted)}</Text> registros. Una sesión finalizada no se puede reanudar.
+            {run ? (emptyRun ? " El entrenamiento no tiene series: se descarta." : ` También se cierra el entrenamiento (${run.detail.summary.strength_sets} series).`) : ""}
           </Text>
           <View style={{ gap: space[3], marginTop: space[3] }}>
-            <Button variant="danger" icon="stop" onPress={() => void finish()}>Finalizar</Button>
+            <Button variant="danger" icon="stop" onPress={() => void finish()}>{run ? "Finalizar todo" : "Finalizar"}</Button>
             <Button onPress={() => setConfirm(false)}>Seguir grabando</Button>
           </View>
         </Sheet>
       ) : null}
       {run ? (
-        <Sheet visible={confirmFinishWorkout} onDismiss={() => setConfirmFinishWorkout(false)} title="Finalizar entrenamiento">
-          <Text variant="body" color={colors.textSecondary}>{run.detail.summary.strength_sets} series · volumen {run.detail.summary.volume_kg} kg·rep · caminata {formatDuration(run.detail.summary.walk_run_duration_s * 1000)} · {run.detail.links.length} sesión(es) vinculada(s){recording ? ". La sesión de plantillas sigue grabando." : "."}</Text>
-          <TextInput value={notes} onChangeText={setNotes} placeholder="Notas del entrenamiento (opcional)" placeholderTextColor={colors.textSecondary} style={styles.input} />
-          <Button variant="primary" onPress={() => { setConfirmFinishWorkout(false); void finishActivity(notes).then(() => { if (!recording) router.replace("/"); }); }}>Finalizar</Button>
+        <Sheet visible={confirmFinishWorkout} onDismiss={() => setConfirmFinishWorkout(false)} title={recording ? "Terminar rutina" : "Finalizar entrenamiento"}>
+          {emptyRun ? (
+            <Text variant="body" color={colors.textSecondary}>No cargaste ninguna serie. El entrenamiento vacío se descarta{recording ? "; la sesión de plantillas sigue grabando" : ""}.</Text>
+          ) : (
+            <>
+              <Text variant="body" color={colors.textSecondary}>{run.detail.summary.strength_sets} series · volumen {run.detail.summary.volume_kg} kg·rep · caminata {formatDuration(run.detail.summary.walk_run_duration_s * 1000)} · {run.detail.links.length} sesión(es) vinculada(s){recording ? ". La sesión de plantillas sigue grabando." : "."}</Text>
+              <TextInput value={notes} onChangeText={setNotes} placeholder="Notas del entrenamiento (opcional)" placeholderTextColor={colors.textSecondary} style={styles.input} />
+            </>
+          )}
+          <Button variant={emptyRun ? "danger" : "primary"} onPress={() => { setConfirmFinishWorkout(false); void finishActivity(emptyRun ? undefined : notes).then(() => { setNotes(""); if (!recording) router.replace("/"); }); }}>{emptyRun ? "Descartar entrenamiento vacío" : "Finalizar"}</Button>
+          <Button onPress={() => setConfirmFinishWorkout(false)}>{recording ? "Seguir con la rutina" : "Seguir entrenando"}</Button>
         </Sheet>
       ) : null}
     </>
@@ -169,10 +183,9 @@ function MeasurementPane({ active }: { active: ActiveSession }) {
 
   return (
     <>
-      <View style={[styles.statusRow, { justifyContent: "flex-end" }]}>
-        <Pressable onPress={toggleBigNumbers} accessibilityRole="switch" accessibilityState={{ checked: bigNumbers }} accessibilityLabel={bigNumbers ? "Volver a las siluetas" : "Mostrar números grandes"} hitSlop={8} style={[styles.toggle, bigNumbers && styles.toggleOn]}>
-          <Text variant="label" color={bigNumbers ? colors.accent : colors.textSecondary}>123</Text>
-        </Pressable>
+      {/* Vista de la carga (pulido 4/11): siluetas o números grandes para mirar el teléfono de lejos. */}
+      <View style={{ marginTop: space[3] }}>
+        <Segmented value={bigNumbers ? "numbers" : "feet"} options={[{ value: "feet", label: "Pies" }, { value: "numbers", label: "Números grandes" }]} onChange={(v) => { if ((v === "numbers") !== bigNumbers) toggleBigNumbers(); }} />
       </View>
 
       {multi ? (
@@ -243,8 +256,6 @@ const styles = StyleSheet.create({
   modules: { flexDirection: "row", gap: space[2], marginTop: space[3] },
   back: { width: 32, height: 32, alignItems: "center", justifyContent: "center", marginLeft: -8, transform: [{ scaleX: -1 }] },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
-  toggle: { paddingHorizontal: space[2], height: 28, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, justifyContent: "center" },
-  toggleOn: { borderColor: colors.accent },
   chips: { flexDirection: "row", gap: space[2], marginTop: space[6] },
   counters: { flexDirection: "row", justifyContent: "space-between", marginTop: space[3] },
   input: { minHeight: size.controlHeight, borderRadius: radius.md, borderWidth: size.hairline, borderColor: colors.line, backgroundColor: colors.surface, color: colors.textPrimary, paddingHorizontal: space[4], fontFamily: fonts.regular, fontSize: 16 },

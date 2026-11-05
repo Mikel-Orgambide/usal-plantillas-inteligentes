@@ -292,6 +292,14 @@ ALTER TABLE workout_entry ADD COLUMN session_id TEXT REFERENCES session(id) ON D
 CREATE INDEX workout_entry_session_idx ON workout_entry(session_id);
 `,
   },
+  {
+    version: 8,
+    description: "Tipo de rutina opcional (pulido 4/11): routine.category y workout.category (copiado al iniciar, para filtrar el historial aunque la rutina cambie o el entrenamiento se restaure sin ella)",
+    sql: `
+ALTER TABLE routine ADD COLUMN category TEXT;
+ALTER TABLE workout ADD COLUMN category TEXT;
+`,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

@@ -6,6 +6,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 - Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
 
+## [0.15.2] - 2026-11-04 — pulido de la actividad, el historial y la navegación
+
+### Cambiado
+- Grabación: el alternador «123» pasa a un selector «Pies | Números grandes».
+- Finalizar la sesión de plantillas cierra toda la actividad (también el entrenamiento vinculado), con una confirmación única «Finalizar sesión y entrenamiento». En la pestaña Rutina, «Terminar rutina» cierra sólo el entrenamiento y la medición sigue.
+- Un entrenamiento que termina sin ninguna serie ni nota se descarta en vez de guardarse vacío. Los vacíos que ya existían se muestran «sin series» y se pueden borrar desde su detalle.
+- Descanso: mientras corre no se puede pasar a otra serie ni a otro ejercicio; el botón principal pasa a «Saltar descanso» y los chips de ejercicio avisan. «Listo» no admite doble toque.
+- Historial con dos vistas, «Sesiones | Entrenamientos», cada una con sus contadores y filtros; los entrenamientos se filtran por tipo de rutina. Orden dentro del día por hora de inicio.
+- Tipo de rutina opcional (Piernas, Tren superior, Cuerpo completo, Core, Cardio / caminata, Movilidad, Rehabilitación, Otro): se elige al crear o editar la rutina, el entrenamiento lo copia al iniciar y se muestra en las tarjetas (base local v8: `routine.category`, `workout.category`).
+- Navegación: cada pestaña vuelve a su raíz al dejarla; el detalle de una sesión se abre con la lista de Historial debajo («atrás» vuelve a la lista y no queda abierto al volver a la pestaña).
+
+### Corregido
+- Borrar una serie desde la actividad no actualizaba el cursor ni la lista de hechas.
+- Finalizar desde la pantalla de entrenamiento el que estaba en curso dejaba la isla y la actividad abiertas.
+- Cargar una serie desde la pantalla de entrenamiento no movía el cursor de la rutina en curso.
+- Los errores de «Cargar ejercicio» fuera de la rutina aparecían en la tarjeta de la serie en curso.
+- Una serie de fuerza con 0 repeticiones se aceptaba.
+- Guardar una rutina admitía doble toque.
+
 ## [0.15.1] - 2026-11-04 — actividad unificada (ajuste de la etapa 15)
 
 ### Corregido

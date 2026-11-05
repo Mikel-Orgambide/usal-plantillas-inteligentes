@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import * as Crypto from "expo-crypto";
 import {
   askForMissing, describeEntry, proposalMissing, summarizeWorkout, validateEntry, validateItem, validateProposal, validateRoutine,
-  type ItemKind, type ItemTarget, type LogEntryProposal, type Routine, type RoutineItem, type SessionLink, type Workout, type WorkoutEntry, type WorkoutSummary,
+  isRoutineCategory,
+  type ItemKind, type ItemTarget, type LogEntryProposal, type Routine, type RoutineCategory, type RoutineItem, type SessionLink, type Workout, type WorkoutEntry, type WorkoutSummary,
 } from "@plantillas/training";
 import type { AssistantTrainingInput, AssistantWorkoutInput } from "@plantillas/assistant";
 import { TrainingRepository, type RoutineItemRow } from "@plantillas/storage";
@@ -72,12 +73,14 @@ export interface RoutineDraft {
   readonly goal: string;
   readonly origin: Routine["origin"];
   readonly professional_note: string;
+  /** Tipo de rutina opcional (pulido 4/11). */
+  readonly category?: RoutineCategory | null;
   readonly items: readonly { id?: string; kind: ItemKind; name: string; target: ItemTarget; instructions: string; rest_sec: number | null }[];
 }
 
 /** Crea o actualiza una rutina con sus ejercicios. Devuelve los errores de validación (vacío = guardada). */
 export async function saveRoutine(draft: RoutineDraft): Promise<{ id: string; errors: string[] }> {
-  const errors = validateRoutine({ name: draft.name, origin: draft.origin });
+  const errors = validateRoutine({ name: draft.name, origin: draft.origin, category: draft.category ?? null });
   draft.items.forEach((i, idx) => validateItem({ name: i.name, kind: i.kind, target: i.target, rest_sec: i.rest_sec }).forEach((e) => errors.push(`ejercicio ${idx + 1}: ${e}`)));
   if (draft.items.length === 0) errors.push("agregá al menos un ejercicio");
   const id = draft.id ?? Crypto.randomUUID();
@@ -89,6 +92,7 @@ export async function saveRoutine(draft: RoutineDraft): Promise<{ id: string; er
   await tr.saveRoutine({
     id, user_id: existing?.user_id ?? userId, name: draft.name.trim(), goal: draft.goal.trim() || null, origin: draft.origin,
     professional_note: draft.professional_note.trim() || null, created_at: existing?.created_at ?? ts, updated_at: ts, archived: existing?.archived ?? false,
+    category: draft.category ?? null,
   });
   await tr.replaceItems(id, draft.items.map((i) => ({ id: i.id ?? Crypto.randomUUID(), kind: i.kind, name: i.name.trim(), target: i.target, instructions: i.instructions.trim() || null, rest_sec: i.rest_sec })));
   bump();
@@ -105,7 +109,7 @@ export async function duplicateRoutine(id: string): Promise<string | undefined> 
   const r = await getRoutine(id);
   if (!r) return undefined;
   const { id: newId } = await saveRoutine({
-    name: `${r.routine.name} (copia)`, goal: r.routine.goal ?? "", origin: r.routine.origin, professional_note: r.routine.professional_note ?? "",
+    name: `${r.routine.name} (copia)`, goal: r.routine.goal ?? "", origin: r.routine.origin, professional_note: r.routine.professional_note ?? "", category: r.routine.category ?? null,
     items: r.items.map((i) => ({ kind: i.kind, name: i.name, target: i.target, instructions: i.instructions ?? "", rest_sec: i.rest_sec })),
   });
   return newId;
@@ -151,21 +155,34 @@ export async function listWorkouts(limit = 100): Promise<Workout[]> {
   return tr.listWorkouts(await resolveLocalUserId(), { limit });
 }
 
-export interface WorkoutListItem { readonly workout: Workout; readonly routine_name: string | null; readonly summary: WorkoutSummary; readonly links: number }
+export interface WorkoutListItem {
+  readonly workout: Workout; readonly routine_name: string | null; readonly summary: WorkoutSummary; readonly links: number;
+  /** Tipo del entrenamiento (copiado de la rutina al iniciar o, si es anterior a v8, el de la rutina). */
+  readonly category: RoutineCategory | null;
+  /** Series o entradas declaradas; 0 = entrenamiento vacío. */
+  readonly entry_count: number;
+}
 
 /** Entrenamientos con nombre de rutina y resumen, para Historial. */
 export async function listWorkoutsDetailed(limit = 300): Promise<WorkoutListItem[]> {
   const tr = await repo();
   const rows = await tr.listWorkouts(await resolveLocalUserId(), { limit });
-  const names = new Map<string, string>();
+  const routines = new Map<string, { name: string; category: RoutineCategory | null }>();
   const out: WorkoutListItem[] = [];
   for (const w of rows) {
     let routineName: string | null = null;
+    let category: RoutineCategory | null = isRoutineCategory(w.category) ? w.category : null;
     if (w.routine_id) {
-      if (!names.has(w.routine_id)) names.set(w.routine_id, (await tr.getRoutine(w.routine_id))?.name ?? "");
-      routineName = names.get(w.routine_id) || null;
+      if (!routines.has(w.routine_id)) {
+        const r = await tr.getRoutine(w.routine_id);
+        routines.set(w.routine_id, { name: r?.name ?? "", category: isRoutineCategory(r?.category) ? r!.category as RoutineCategory : null });
+      }
+      const r = routines.get(w.routine_id)!;
+      routineName = r.name || null;
+      category = category ?? r.category;
     }
-    out.push({ workout: w, routine_name: routineName, summary: summarizeWorkout(await tr.getEntries(w.id)), links: (await tr.getWorkoutLinks(w.id)).length });
+    const entries = await tr.getEntries(w.id);
+    out.push({ workout: w, routine_name: routineName, summary: summarizeWorkout(entries), links: (await tr.getWorkoutLinks(w.id)).length, category, entry_count: entries.length });
   }
   return out;
 }
@@ -177,17 +194,31 @@ export async function startWorkout(routineId: string | null): Promise<string> {
   const open = await tr.openWorkout(userId);
   if (open) return open.id;
   const id = Crypto.randomUUID();
-  await tr.saveWorkout({ id, user_id: userId, routine_id: routineId, date: todayDate(), started_at: now(), ended_at: null, state: "in_progress", notes: null });
+  const routine = routineId ? await tr.getRoutine(routineId) : undefined;
+  const category = isRoutineCategory(routine?.category) ? routine!.category as RoutineCategory : null;
+  await tr.saveWorkout({ id, user_id: userId, routine_id: routineId, date: todayDate(), started_at: now(), ended_at: null, state: "in_progress", notes: null, category });
   bump();
   return id;
 }
 
-export async function finishWorkout(id: string, notes?: string): Promise<void> {
+/**
+ * Cierra el entrenamiento. Sin ninguna serie ni entrada declarada no se
+ * guarda un entrenamiento vacío (pulido 4/11): se descarta y se devuelve
+ * `"discarded"`. Sus vínculos con sesiones se borran en cascada; las
+ * sesiones medidas no se tocan.
+ */
+export async function finishWorkout(id: string, notes?: string): Promise<"completed" | "discarded" | "missing"> {
   const tr = await repo();
   const w = await tr.getWorkout(id);
-  if (!w) return;
+  if (!w) return "missing";
+  if ((await tr.getEntries(id)).length === 0 && !notes?.trim()) {
+    await tr.deleteWorkout(id);
+    bump();
+    return "discarded";
+  }
   await tr.saveWorkout({ ...w, ended_at: now(), state: "completed", notes: notes?.trim() || w.notes });
   bump();
+  return "completed";
 }
 
 export async function deleteWorkout(id: string): Promise<void> {

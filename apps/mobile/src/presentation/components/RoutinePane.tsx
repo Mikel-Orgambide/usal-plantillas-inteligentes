@@ -10,10 +10,10 @@ import { Text } from "./Text";
 import { TextButton } from "./TextButton";
 import { colors, fonts, formatDuration, radius, size, space } from "../theme/tokens";
 import {
-  currentItem, cursorLabel, declareFreeEntry, declareSet, draftForCurrent, jumpToItem, restLeft, skipRestNow, walkDiscard, walkLeft, walkSeconds, walkToggle,
+  currentItem, cursorLabel, declareFreeEntry, declareSet, draftForCurrent, jumpToItem, removeEntry, restLeft, skipRestNow, walkDiscard, walkLeft, walkSeconds, walkToggle,
   type ActivityRun,
 } from "../../application/activityStore";
-import { deleteEntry, type EntryDraft } from "../../application/trainingStore";
+import type { EntryDraft } from "../../application/trainingStore";
 
 const KIND_LABEL: Record<ItemKind, string> = { strength: "Fuerza", walk_run: "Caminata / carrera", other: "Otro" };
 const numOrNull = (v: string): number | null => (v.trim() === "" ? null : Number(v.replace(",", ".")));
@@ -32,6 +32,9 @@ export function RoutinePane({ run }: { run: ActivityRun }) {
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [free, setFree] = useState<EntryDraft | null>(null);
+  const [freeErrors, setFreeErrors] = useState<string[]>([]);
+  const [restNotice, setRestNotice] = useState(false);
+  useEffect(() => { if (rest === 0) setRestNotice(false); }, [rest]);
   const cursorKey = cur ? `${cur.item.id}:${cur.setIndex}` : "none";
   const lastKey = useRef<string>("");
   const scroll = useRef<ScrollView>(null);
@@ -45,7 +48,7 @@ export function RoutinePane({ run }: { run: ActivityRun }) {
 
   const patch = (p: Partial<EntryDraft>) => setDraft((d) => (d ? { ...d, ...p } : d));
   const done = async () => {
-    if (!draft || !cur) return;
+    if (!draft || !cur || saving) return;
     setSaving(true);
     const d = cur.item.kind === "walk_run" ? { ...draft, duration_s: draft.duration_s ?? walkSeconds(run) } : draft;
     const errs = await declareSet(d);
@@ -66,20 +69,20 @@ export function RoutinePane({ run }: { run: ActivityRun }) {
             const d = doneSets(it, entries), t = targetSets(it);
             const on = cur?.index === idx;
             return (
-              <Chip key={it.id} variant={on ? "selected" : "neutral"} icon={d >= t ? "check" : undefined} onPress={() => jumpToItem(idx)}>{`${idx + 1} · ${it.name}${t > 1 ? ` ${d}/${t}` : d >= t ? "" : ""}`}</Chip>
+              <Chip key={it.id} variant={on ? "selected" : "neutral"} icon={d >= t ? "check" : undefined} onPress={() => { if (!jumpToItem(idx)) setRestNotice(true); }}>{`${idx + 1} · ${it.name}${t > 1 ? ` ${d}/${t}` : d >= t ? "" : ""}`}</Chip>
             );
           })}
         </ScrollView>
       ) : null}
 
+      {restNotice && rest > 0 ? (
+        <Text variant="caption" color={colors.alert} style={{ marginTop: space[2] }}>Terminá o saltá el descanso para cambiar de ejercicio.</Text>
+      ) : null}
       {rest > 0 ? (
         <Card elevated style={styles.rest}>
           <Text variant="label" color={colors.textSecondary}>Descanso</Text>
           <Text variant="numXl" color={colors.accent}>{formatDuration(rest * 1000)}</Text>
           <Text variant="caption" color={colors.textSecondary}>{cur ? `Después: ${cursorLabel(run).replace(/^Ejercicio \d+ de \d+ · /, "")}` : "Rutina completa"}</Text>
-          <View style={{ marginTop: space[3] }}>
-            <Button onPress={skipRestNow}>Saltar descanso</Button>
-          </View>
         </Card>
       ) : null}
 
@@ -105,7 +108,12 @@ export function RoutinePane({ run }: { run: ActivityRun }) {
           <TextInput value={draft.discomfort_note ?? ""} onChangeText={(v) => patch({ discomfort_note: v || null })} placeholder="Molestia o dolor (se anota tal cual, no se interpreta)" placeholderTextColor={colors.textSecondary} style={[styles.input, { marginTop: space[3] }]} />
           {errors.map((e) => <Text key={e} variant="caption" color={colors.alert} style={{ marginTop: space[1] }}>· {e}</Text>)}
           <View style={{ marginTop: space[3] }}>
-            <Button variant="primary" icon="check" disabled={saving} onPress={() => void done()}>{cur.item.kind === "strength" ? `Listo · serie ${cur.setIndex} de ${cur.sets}` : cur.item.kind === "walk_run" ? "Terminé la caminata" : "Hecho"}</Button>
+            {rest > 0 ? (
+              // Mientras corre el descanso no se avanza: el botón principal lo salta.
+              <Button key="saltar" variant="primary" icon="play" onPress={skipRestNow}>{`Saltar descanso · ${formatDuration(rest * 1000)}`}</Button>
+            ) : (
+              <Button key="listo" variant="primary" icon="check" disabled={saving} onPress={() => void done()}>{saving ? "Guardando…" : cur.item.kind === "strength" ? `Listo · serie ${cur.setIndex} de ${cur.sets}` : cur.item.kind === "walk_run" ? "Terminé la caminata" : "Hecho"}</Button>
+            )}
           </View>
           <DoneSets item={cur.item} run={run} />
         </Card>
@@ -121,11 +129,14 @@ export function RoutinePane({ run }: { run: ActivityRun }) {
         {entries.filter((e) => !e.item_id).map((e, idx, arr) => (
           <View key={e.id} style={styles.entryRow}>
             <View style={{ flex: 1 }}><ListRow title={describeEntry(e)} subtitle={e.discomfort_note ? `molestia: ${e.discomfort_note}` : undefined} chevron={false} last={idx === arr.length - 1} /></View>
-            <Pressable onPress={() => void deleteEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
+            <Pressable onPress={() => void removeEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
           </View>
         ))}
         {free ? (
-          <FreeEntryForm draft={free} onChange={setFree} onCancel={() => setFree(null)} onSave={async () => { const errs = await declareFreeEntry(free); if (!errs.length) setFree(null); else setErrors(errs); }} />
+          <>
+            <FreeEntryForm draft={free} onChange={setFree} onCancel={() => { setFree(null); setFreeErrors([]); }} onSave={async () => { const errs = await declareFreeEntry(free); setFreeErrors(errs); if (!errs.length) setFree(null); }} />
+            {freeErrors.map((e) => <Text key={e} variant="caption" color={colors.alert} style={{ marginTop: space[1] }}>· {e}</Text>)}
+          </>
         ) : (
           <TextButton icon="plus" style={{ marginTop: space[2] }} onPress={() => setFree({ item_id: null, item_name: "", kind: "strength", set_index: 1, reps: null, weight_kg: null, duration_s: null, distance_m: null, rpe: null, discomfort_note: null, notes: null })}>Cargar ejercicio</TextButton>
         )}
@@ -168,7 +179,7 @@ function DoneSets({ item, run }: { item: RoutineItem; run: ActivityRun }) {
       {mine.map((e, idx) => (
         <View key={e.id} style={styles.entryRow}>
           <View style={{ flex: 1 }}><ListRow title={describeEntry(e).replace(`${e.item_name} · `, "")} subtitle={e.discomfort_note ? `molestia: ${e.discomfort_note}` : undefined} chevron={false} last={idx === mine.length - 1} /></View>
-          <Pressable onPress={() => void deleteEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar serie"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
+          <Pressable onPress={() => void removeEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar serie"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
         </View>
       ))}
     </View>

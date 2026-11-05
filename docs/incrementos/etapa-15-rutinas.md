@@ -62,3 +62,30 @@ Capturas de Rutinas, Entrenamiento, tarjeta de confirmación del asistente, Deta
 6. Historial: el entrenamiento aparece en el día con «3 series · 315 kg·rep · 2 min caminata · 1 sesión(es)»; abrirlo muestra las series con 35 kg; el Detalle de la sesión lista las series declaradas y el PDF marca «esta sesión».
 7. Asistente desde la actividad: «hice 10 con 40» con la serie en curso → tarjeta con Sentadilla · serie n → Guardar avanza el cursor.
 8. Entrenar sin plantillas desde Hoy → «Iniciar rutina»: sólo la pestaña Rutina; cerrar la app y reabrirla: la isla y Hoy muestran el entrenamiento en curso.
+
+## Pulido 4/11 (app 0.15.2)
+
+Pedido de Mikel tras probar la 0.15.1 (todo funcional; ajustes de uso):
+
+| Tema | Decisión |
+|---|---|
+| «123» en Grabación | Selector «Pies \| Números grandes» con rótulo; el modo se recuerda. |
+| Fin de la actividad | «Finalizar sesión» termina todo (sesión + entrenamiento vinculado), con una sola confirmación. «Terminar rutina» (pestaña Rutina) cierra sólo el entrenamiento; la medición sigue. |
+| Entrenamiento vacío | Al terminar sin series ni nota se descarta (`finishWorkout` → `"discarded"`). Los vacíos previos no se borran solos: se ven «sin series» y se borran desde su detalle («Borrar entrenamiento vacío»). |
+| Descanso | `isResting`/`canAdvance` en la máquina de estados: con el descanso corriendo, `jumpTo` no hace nada y `declareSet` devuelve un aviso; el botón principal es «Saltar descanso · m:ss». Doble toque en «Listo» ignorado. |
+| Historial | Vistas «Sesiones \| Entrenamientos»; contadores y encabezado de la vista activa; filtro por tipo de rutina; orden por hora de inicio. |
+| Tipo de rutina | Opcional, 8 valores (`ROUTINE_CATEGORIES`); `routine.category` y `workout.category` (copiado al iniciar) — migración local v8. |
+| Navegación | `popToTopOnBlur` en las tres pestañas; los detalles de Historial se abren con `withAnchor` (la lista queda debajo). Al finalizar una sesión, «Ver la sesión» reemplaza la actividad por el detalle: «atrás» → lista de Historial. |
+
+Revisión general (hallazgos corregidos): borrar una serie no refrescaba el cursor; finalizar desde la pantalla de entrenamiento no cerraba la actividad en memoria (isla visible); cargar una serie desde esa pantalla no movía el cursor; errores del formulario «fuera de la rutina» se mostraban en otro lugar; series de fuerza con 0 reps aceptadas; doble toque al guardar rutina. Verificado sin cambios: pesos negativos, textos no numéricos y RPE fuera de rango ya se rechazaban; rutinas sin ejercicios no se pueden guardar ni iniciar; la isla se oculta sin actividad. Limitación declarada: si la app se cierra con el descanso o la caminata corriendo, al reabrir el entrenamiento sigue en curso pero el temporizador vuelve a cero (no se persiste).
+
+### Cómo probar (build 0.15.2)
+
+1. Grabación: el selector «Pies | Números grandes» cambia la vista y se recuerda al volver.
+2. Nueva sesión con rutina → declarar una serie → durante el descanso, tocar otro ejercicio: aparece el aviso y no cambia; el botón dice «Saltar descanso». Saltar → se habilita.
+3. «Terminar rutina» con la medición en curso: el entrenamiento se cierra y la sesión sigue grabando.
+4. Iniciar otra vez con rutina, sin declarar series, y «Finalizar sesión»: la confirmación dice «Finalizar sesión y entrenamiento» y que el vacío se descarta; en Historial → Entrenamientos no aparece.
+5. Historial: alternar «Sesiones | Entrenamientos»; los contadores cambian; filtrar entrenamientos por tipo.
+6. Crear o editar una rutina con tipo «Piernas»; iniciar; el entrenamiento muestra el tipo.
+7. Abrir una sesión desde Historial, ir a Hoy y volver a Historial: se ve la lista. Al finalizar una sesión y tocar «Ver la sesión», «atrás» vuelve a la lista de Historial.
+8. Un entrenamiento vacío previo: abrirlo → «Borrar entrenamiento vacío».

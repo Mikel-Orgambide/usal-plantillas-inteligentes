@@ -1,6 +1,6 @@
 # Alcance final del prototipo (cierre del desarrollo, 4 de noviembre de 2026)
 
-Proyecto Final de Ingeniería en Informática — Mikel Orgambide Rueda. Versión de la app: 0.15.0; firmware 0.3.1.
+Proyecto Final de Ingeniería en Informática — Mikel Orgambide Rueda. Versión de la app: 0.15.2; firmware 0.3.1.
 Propósito: describir **qué hace realmente** la plataforma al cierre del desarrollo (etapas 0–15), separando en cada punto lo **validado con hardware real**, lo **implementado y probado con datos simulados** y lo **diseñado o documentado sin implementar**. Es la base para reescribir los capítulos de la tesis: ningún capítulo debe afirmar más de lo que dice este documento, y cada afirmación remite a su evidencia en `docs/incrementos/`.
 
 Leyenda de estado: **[H]** validado con hardware real (FSR + ESP32 + app) · **[S]** implementado y probado con pruebas automáticas y datos simulados · **[D]** diseñado o preparado, no implementado o no validado.
@@ -29,7 +29,7 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 | Sesión: actividad, contexto, inicio/fin, estado, eventos (conexión, captura, desconexión, reconexión, módulo perdido/recuperado) | **[H]** (unilateral) / **[S]** (bilateral) |
 | Persistencia local SQLite (v6), respaldo y restauración, exportación de sesión (`.plantillas.json`) y CSV | **[H]** |
 | Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; migración 0003 para bilateral **[S]** |
-| Entrenamiento declarado: rutinas (propias o del profesional), ejercicios objetivo, entrenamientos, series (reps, peso, duración, distancia, RPE, molestia como nota), vínculo sesión↔serie (ADR 0013, etapa 15) | **[S]** (local; remoto preparado **[D]**) |
+| Entrenamiento declarado: rutinas (propias o del profesional), ejercicios objetivo, entrenamientos, series (reps, peso, duración, distancia, RPE, molestia como nota), vínculo sesión↔serie, actividad unificada con descansos, tipo de rutina opcional e historial de entrenamientos separado (ADR 0013, etapa 15) | **[S]** (local; remoto preparado **[D]**) |
 | Actividad unificada (ajuste 4/11): rutina ejercicio por ejercicio dentro de la sesión de plantillas, serie precargada y corregible, descanso entre series con cuenta regresiva, cronómetro de caminata, isla flotante con la actividad en curso, entrenamientos en Historial también sin sesión medida | **[S]** |
 
 ## 4. Qué calcula (métricas)

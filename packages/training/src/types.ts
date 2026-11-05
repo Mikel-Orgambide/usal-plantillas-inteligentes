@@ -13,6 +13,16 @@ export type RoutineOrigin = "own" | "professional";
 export type ItemKind = "strength" | "walk_run" | "other";
 export type WorkoutState = "planned" | "in_progress" | "completed";
 
+/** Tipo de rutina (opcional, pulido 4/11): ordena y filtra el historial de entrenamientos. Declarado, no inferido. */
+export const ROUTINE_CATEGORIES = ["legs", "upper", "full_body", "core", "cardio", "mobility", "rehab", "other"] as const;
+export type RoutineCategory = (typeof ROUTINE_CATEGORIES)[number];
+export const ROUTINE_CATEGORY_LABEL: Readonly<Record<RoutineCategory, string>> = {
+  legs: "Piernas", upper: "Tren superior", full_body: "Cuerpo completo", core: "Core", cardio: "Cardio / caminata", mobility: "Movilidad", rehab: "Rehabilitación", other: "Otro",
+};
+export function isRoutineCategory(v: unknown): v is RoutineCategory {
+  return typeof v === "string" && (ROUTINE_CATEGORIES as readonly string[]).includes(v);
+}
+
 export interface Routine {
   readonly id: string;
   readonly user_id: string;
@@ -24,6 +34,8 @@ export interface Routine {
   readonly created_at: string;
   readonly updated_at: string;
   readonly archived: boolean;
+  /** Tipo de rutina declarado (opcional). */
+  readonly category?: RoutineCategory | null;
 }
 
 export interface StrengthTarget { readonly kind: "strength"; readonly sets: number; readonly reps: number; readonly weight_kg: number | null }
@@ -52,6 +64,8 @@ export interface Workout {
   readonly ended_at: string | null;
   readonly state: WorkoutState;
   readonly notes: string | null;
+  /** Tipo copiado de la rutina al iniciar (para filtrar aunque la rutina cambie o no viaje en un respaldo). */
+  readonly category?: RoutineCategory | null;
 }
 
 export interface WorkoutEntry {

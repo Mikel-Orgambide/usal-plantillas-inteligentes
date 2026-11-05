@@ -1,8 +1,9 @@
-import type { ItemTarget, Routine, RoutineItem, Workout, WorkoutEntry } from "./types";
+import { isRoutineCategory, type ItemTarget, type Routine, type RoutineItem, type Workout, type WorkoutEntry } from "./types";
 
 /** Errores de validación en lenguaje del usuario; lista vacía = válido. */
-export function validateRoutine(r: Pick<Routine, "name" | "origin">): string[] {
+export function validateRoutine(r: Pick<Routine, "name" | "origin"> & { category?: unknown }): string[] {
   const errors: string[] = [];
+  if (r.category !== undefined && r.category !== null && !isRoutineCategory(r.category)) errors.push("tipo de rutina desconocido");
   if (!r.name.trim()) errors.push("la rutina necesita un nombre");
   if (r.name.length > 80) errors.push("el nombre no puede superar 80 caracteres");
   if (r.origin !== "own" && r.origin !== "professional") errors.push("origen desconocido");
@@ -47,6 +48,7 @@ export function validateEntry(e: Pick<WorkoutEntry, "item_name" | "kind" | "set_
   if (e.distance_m !== null && (!(e.distance_m >= 0) || e.distance_m > 500_000)) errors.push("la distancia debe estar entre 0 y 500 km");
   if (e.rpe !== null && (!Number.isInteger(e.rpe) || e.rpe < 1 || e.rpe > 10)) errors.push("el esfuerzo percibido va de 1 a 10");
   if (e.kind === "strength" && e.reps === null && e.duration_s === null) errors.push("indicá repeticiones (o duración) de la serie");
+  if (e.kind === "strength" && e.reps === 0 && !(e.duration_s && e.duration_s > 0)) errors.push("una serie de fuerza necesita al menos 1 repetición");
   if (e.kind === "walk_run" && e.duration_s === null && e.distance_m === null) errors.push("indicá tiempo o distancia");
   return errors;
 }

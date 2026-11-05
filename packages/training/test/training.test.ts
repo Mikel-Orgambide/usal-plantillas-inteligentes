@@ -15,6 +15,16 @@ describe("validación", () => {
     expect(validateEntry({ ...entry({ reps: null }) })).toContain("indicá repeticiones (o duración) de la serie");
     expect(validateEntry(entry({}))).toEqual([]);
   });
+  it("pulido 4/11: tipo de rutina, repeticiones en cero, pesos negativos y textos no numéricos", () => {
+    expect(validateRoutine({ name: "Piernas", origin: "own", category: "legs" })).toEqual([]);
+    expect(validateRoutine({ name: "Piernas", origin: "own", category: null })).toEqual([]);
+    expect(validateRoutine({ name: "Piernas", origin: "own", category: "yoga" })).toContain("tipo de rutina desconocido");
+    expect(validateRoutine({ name: "   ", origin: "own" })).toContain("la rutina necesita un nombre");
+    expect(validateEntry(entry({ reps: 0 }))).toContain("una serie de fuerza necesita al menos 1 repetición");
+    expect(validateEntry(entry({ weight_kg: -5 }))).toContain("el peso debe estar entre 0 y 1000 kg");
+    expect(validateEntry(entry({ weight_kg: Number.NaN }))).toContain("el peso debe estar entre 0 y 1000 kg");
+    expect(validateEntry(entry({ reps: 8.5 }))).toContain("las repeticiones deben ser un entero entre 0 y 500");
+  });
 });
 
 describe("resumen", () => {

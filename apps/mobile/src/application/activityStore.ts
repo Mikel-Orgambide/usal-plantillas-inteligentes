@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 import {
-  completeSet, createActivity, describeCursor, jumpTo, restRemaining, skipRest, targetSets, tick, walkElapsed, walkPause, walkRemaining, walkReset, walkStart,
+  canAdvance, completeSet, createActivity, describeCursor, jumpTo, restRemaining, skipRest, targetSets, tick, walkElapsed, walkPause, walkRemaining, walkReset, walkStart,
   type ActivityState, type RoutineItem, type WorkoutEntry,
 } from "@plantillas/training";
-import { addEntry, finishWorkout, getWorkout, linkSession, setCurrentCursorText, startWorkout, todayWorkout, type EntryDraft, type WorkoutDetail } from "./trainingStore";
+import { addEntry, deleteEntry, finishWorkout, getWorkout, linkSession, setCurrentCursorText, startWorkout, todayWorkout, type EntryDraft, type WorkoutDetail } from "./trainingStore";
 import { getRecordingSessionId } from "./sessionStore";
 
 /**
@@ -115,7 +115,18 @@ export function draftForCurrent(r: ActivityRun, cur: { item: RoutineItem; setInd
 }
 
 /** Declara la serie en curso (con lo que la persona corrigió), la vincula a la sesión que graba y abre el descanso. */
+let declaring = false;
 export async function declareSet(draft: EntryDraft): Promise<string[]> {
+  if (!run) return ["no hay un entrenamiento en curso"];
+  // Con el descanso corriendo no se pasa a la siguiente serie (pulido 4/11): primero «Saltar descanso».
+  if (!canAdvance(run.state, Date.now())) return ["terminá o saltá el descanso antes de la siguiente serie"];
+  // Doble toque en «Listo»: una sola serie.
+  if (declaring) return [];
+  declaring = true;
+  try { return await declareSetNow(draft); } finally { declaring = false; }
+}
+
+async function declareSetNow(draft: EntryDraft): Promise<string[]> {
   if (!run) return ["no hay un entrenamiento en curso"];
   const sessionId = getRecordingSessionId() ?? null;
   const r = await addEntry(run.detail.workout.id, draft, sessionId);
@@ -141,7 +152,19 @@ export async function declareFreeEntry(draft: EntryDraft): Promise<string[]> {
 }
 
 export function skipRestNow(): void { if (run) publish({ ...run, state: skipRest(run.state) }); }
-export function jumpToItem(index: number): void { if (run) publish({ ...run, state: jumpTo(run.state, run.items, run.detail.entries, index) }); }
+/** Salta a otro ejercicio. Devuelve false si no se pudo porque corre el descanso. */
+export function jumpToItem(index: number): boolean {
+  if (!run) return false;
+  const now = Date.now();
+  if (!canAdvance(run.state, now)) return false;
+  publish({ ...run, state: jumpTo(run.state, run.items, run.detail.entries, index, now) });
+  return true;
+}
+/** Borra una serie declarada y refresca el cursor (la serie vuelve a quedar pendiente). */
+export async function removeEntry(id: string): Promise<void> {
+  await deleteEntry(id);
+  await refreshActivity();
+}
 export function walkToggle(): void {
   if (!run) return;
   const now = Date.now();
@@ -155,13 +178,16 @@ export const walkSeconds = (r: ActivityRun): number => walkElapsed(r.state, r.no
 export const walkLeft = (r: ActivityRun, item: RoutineItem): number => walkRemaining(item, r.state, r.now);
 export const cursorLabel = (r: ActivityRun): string => describeCursor(r.items, r.state.cursor);
 
-/** Cierra el entrenamiento en curso. */
-export async function finishActivity(notes?: string): Promise<void> {
-  if (!run) return;
+/** Cierra el entrenamiento en curso; si quedó vacío se descarta (ver `finishWorkout`). */
+export async function finishActivity(notes?: string): Promise<"completed" | "discarded" | "none"> {
+  if (!run) return "none";
   const id = run.detail.workout.id;
   publish(null);
-  await finishWorkout(id, notes);
+  const r = await finishWorkout(id, notes);
+  return r === "missing" ? "none" : r;
 }
+/** ¿El entrenamiento en curso todavía no tiene ninguna serie ni entrada? */
+export const isEmptyRun = (r: ActivityRun | null): boolean => !!r && r.detail.entries.length === 0;
 
 /** Refresca desde la base (p. ej. tras cargar una serie por el asistente). */
 export async function refreshActivity(): Promise<void> {

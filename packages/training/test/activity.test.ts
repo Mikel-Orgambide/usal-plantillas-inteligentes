@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  completeSet, createActivity, describeCursor, jumpTo, nextCursor, restRemaining, skipRest, tick, walkElapsed, walkPause, walkRemaining, walkStart,
+  canAdvance, completeSet, createActivity, describeCursor, isResting, jumpTo, nextCursor, restRemaining, skipRest, tick, walkElapsed, walkPause, walkRemaining, walkStart,
   type RoutineItem, type WorkoutEntry,
 } from "../src/index";
 
@@ -52,6 +52,24 @@ describe("actividad: cursor por ejercicio y serie", () => {
     const s = jumpTo(createActivity(items, []), items, [entry(walk, 1)], 1);
     expect(s.cursor).toEqual({ itemIndex: 1, setIndex: 1 });
     expect(jumpTo(s, items, [], 9)).toBe(s);
+  });
+
+  it("con el descanso corriendo no se puede saltar de ejercicio; se habilita al saltarlo o al terminar", () => {
+    const t0 = 2_000_000;
+    let s = completeSet(createActivity(items, []), items, [entry(squat, 1)], t0);
+    expect(isResting(s, t0 + 10_000)).toBe(true);
+    expect(canAdvance(s, t0 + 10_000)).toBe(false);
+    // El chip de otro ejercicio no mueve el cursor ni cancela el descanso.
+    const blocked = jumpTo(s, items, [entry(squat, 1)], 2, t0 + 10_000);
+    expect(blocked).toBe(s);
+    expect(blocked.rest).not.toBeNull();
+    // Terminado el tiempo, el salto funciona aunque `tick` todavía no lo haya limpiado.
+    expect(canAdvance(s, t0 + 60_000)).toBe(true);
+    expect(jumpTo(s, items, [entry(squat, 1)], 2, t0 + 60_000).cursor).toEqual({ itemIndex: 2, setIndex: 1 });
+    // «Saltar descanso» lo habilita en el momento.
+    s = skipRest(s);
+    expect(canAdvance(s, t0 + 10_000)).toBe(true);
+    expect(jumpTo(s, items, [entry(squat, 1)], 1, t0 + 10_000).cursor).toEqual({ itemIndex: 1, setIndex: 1 });
   });
 
   it("caminata: cronómetro con pausa y tiempo restante al objetivo", () => {

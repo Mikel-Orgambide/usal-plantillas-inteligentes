@@ -74,7 +74,7 @@ export default function RootLayout() {
               <Chip variant="alert">Incompleta · cierre inesperado</Chip>
             </View>
             <View style={{ gap: space[3], marginTop: space[3] }}>
-              <Button variant="primary" onPress={() => { const id = first.id; setRecovered([]); router.push({ pathname: "/historial/sesion/[id]", params: { id } }); }}>Ver sesión</Button>
+              <Button variant="primary" onPress={() => { const id = first.id; setRecovered([]); router.push({ pathname: "/historial/sesion/[id]", params: { id } }, { withAnchor: true }); }}>Ver sesión</Button>
               <Button onPress={() => setRecovered([])}>Más tarde</Button>
             </View>
           </>

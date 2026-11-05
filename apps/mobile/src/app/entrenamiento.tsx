@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { describeEntry, describeTarget, fmtDuration, routineProgress, type ItemKind, type RoutineItem, type WorkoutEntry } from "@plantillas/training";
+import { describeEntry, describeTarget, fmtDuration, ROUTINE_CATEGORY_LABEL, routineProgress, type ItemKind, type RoutineItem, type WorkoutEntry } from "@plantillas/training";
 import { Button, Card, Chip, Header, Icon, ListRow, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../presentation/components";
 import { colors, fonts, radius, size, space } from "../presentation/theme/tokens";
-import { addEntry, deleteEntry, finishWorkout, getWorkout, nextSetIndex, setPendingLink, useTrainingVersion, type EntryDraft, type WorkoutDetail } from "../application/trainingStore";
+import { addEntry, deleteWorkout, finishWorkout, getWorkout, nextSetIndex, setPendingLink, useTrainingVersion, type EntryDraft, type WorkoutDetail } from "../application/trainingStore";
 import { useActiveSession } from "../application/sessionStore";
 import { useActiveSource } from "../application/activeSource";
-import { useActivity } from "../application/activityStore";
+import { finishActivity, refreshActivity, removeEntry, useActivity } from "../application/activityStore";
 
 const KIND_LABEL: Record<ItemKind, string> = { strength: "Fuerza", walk_run: "Caminata / carrera", other: "Otro" };
 const numOrNull = (v: string): number | null => (v.trim() === "" ? null : Number(v.replace(",", ".")));
@@ -28,6 +28,7 @@ export default function WorkoutScreen() {
   const [editing, setEditing] = useState<{ item: RoutineItem | null; draft: EntryDraft } | null>(null);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [notes, setNotes] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // Todos los hooks antes del primer `return`: un hook declarado después de la salida temprana
   // («Cargando…») cambiaba la cantidad de hooks entre renders y cerraba la app al abrir un entrenamiento.
   const [entryErrors, setEntryErrors] = useState<string[]>([]);
@@ -68,6 +69,8 @@ export default function WorkoutScreen() {
     const r = await addEntry(workout.id, editing.draft);
     if (r.errors.length) { setEntryErrors(r.errors); return; }
     setEntryErrors([]); setEditing(null);
+    // Si es el entrenamiento de la actividad en curso, el cursor de la rutina avanza con esta serie.
+    if (run && run.detail.workout.id === workout.id) await refreshActivity();
   };
   const recordWith = (item: RoutineItem | null, setIndex: number) => {
     const label = `${item?.name ?? "ejercicio"} · serie ${setIndex}`;
@@ -78,8 +81,13 @@ export default function WorkoutScreen() {
 
   return (
     <>
-    <Screen footer={done ? <Button onPress={() => router.back()}>Volver</Button> : <Button variant="primary" icon="check" onPress={() => setConfirmFinish(true)}>Finalizar entrenamiento</Button>}>
-      <Header title={routine?.routine.name ?? "Entrenamiento libre"} context={`${workout.date} · ${done ? "terminado" : "en curso"}${routine?.routine.origin === "professional" ? " · indicada por un profesional" : ""}`} onBack={() => router.back()} />
+    <Screen footer={done ? (
+      <View style={{ gap: space[3] }}>
+        <Button onPress={() => router.back()}>Volver</Button>
+        <TextButton onPress={() => setConfirmDelete(true)}>{entries.length === 0 ? "Borrar entrenamiento vacío" : "Borrar entrenamiento"}</TextButton>
+      </View>
+    ) : <Button variant="primary" icon="check" onPress={() => setConfirmFinish(true)}>Finalizar entrenamiento</Button>}>
+      <Header title={routine?.routine.name ?? "Entrenamiento libre"} context={`${workout.date} · ${done ? "terminado" : "en curso"}${(workout.category ?? routine?.routine.category) ? ` · ${ROUTINE_CATEGORY_LABEL[(workout.category ?? routine!.routine.category)!]}` : ""}${routine?.routine.origin === "professional" ? " · indicada por un profesional" : ""}`} onBack={() => router.back()} />
       {run && run.detail.workout.id === workout.id ? (
         <StatusBanner icon="play" actionLabel="Seguir" onAction={() => router.push("/grabacion")}>Este entrenamiento está en curso: se sigue ejercicio por ejercicio desde la actividad</StatusBanner>
       ) : recording ? <StatusBanner icon="play" actionLabel="Ver" onAction={() => router.push("/grabacion")}>Hay una sesión de plantillas grabando</StatusBanner> : null}
@@ -168,7 +176,19 @@ export default function WorkoutScreen() {
     <Sheet visible={confirmFinish} onDismiss={() => setConfirmFinish(false)} title="Finalizar entrenamiento">
       <Text variant="body" color={colors.textSecondary}>{summary.strength_sets} series · volumen {summary.volume_kg} kg·rep · caminata {fmtDuration(summary.walk_run_duration_s)} · {detail.links.length} sesión(es) vinculada(s).</Text>
       <TextInput value={notes} onChangeText={setNotes} placeholder="Notas del entrenamiento (opcional)" placeholderTextColor={colors.textSecondary} style={styles.input} />
-      <Button variant="primary" onPress={() => { setConfirmFinish(false); void finishWorkout(workout.id, notes); }}>Finalizar</Button>
+      {entries.length === 0 ? <Text variant="caption" color={colors.textSecondary}>Sin series ni ejercicios cargados: el entrenamiento vacío se descarta.</Text> : null}
+      <Button variant="primary" onPress={() => {
+        setConfirmFinish(false);
+        // Si es el de la actividad en curso, se cierra por ahí para que la isla y Hoy se actualicen.
+        const live = run && run.detail.workout.id === workout.id;
+        void (live ? finishActivity(notes) : finishWorkout(workout.id, notes)).then((r) => { if (r === "discarded") router.back(); });
+      }}>{entries.length === 0 ? "Descartar" : "Finalizar"}</Button>
+    </Sheet>
+
+    <Sheet visible={confirmDelete} onDismiss={() => setConfirmDelete(false)} title="Borrar entrenamiento">
+      <Text variant="body" color={colors.textSecondary}>Se borran las series declaradas{detail.links.length ? " y el vínculo con las sesiones; las sesiones medidas no se tocan" : ""}. No se puede deshacer.</Text>
+      <Button variant="danger" onPress={() => { setConfirmDelete(false); void deleteWorkout(workout.id).then(() => router.back()); }}>Borrar</Button>
+      <Button onPress={() => setConfirmDelete(false)}>Cancelar</Button>
     </Sheet>
     </>
   );
@@ -181,7 +201,7 @@ function EntryRow({ e, last, editable }: { e: WorkoutEntry; last: boolean; edita
         <ListRow title={describeEntry(e)} subtitle={[e.discomfort_note ? `molestia: ${e.discomfort_note}` : null, e.notes].filter(Boolean).join(" · ") || undefined} chevron={false} last={last} />
       </View>
       {editable ? (
-        <Pressable onPress={() => void deleteEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar serie"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
+        <Pressable onPress={() => void removeEntry(e.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Quitar serie"><Icon name="close" size={18} color={colors.textSecondary} /></Pressable>
       ) : null}
     </View>
   );

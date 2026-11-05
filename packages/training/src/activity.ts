@@ -83,8 +83,26 @@ export function completeSet(state: ActivityState, items: readonly RoutineItem[],
   return { cursor, rest, walk: null };
 }
 
-/** Salta a un ejercicio concreto (la persona elige otro orden); la serie es la siguiente pendiente de ese ejercicio. */
-export function jumpTo(state: ActivityState, items: readonly RoutineItem[], entries: readonly WorkoutEntry[], itemIndex: number): ActivityState {
+/**
+ * ¿Se puede pasar a otra serie o ejercicio? No mientras corre el descanso
+ * (pulido 4/11): primero termina o se salta explícitamente con «Saltar
+ * descanso», así el contador nunca queda corriendo para un ejercicio que ya
+ * no es el actual.
+ */
+export function isResting(state: ActivityState, now: number): boolean {
+  return state.rest !== null && now < state.rest.ends_at;
+}
+export function canAdvance(state: ActivityState, now: number): boolean {
+  return !isResting(state, now);
+}
+
+/**
+ * Salta a un ejercicio concreto (la persona elige otro orden); la serie es la
+ * siguiente pendiente de ese ejercicio. Con el descanso corriendo no hace
+ * nada: se cancela sólo con `skipRest`.
+ */
+export function jumpTo(state: ActivityState, items: readonly RoutineItem[], entries: readonly WorkoutEntry[], itemIndex: number, now: number = Date.now()): ActivityState {
+  if (isResting(state, now)) return state;
   const ordered = [...items].sort((a, b) => a.order - b.order);
   const item = ordered[itemIndex];
   if (!item) return state;

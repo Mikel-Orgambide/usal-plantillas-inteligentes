@@ -30,9 +30,11 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
       }}
     >
+      {/* Cada pestaña vuelve a su raíz al dejarla (pulido 4/11); tocar la pestaña activa también. Los detalles de
+          Historial se abren con `withAnchor`, así la lista queda debajo y «atrás» vuelve a ella. */}
       <Tabs.Screen name="historial" options={{ ...tab("Historial", "history"), popToTopOnBlur: true }} />
-      <Tabs.Screen name="index" options={tab("Hoy", "foot")} />
-      <Tabs.Screen name="mas" options={tab("Ajustes", "more")} />
+      <Tabs.Screen name="index" options={{ ...tab("Hoy", "foot"), popToTopOnBlur: true }} />
+      <Tabs.Screen name="mas" options={{ ...tab("Ajustes", "more"), popToTopOnBlur: true }} />
     </Tabs>
   );
 }

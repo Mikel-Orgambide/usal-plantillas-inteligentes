@@ -20,7 +20,7 @@ describe("migraciones", () => {
   it("aplica el esquema inicial y fija user_version", async () => {
     const db = new NodeSqliteDriver();
     const report = await migrate(db);
-    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2, 3, 4, 5, 6, 7] });
+    expect(report).toEqual({ from: 0, to: CURRENT_SCHEMA_VERSION, applied: [1, 2, 3, 4, 5, 6, 7, 8] });
     expect(await getSchemaVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
     const again = await migrate(db);
     expect(again.applied).toEqual([]);
@@ -46,7 +46,7 @@ describe("migraciones", () => {
     await db1.close();
 
     const db2 = new NodeSqliteDriver(path);
-    expect(await migrate(db2)).toEqual({ from: 1, to: CURRENT_SCHEMA_VERSION, applied: [2, 3, 4, 5, 6, 7] });
+    expect(await migrate(db2)).toEqual({ from: 1, to: CURRENT_SCHEMA_VERSION, applied: [2, 3, 4, 5, 6, 7, 8] });
     const repo2 = new SessionRepository(db2);
     expect(await repo2.countRecords(capture.id)).toBe(5);
     expect(await repo2.getResults(capture.id)).toEqual([]);

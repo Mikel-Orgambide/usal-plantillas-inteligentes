@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import type { ChannelCode } from "@plantillas/contract";
+import { ROUTINE_CATEGORY_LABEL } from "@plantillas/training";
 import { isInstrumented } from "@plantillas/metrics";
 import { AssistantFab, Button, Card, Chip, Halo, Icon, ListRow, MeterRow, Ring, Screen, Sheet, StatusBanner, Text, TextButton, ValueCard } from "../../presentation/components";
 import { colors, formatDuration, formatNumber, radius, size, space } from "../../presentation/theme/tokens";
@@ -192,7 +193,7 @@ export default function HomeScreen() {
             title={`${timeOf(s.started_at)} · ${ACTIVITY_LABEL[s.activity as Activity] ?? s.activity}`}
             subtitle={`${formatDuration(s.duration_ms ?? 0)} min · ${formatNumber(s.record_count)} registros${s.gap_count ? ` · ${s.gap_count} hueco(s)` : ""}`}
             chip={s.state === "incomplete" ? <Chip variant="alert">Incompleta</Chip> : s.source === "simulated" ? <Chip variant="sim" icon="settings">Simulada</Chip> : <Chip icon="bluetooth">Física</Chip>}
-            onPress={() => router.push({ pathname: "/historial/sesion/[id]", params: { id: s.id } })}
+            onPress={() => router.push({ pathname: "/historial/sesion/[id]", params: { id: s.id } }, { withAnchor: true })}
           />
         ))
       )}
@@ -205,7 +206,7 @@ export default function HomeScreen() {
     <AssistantFab bottomOffset={96} />
     <Sheet visible={pickRoutine} onDismiss={() => setPickRoutine(false)} title="¿Qué rutina?">
       <Text variant="caption" color={colors.textSecondary}>Entrenás sin plantillas; si querés medir, iniciá la sesión desde «Nueva sesión» y elegí la rutina ahí.</Text>
-      {routines.map((r, idx) => <ListRow key={r.routine.id} title={r.routine.name} subtitle={`${r.items.length} ejercicio(s)${r.routine.origin === "professional" ? " · profesional" : ""}`} onPress={() => void beginWorkout(r.routine.id)} last={idx === routines.length - 1} />)}
+      {routines.map((r, idx) => <ListRow key={r.routine.id} title={r.routine.name} subtitle={`${r.routine.category ? `${ROUTINE_CATEGORY_LABEL[r.routine.category]} · ` : ""}${r.items.length} ejercicio(s)${r.routine.origin === "professional" ? " · profesional" : ""}`} onPress={() => void beginWorkout(r.routine.id)} last={idx === routines.length - 1} />)}
       <TextButton icon="plus" onPress={() => void beginWorkout(null)}>Entrenamiento libre (sin rutina)</TextButton>
     </Sheet>
 

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { describeTarget } from "@plantillas/training";
+import { describeTarget, ROUTINE_CATEGORY_LABEL } from "@plantillas/training";
 import { Button, Card, Chip, Header, Icon, ListRow, Screen, Text, TextButton } from "../../presentation/components";
 import { colors, space } from "../../presentation/theme/tokens";
 import { archiveRoutine, duplicateRoutine, listRoutines, useTrainingVersion, type RoutineWithItems } from "../../application/trainingStore";
@@ -42,7 +42,7 @@ export default function RoutinesScreen() {
             <View style={styles.head}>
               <View style={{ flex: 1 }}>
                 <Text variant="heading" color={routine.archived ? colors.textSecondary : colors.textPrimary}>{routine.name}</Text>
-                {routine.goal ? <Text variant="caption" color={colors.textSecondary}>{routine.goal}</Text> : null}
+                {routine.category || routine.goal ? <Text variant="caption" color={colors.textSecondary}>{[routine.category ? ROUTINE_CATEGORY_LABEL[routine.category] : null, routine.goal].filter(Boolean).join(" · ")}</Text> : null}
               </View>
               <Chip variant={routine.origin === "professional" ? "selected" : "neutral"} icon={routine.origin === "professional" ? "user" : undefined}>{routine.origin === "professional" ? "Profesional" : "Propia"}</Chip>
             </View>

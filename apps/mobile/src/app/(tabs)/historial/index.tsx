@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { AssistantFab, Button, Chip, DayCard, Halo, Header, Icon, ListRow, Screen, StatusBanner, Text, TextButton } from "../../../presentation/components";
+import { ROUTINE_CATEGORIES, ROUTINE_CATEGORY_LABEL, type RoutineCategory } from "@plantillas/training";
+import { AssistantFab, Button, Chip, DayCard, Halo, Header, Icon, ListRow, Screen, Segmented, StatusBanner, Text, TextButton } from "../../../presentation/components";
 import { colors, formatDuration, formatNumber, space } from "../../../presentation/theme/tokens";
 import { useSessionList } from "../../../application/useSessions";
 import { useAuth } from "../../../application/authStore";
@@ -11,6 +12,7 @@ import { listWorkoutsDetailed, useTrainingVersion, type WorkoutListItem } from "
 import { useActivity } from "../../../application/activityStore";
 
 type Filter = "all" | Activity | "simulated";
+type View_ = "sessions" | "workouts";
 
 /** Días que se muestran de entrada; el resto detrás de «Ver sesiones anteriores». */
 const RECENT_DAYS = 7;
@@ -33,18 +35,20 @@ export default function HistoryScreen() {
   const { sessions, hiddenCount, error, reload } = useSessionList();
   const auth = useAuth();
   const [filter, setFilter] = useState<Filter>("all");
+  // Pulido 4/11: sesiones medidas y entrenamientos declarados en vistas separadas, cada una con sus filtros y contadores.
+  const [view, setView] = useState<View_>("sessions");
+  const [category, setCategory] = useState<RoutineCategory | "all">("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
   const { select } = useLocalSearchParams<{ select?: string }>();
   // «Comparar con…» desde el detalle llega con la sesión ya marcada.
-  useEffect(() => { if (select) setSelected([select]); }, [select]);
+  useEffect(() => { if (select) { setSelected([select]); setView("sessions"); } }, [select]);
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
   // Entrenamientos (ADR 0013): una fila propia en el día, junto a las sesiones medidas.
   const trainingVersion = useTrainingVersion();
   const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
   const run = useActivity();
   useFocusEffect(useCallback(() => { listWorkoutsDetailed(300).then(setWorkouts).catch(() => undefined); }, [trainingVersion]));
-  const workoutsByDay = useMemo(() => { const m = new Map<string, WorkoutListItem[]>(); for (const w of workouts) m.set(w.workout.date, [...(m.get(w.workout.date) ?? []), w]); return m; }, [workouts]);
 
   const toggle = (id: string) => {
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 2 ? [...cur, id] : [cur[1]!, id]));
@@ -54,16 +58,22 @@ export default function HistoryScreen() {
   const physical = (sessions ?? []).filter((s) => s.source === "physical").length;
   const simulated = (sessions ?? []).filter((s) => s.source === "simulated").length;
   const total = totalDuration((sessions ?? []).reduce((n, s) => n + (s.duration_ms ?? 0), 0));
-  // Días con entrenamiento pero sin sesiones medidas también aparecen (ajuste 4/11), salvo con un filtro activo.
-  const groups = useMemo(() => {
-    const g = groupByDay(list);
-    if (filter !== "all") return g;
-    const known = new Set(g.map((x) => x.day));
-    const extra = [...workoutsByDay.keys()].filter((d) => !known.has(d)).map((day) => ({ day, sessions: [], durationMs: 0 }));
-    return [...g, ...extra].sort((a, b) => (a.day < b.day ? 1 : -1));
-  }, [list, filter, workoutsByDay]);
+  const groups = useMemo(() => groupByDay(list).map((g) => ({ ...g, sessions: [...g.sessions].sort((a, b) => (a.started_at < b.started_at ? 1 : -1)) })), [list]);
   const visible = showAll ? groups : groups.slice(0, RECENT_DAYS);
   const hiddenDays = groups.length - visible.length;
+
+  // Entrenamientos: por día, filtrados por tipo de rutina; orden por hora de inicio (más reciente arriba).
+  const workoutList = workouts.filter((w) => category === "all" || w.category === category);
+  const workoutDays = useMemo(() => {
+    const m = new Map<string, WorkoutListItem[]>();
+    for (const w of workoutList) m.set(w.workout.date, [...(m.get(w.workout.date) ?? []), w]);
+    return [...m.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([day, ws]) => ({ day, workouts: [...ws].sort((a, b) => ((a.workout.started_at ?? "") < (b.workout.started_at ?? "") ? 1 : -1)) }));
+  }, [workoutList]);
+  const visibleWorkoutDays = showAll ? workoutDays : workoutDays.slice(0, RECENT_DAYS);
+  const hiddenWorkoutDays = workoutDays.length - visibleWorkoutDays.length;
+  const categoriesPresent = ROUTINE_CATEGORIES.filter((c) => workouts.some((w) => w.category === c));
+  const totalSets = workouts.reduce((n, w) => n + w.summary.strength_sets, 0);
+  const totalVolume = workouts.reduce((n, w) => n + w.summary.volume_kg, 0);
 
   const sourceChip = (s: { state: string; source: string }) =>
     s.state === "incomplete" ? <Chip variant="alert">Incompleta</Chip> : s.source === "simulated" ? <Chip variant="sim" icon="foot">Simulada</Chip> : <Chip>Física</Chip>;
@@ -73,13 +83,16 @@ export default function HistoryScreen() {
     <Screen
       tabbed
       footer={
-        selected.length === 2 ? (
+        view === "sessions" && selected.length === 2 ? (
           <Button variant="primary" icon="compare" onPress={() => router.push({ pathname: "/historial/comparar", params: { a: selected[0]!, b: selected[1]! } })}>Comparar las 2 elegidas</Button>
         ) : undefined
       }
     >
       <Halo />
-      <Header title="Historial" context={sessions ? `${sessions.length} sesiones · ${physical} físicas · ${simulated} simuladas` : "Cargando…"} />
+      <Header title="Historial" context={view === "workouts" ? `${workouts.length} entrenamientos · ${totalSets} series declaradas` : sessions ? `${sessions.length} sesiones · ${physical} físicas · ${simulated} simuladas` : "Cargando…"} />
+      <View style={{ marginBottom: space[4] }}>
+        <Segmented value={view} options={[{ value: "sessions", label: "Sesiones" }, { value: "workouts", label: "Entrenamientos" }]} onChange={(v) => { setView(v); setShowAll(false); }} />
+      </View>
       {auth.status === "signed_in" || hiddenCount > 0 ? (
         <Text variant="caption" color={colors.textSecondary} style={{ marginBottom: space[3] }}>
           {auth.status === "signed_in" ? `Sesiones de ${auth.email ?? "la cuenta activa"}` : "Sesiones de este teléfono, sin cuenta"}
@@ -87,6 +100,8 @@ export default function HistoryScreen() {
         </Text>
       ) : null}
 
+      {view === "sessions" ? (
+      <>
       {/* Resumen. */}
       <DayCard style={styles.summary}>
         <View style={styles.stat}>
@@ -136,14 +151,7 @@ export default function HistoryScreen() {
           </Text>
           <View style={{ marginTop: space[4], gap: space[3] }}>
             {visible.map((g) => (
-              <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={g.sessions.length ? `${g.sessions.length} ${g.sessions.length === 1 ? "sesión" : "sesiones"} · ${formatDuration(g.durationMs)} min` : "entrenamiento"}>
-                {(workoutsByDay.get(g.day) ?? []).map((w, wi, arr) => {
-                  const live = run?.detail.workout.id === w.workout.id;
-                  const sum = `${w.summary.strength_sets} series${w.summary.volume_kg ? ` · ${w.summary.volume_kg} kg·rep` : ""}${w.summary.walk_run_duration_s ? ` · ${Math.round(w.summary.walk_run_duration_s / 60)} min caminata` : ""}${w.links ? ` · ${w.links} sesión(es)` : ""}`;
-                  return (
-                    <ListRow key={w.workout.id} inset last={g.sessions.length === 0 && wi === arr.length - 1} lead={w.workout.started_at ? timeOf(w.workout.started_at) : "—"} title={w.routine_name ?? "Entrenamiento libre"} subtitle={`${w.workout.state === "in_progress" ? "en curso" : "terminado"} · ${sum} · declarado`} chip={<Chip variant={live ? "selected" : "neutral"} icon="dumbbell">{w.workout.state === "in_progress" ? "En curso" : "Entreno"}</Chip>} onPress={() => (live ? router.push("/grabacion") : router.push({ pathname: "/entrenamiento", params: { id: w.workout.id } }))} />
-                  );
-                })}
+              <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={`${g.sessions.length} ${g.sessions.length === 1 ? "sesión" : "sesiones"} · ${formatDuration(g.durationMs)} min`}>
                 {g.sessions.map((s, i) => (
                   <ListRow
                     key={s.id}
@@ -168,8 +176,74 @@ export default function HistoryScreen() {
           ) : null}
         </>
       )}
+      </>
+      ) : (
+      <>
+      {/* Entrenamientos declarados (ADR 0013). */}
+      <DayCard style={styles.summary}>
+        <View style={styles.stat}>
+          <Text variant="numMd" color={colors.accent}>{formatNumber(workouts.length)}</Text>
+          <Text variant="caption" color={colors.textSecondary}>entrenamientos</Text>
+        </View>
+        <View style={styles.stat}>
+          <Text variant="numMd">{formatNumber(totalSets)}</Text>
+          <Text variant="caption" color={colors.textSecondary}>series</Text>
+        </View>
+        <View style={styles.stat}>
+          <View style={styles.valueRow}>
+            <Text variant="numMd">{formatNumber(Math.round(totalVolume))}</Text>
+            <Text variant="caption" color={colors.textSecondary}>kg·rep</Text>
+          </View>
+          <Text variant="caption" color={colors.textSecondary}>declarado</Text>
+        </View>
+      </DayCard>
+      <View style={styles.chips}>
+        <Chip variant={category === "all" ? "selected" : "neutral"} onPress={() => setCategory("all")}>Todos</Chip>
+        {categoriesPresent.map((c) => (
+          <Chip key={c} variant={category === c ? "selected" : "neutral"} onPress={() => setCategory(c)}>{ROUTINE_CATEGORY_LABEL[c]}</Chip>
+        ))}
+      </View>
+      {workoutDays.length === 0 ? (
+        <View style={styles.empty}>
+          <Icon name="dumbbell" size={32} />
+          <Text variant="heading">{workouts.length === 0 ? "Todavía no hay entrenamientos" : "Nada con este filtro"}</Text>
+          <Text variant="body" color={colors.textSecondary} style={{ textAlign: "center" }}>{workouts.length === 0 ? "Iniciá una rutina desde Hoy, con o sin plantillas." : "Probá con otro tipo de rutina."}</Text>
+        </View>
+      ) : (
+        <>
+          <View style={{ marginTop: space[4], gap: space[3] }}>
+            {visibleWorkoutDays.map((g) => (
+              <DayCard key={g.day} padded={false} title={dayShort(g.day)} aside={`${g.workouts.length} ${g.workouts.length === 1 ? "entrenamiento" : "entrenamientos"}`}>
+                {g.workouts.map((w, wi) => {
+                  const live = run?.detail.workout.id === w.workout.id;
+                  const sum = w.entry_count === 0
+                    ? "sin series"
+                    : `${w.summary.strength_sets} series${w.summary.volume_kg ? ` · ${w.summary.volume_kg} kg·rep` : ""}${w.summary.walk_run_duration_s ? ` · ${Math.round(w.summary.walk_run_duration_s / 60)} min caminata` : ""}${w.links ? ` · ${w.links} sesión(es)` : ""}`;
+                  return (
+                    <ListRow
+                      key={w.workout.id}
+                      inset
+                      last={wi === g.workouts.length - 1}
+                      lead={w.workout.started_at ? timeOf(w.workout.started_at) : "—"}
+                      title={w.routine_name ?? "Entrenamiento libre"}
+                      subtitle={`${w.category ? `${ROUTINE_CATEGORY_LABEL[w.category]} · ` : ""}${w.workout.state === "in_progress" ? "en curso" : "terminado"} · ${sum}`}
+                      chip={<Chip variant={live ? "selected" : "neutral"} icon="dumbbell">{w.workout.state === "in_progress" ? "En curso" : "Entreno"}</Chip>}
+                      onPress={() => (live ? router.push("/grabacion") : router.push({ pathname: "/entrenamiento", params: { id: w.workout.id } }))}
+                    />
+                  );
+                })}
+              </DayCard>
+            ))}
+          </View>
+          {hiddenWorkoutDays > 0 ? (
+            <TextButton icon="chevron-down" style={{ marginTop: space[3] }} onPress={() => setShowAll(true)}>{`Ver anteriores (${hiddenWorkoutDays} ${hiddenWorkoutDays === 1 ? "día" : "días"} más)`}</TextButton>
+          ) : null}
+        </>
+      )}
+      </>
+      )}
     </Screen>
-    <AssistantFab bottomOffset={selected.length === 2 ? 96 : 16} />
+    <AssistantFab bottomOffset={view === "sessions" && selected.length === 2 ? 96 : 16} />
     </>
   );
 }
