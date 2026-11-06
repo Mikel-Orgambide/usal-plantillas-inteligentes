@@ -19,7 +19,7 @@
 
 ## Entorno y cuentas
 
-- Repositorio privado `Mikel-Orgambide/proyecto-final-plantillas-inteligentes`, CI de GitHub Actions configurado.
+- Repositorio privado `Mikel-Orgambide/usal-plantillas-inteligentes`, CI de GitHub Actions configurado.
 - Proyecto EAS `@mikel-orgambide/plantillas-inteligentes` (ID 3b47649d-172b-4c2b-8ac4-1d9a13ea119c), keystore Android generada y almacenada en EAS.
 - Variables `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cargadas en los entornos development, preview y production de EAS.
 - Proyecto Supabase `plantillas-inteligentes` (región São Paulo, plan Free): Data API activa, exposición automática de tablas desactivada, RLS automática activada. Sin esquema todavía.
