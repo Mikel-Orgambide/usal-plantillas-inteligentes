@@ -16,10 +16,24 @@ export type QuestionScope = "in_scope" | "out_of_scope_clinical" | "out_of_scope
 /** Siempre clínicas, digan lo que digan. */
 const CLINICAL = [
   /diagn[oó]s/i, /lesi[oó]n/i, /lesionad/i, /tratamiento/i, /medicaci[oó]n/i, /medicamento/i, /remedio/i, /\bdolor/i, /duele/i, /fascitis/i,
-  /tendinitis/i, /esguince/i, /fractura/i, /artrosis/i, /\bligamento/i, /\blca\b/i, /\bacl\b/i, /rehabilitaci[oó]n/i, /fisioterap/i, /kinesi/i,
-  /\bm[eé]dic[oa]\b/i, /enferm/i, /pat[oó]log/i, /s[ií]ntoma/i, /\bcur[ao]r?\b/i, /inflam/i, /fatiga/i, /cansancio/i, /sobrecarga/i,
-  /\bpisada (plana|pronad|supinad)/i, /pie plano/i, /plantilla ortop/i, /ortop[eé]d/i, /qu[eé] (ejercicio|estiramiento)/i,
+  /tendinitis/i, /esguince/i, /fractura/i, /artrosis/i, /\bligamento/i, /\blca\b/i, /\bacl\b/i, /fatiga/i, /sobrecarga/i,
+  /\bm[eé]dic[oa]\b/i, /enferm/i, /pat[oó]log/i, /s[ií]ntoma/i, /\bcur[ao]r?\b/i, /inflam/i,
+  /\bpisada (plana|pronad|supinad)/i, /pie plano/i, /plantilla ortop/i, /ortop[eé]d/i,
   /pron[oó]stico/i, /peligros/i, /\briesgo de/i, /\bes normal\b/i, /\bnormales?\b.*\b(valor|rango|nivel)/i, /\b(valor|rango|nivel)\w* normal/i,
+];
+
+/**
+ * Clínicas salvo que la pregunta hable de lo registrado en la app (rutina, entrenamiento,
+ * series, sesión). Ajuste del 6/11/2026: existe el tipo de rutina «Rehabilitación» y el
+ * origen «Indicada por un profesional», y las notas de entrenamiento mencionan cansancio;
+ * fatiga y sobrecarga siguen siendo siempre clínicas.
+ * preguntar «¿qué hice en la rutina de rehabilitación?» no es una consulta clínica.
+ */
+const CLINICAL_UNLESS_RECORDED = [
+  /rehabilitaci[oó]n/i, /fisioterap/i, /kinesi/i, /cansancio/i, /qu[eé] (ejercicio|estiramiento)/i,
+];
+const ABOUT_TRAINING = [
+  /rutina/i, /entren/i, /series?/i, /repetici/i, /reps?/i, /peso/i, /kg/i, /caminat/i, /hice/i, /hicimos/i, /cargu[eé]/i, /anot/i,
 ];
 
 /** Pedidos de consejo: clínicos salvo que hablen del registro, la sesión o la comparación. */
@@ -39,6 +53,8 @@ const OTHER = [
 export function classifyQuestion(text: string): QuestionScope {
   const q = text.trim();
   if (CLINICAL.some((re) => re.test(q))) return "out_of_scope_clinical";
+  // Sólo lo anotado en el entrenamiento habilita la excepción: «¿estoy cansado según los datos?» sigue siendo clínico.
+  if (CLINICAL_UNLESS_RECORDED.some((re) => re.test(q)) && !ABOUT_TRAINING.some((re) => re.test(q))) return "out_of_scope_clinical";
   if (ADVICE.some((re) => re.test(q)) && !ABOUT_RECORDING.some((re) => re.test(q))) return "out_of_scope_clinical";
   if (OTHER.some((re) => re.test(q))) return "out_of_scope_other";
   return "in_scope";

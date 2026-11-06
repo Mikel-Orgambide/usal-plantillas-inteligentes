@@ -48,4 +48,16 @@ describe("classifyQuestion", () => {
       expect(classifyQuestion(q), q).toBe("out_of_scope_other");
     }
   });
+
+  it("las preguntas sobre rutinas de rehabilitación o el cansancio anotado no se rechazan (ajuste 6/11)", () => {
+    expect(classifyQuestion("¿Qué hice en la rutina de rehabilitación esta semana?")).toBe("in_scope");
+    expect(classifyQuestion("¿En qué serie anoté cansancio?")).toBe("in_scope");
+    expect(classifyQuestion("¿Qué ejercicio hice último en el entrenamiento?")).toBe("in_scope");
+  });
+
+  it("sin referencia a lo registrado, rehabilitación y fatiga siguen siendo clínicas", () => {
+    expect(classifyQuestion("¿Mi rehabilitación va bien?")).toBe("out_of_scope_clinical");
+    expect(classifyQuestion("¿Tengo fatiga?")).toBe("out_of_scope_clinical");
+    expect(classifyQuestion("¿Tengo una lesión en la rutina?")).toBe("out_of_scope_clinical");
+  });
 });

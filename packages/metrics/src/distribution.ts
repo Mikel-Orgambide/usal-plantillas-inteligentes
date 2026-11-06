@@ -28,7 +28,7 @@ export interface LoadDistribution {
   readonly rearfoot_share: number | null;
   /** (izq − der) / (izq + der) por zona, −1…1; 0 = simétrico, positivo = más carga a la izquierda. */
   readonly asymmetry: Readonly<Record<Zone, number | null>>;
-  /** Coeficiente de variación promedio (σ/media) de las seis posiciones; mayor = lecturas más cambiantes. */
+  /** Coeficiente de variación promedio (σ/media) de las posiciones instrumentadas; mayor = lecturas más cambiantes. */
   readonly variability: number | null;
   /** Suma de las medias instrumentadas, en cuentas: base de las proporciones. */
   readonly total_mean: number | null;

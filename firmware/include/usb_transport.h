@@ -2,7 +2,7 @@
 #include <cstddef>
 #include "record.h"
 
-// JSON por línea a 115200 (H1/H5): status, record e info; órdenes start/stop/info.
+// JSON por línea a 230400 (H1/H5): status, record e info; órdenes start/stop/info.
 namespace usb {
 void begin();
 void send_info();
