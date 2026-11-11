@@ -50,3 +50,7 @@ Hasta la etapa 11 el servidor guardaba una sola configuración por sesión (`ses
 4. Registrar: tasa efectiva por módulo con dos enlaces (objetivo 20 reg/s cada uno), descartes (`progress` por USB), desfase estimado y fracción completa observados, comportamiento de Android al perder y recuperar un módulo (apagar una placa 5 s).
 5. H3 por sensor (seis) con `esp32-adc-test`.
 6. Remoto: `session.configuration` guarda sólo el primer módulo; evaluar ampliar el esquema (evolución futura).
+
+## Validación con dos placas (11/11/2026, parcial)
+
+Segunda placa `ESP32-68D1D8` con `esp32-analog-right` (firmware 0.3.1) y banco propio. Por USB: 397 registros sin saltos, período 50,00 ms, 0 errores, cada sensor mueve sólo su canal. Primera sesión bilateral por BLE (`9befa503`, 35,6 s): 714 registros por módulo, 20,03 reg/s en cada uno, 0 huecos, 0 muestras inválidas. Detalle, archivos y lo que falta (corrida larga, corte de 5 s, sincronización, Comparación) en `docs/tesis/04_Evidencia_y_pruebas.md` §3 bis.

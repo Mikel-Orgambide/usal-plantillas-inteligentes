@@ -164,6 +164,39 @@ Pasos: misma configuración (bilateral si (c) pasó; si no, unilateral izquierda
 
 Si falla: diferencia > 10 pp → informar como resultado (repetibilidad del montaje ≈10 % ya observada) y no ajustar el criterio.
 
+## 3 bis. Resultados parciales del 11/11/2026 (segunda placa)
+
+La segunda placa llegó el 11/11 (no el 6/11). Lo de abajo es lo ejecutado ese día; **no reemplaza** los protocolos (b) y (c), que piden corridas más largas y la prueba de corte. Las tablas de (a)–(d) siguen abiertas.
+
+**Módulo derecho por USB** — `ESP32-68D1D8`, `ESP32-FSR-R-001`, firmware 0.3.1, banco propio en una segunda protoboard (FSR406 con 2,2 kΩ en talón; FSR402 con 4,7 kΩ en antepié). Logs: `test-data/fisico/logs-serie/device-monitor-261111-163349.txt` (carga e `info`) y `…-163551.txt` (captura).
+
+| Criterio de (b) | Observado | ¿Cumple? |
+|---|---|---|
+| Identificación | `info` con `ESP32-FSR-R-001`, R_HEEL/R_MEDIAL/R_LATERAL, firmware 0.3.1 | Sí |
+| Cantidad | 397 registros en ~20 s (corrida corta; el criterio pide 60 s) | Pendiente repetir 60 s |
+| Secuencia | 0..396, 0 saltos | Sí |
+| Período | mín 49,98 · mediana 50,00 · máx 50,00 ms | Sí |
+| Lecturas fallidas | 0 | Sí |
+| Respuesta por canal | Reposo 0 en los tres; máximos R_HEEL 3658, R_MEDIAL 4063, R_LATERAL 3803; cada sensor mueve sólo su canal | Sí |
+
+Observación: el segundo sensor apretado movió `R_LATERAL` y el tercero `R_MEDIAL`; falta confirmar si fue el orden de apretado o si los cables de SVN y P34 están cruzados.
+
+**Primera sesión bilateral por BLE** — sesión `9befa503`, 11/11 16:41 (hora local), izquierdo `ESP32-9E7EE4` (firmware 0.3.0) + derecho `ESP32-68D1D8` (0.3.1), ambas placas alimentadas por USB, sensores apretados a mano. Export: `test-data/fisico/sesion-2026-11-11-9befa503-bilateral.csv` (4284 filas = 714 registros × 3 canales × 2 módulos). Captura de Plantillas con ambos módulos «Conectado» (MTU 185, registro de 27 bytes).
+
+| Criterio de (c) | Izquierdo | Derecho | ¿Cumple? |
+|---|---|---|---|
+| Registros | 714 (secuencia 2..715) | 714 (0..713) | — |
+| Duración por reloj del módulo | 35,6 s | 35,6 s | Corrida corta; el criterio pide ≥ 120 s |
+| Tasa efectiva | 20,03 reg/s | 20,03 reg/s | Sí (≥ 19,8) |
+| Huecos de secuencia | 0 | 0 | Sí |
+| Muestras no válidas | 0 | 0 | Sí |
+| Período entre registros | mediana 50,00 · máx 50,0 ms | mediana 50,00 · máx 50,0 ms | Sí |
+| Mayor intervalo entre recepciones en el teléfono | 0,12 s | 0,11 s | — |
+| Dispersión de la recepción (p5–p95 de `received_at − time_us`) | 37 ms | 35 ms | Informativo: cota de la correspondencia por recepción |
+| Máximos por canal | L_HEEL 3299 · L_MEDIAL 3543 · L_LATERAL 3910 | R_HEEL 3731 · R_MEDIAL 3964 · R_LATERAL 4043 | Sin saturación (0 lecturas en 4095) |
+
+Primera recepción de cada módulo con 55 ms de diferencia (izquierdo 19:41:06.577Z, derecho 19:41:06.632Z); última con la misma diferencia: los dos enlaces se sostienen en paralelo a 20 reg/s sin pérdidas. **Con esto la sesión bilateral pasa de [S] a [H] en su recorrido básico** (dos placas reales, dos enlaces BLE simultáneos, una sesión, export). Siguen pendientes de (c): corrida de ≥ 120 s con la consigna de cargas, `offset_ms` y `complete_fraction` leídos del Detalle, prueba de corte de 5 s y sincronización; y los protocolos (a) y (d).
+
 ## 4. Pruebas que no se realizarán (declararlas)
 
 - Pruebas de uso/usabilidad con personas (SUS u otras): fuera de alcance.
