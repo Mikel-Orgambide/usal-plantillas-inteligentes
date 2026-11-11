@@ -72,7 +72,7 @@ Cronograma real para 2.13.2 (fechas de `docs/incrementos/`):
 | 12–18/10 | Compra, lectura inicial, app con datos simulados | Compra 13/10. 18/10: monorepo, contrato, simulador, persistencia, sesiones, pantallas, métricas, historial (etapas 0–7) |
 | 19–25/10 | Ampliar sensado e integrar | 19/10: firmware H0/H1, USB H5, BLE H6 (8a/8b). 20/10: respaldo y paquete (10). 21–27/10: Supabase, auth, sincronización (11) |
 | 26/10–3/11 | Ensayos técnicos y pruebas de uso | 3/11: banco FSR (9), informe PDF y marca .NSL (12). Pruebas de uso con personas: **no realizadas** (decisión de alcance) |
-| 4–10/11 | Revisión y demo | 4/11: bilateral (13), asistente (14), rutinas (15). 5/11: documentación para la tesis. 6/11: pruebas con segundo módulo |
+| 4–10/11 | Revisión y demo | 4/11: bilateral (13), asistente (14), rutinas (15). 5/11: documentación para la tesis. 11/11: llegada del segundo ESP32 y pruebas con dos módulos (estaban previstas para el 6/11); app 0.15.3 |
 | 11–17/11 | Verificación final | Redacción final, LaTeX, video, tag `entrega-final` |
 
 ---
@@ -116,7 +116,7 @@ Leyenda de referencias: código de la **Base bibliográfica** de Drive (`1m5sqbW
 
 | Apartado E5 | Conservar | Cambiar (concreto) | Agregar | Fuente |
 |---|---|---|---|---|
-| 4.1 Arquitectura | Cuatro capas (sensado, embebido, servicios, aplicación) | Pasar de «propuesta» a «implementada»; un ESP32 central → **un ESP32 por pie** | Diagrama real (README mermaid) | `02`, ADR 0011 |
+| 4.1 Arquitectura | Cuatro capas (sensado, embebido, servicios, aplicación) | Pasar de «propuesta» a «implementada»; un ESP32 central → **un ESP32 por pie**; los **dos módulos están construidos** (cada uno en su protoboard) y probados juntos por BLE el 11/11 | Diagrama real (README mermaid) | `02`, ADR 0011 |
 | 4.1.3 Requisitos ↔ decisiones ↔ comprobaciones | Idea | — | Tabla RF/RNF de `01` con ADR y evidencia | `01` |
 | 4.2.1 Alcance funcional «previsto» / Tabla 10 «estados previstos» | — | **Todo implementado**: reemplazar por estados [H]/[S]/[D] | — | `08_Alcance_Final…` |
 | 4.2.2 Etapas de construcción | — | Etapas reales 0–15 | — | `docs/incrementos/` |
@@ -129,7 +129,7 @@ Leyenda de referencias: código de la **Base bibliográfica** de Drive (`1m5sqbW
 | 4.4.2 Servicios remotos | — | **N ≈ 6×f×T** (un ESP32 con 6 canales) → con dos módulos: N = 2 módulos × 3 canales × 20 Hz × T (idéntico en muestras, pero **dos capturas y dos configuraciones** por sesión). Planes: Supabase Free (pausa a los 7 días de inactividad), EAS Free, OpenRouter por uso | Región São Paulo (sa-east-1) | §Cap. 5 |
 | 4.5 Diseño y UX | Objetivos de uso | 4.5.3 «Usabilidad con 5 tareas» → **no realizada con usuarios**; reemplazar por recorrido de tareas por el autor y criterios de diseño (números grandes, n/d, chips de procedencia) | Marca .NSL; brief de interfaz (doc del proyecto `diseno/brief-interfaz.md`) | `03`, ADR 0005, 0009 |
 | 4.6.1 Protección de datos | RLS | — | Secretos sólo en la función; seudonimización en el PDF; contexto del asistente declarado | ADR 0008, 0010, 0012 |
-| 4.6.2 Estrategia de pruebas («5 pruebas») | — | Reemplazar por 199 pruebas automáticas + H1–H6 + banco | — | `04` |
+| 4.6.2 Estrategia de pruebas («5 pruebas») | — | Reemplazar por 201 pruebas automáticas + H1–H6 + banco | — | `04` |
 | 4.6.3 Versiones y despliegue | — | Repo `usal-plantillas-inteligentes`, tag `entrega-final`, builds EAS preview, APK por adb | README «Inicio rápido» | `README.md` |
 
 ---
@@ -163,10 +163,10 @@ Leyenda de referencias: código de la **Base bibliográfica** de Drive (`1m5sqbW
 
 | Ítem | Cant. | Referencia ARS | Nota |
 |---|---|---|---|
-| ESP32 NodeMCU 38 pines | 1 → **2** | 12.098,37–15.136,68 c/u | Segundo ESP32 (ítem 23) pasa a obligatorio |
+| ESP32 NodeMCU 38 pines | 1 → **2** | 12.098,37–15.136,68 c/u | Segundo ESP32 (ítem 23) comprado y en uso desde el 11/11: **costear** con el importe pagado |
 | FSR (FSR406 ×2 confirmados; FSR402 a conciliar) | 6 activos + repuestos | 16.500–22.000 c/u (referencia indexada) | Cantidad final de FSR402 a registrar |
 | Cable USB de datos | 1 → 2 | 2.000–5.000 | Uno por placa en banco |
-| Protoboard 830 | 1 | 3.700–4.500 | |
+| Protoboard 830 | 1 → **2** | 3.700–4.500 c/u | Una por módulo: **costear la segunda** |
 | Kit Dupont 120 | 1 | 10.200–11.000 | |
 | Resistencias 1 % kit | 1 | 6.500–14.000 | |
 | Kapton/doble faz | lote | 15.000–25.000 (reserva) | |
@@ -181,9 +181,10 @@ Escenarios de referencia del documento: piloto 2 FSR $67.498–93.637; par bási
 
 Formato: «Debido a [causa], podría ocurrir [evento], lo que provocaría [efecto]». P e I de 1 a 5; exposición = P × I. Respuestas: evitar / mitigar / transferir / aceptar. Etapas: antes (desarrollo), durante (demo/defensa), pasaje a producción, operación. Responsable: el autor salvo indicación. Clasificación: alcance, técnicos, recursos, terceros, datos/cumplimiento.
 
-| ID | Riesgo | Área | Int./Ext. | Etapa | P | I | Exp. | Respuesta | Contingencia | Estado al 5/11 |
+| ID | Riesgo | Área | Int./Ext. | Etapa | P | I | Exp. | Respuesta | Contingencia | Estado al 11/11 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| R01 | Debido a que el segundo ESP32 no se probó con sensores, podría fallar la sesión bilateral el 6/11, lo que provocaría presentar el bilateral sólo como [S] | Técnico | Int. | Antes | 3 | 3 | 9 | Mitigar (protocolo `04` §3 con criterios previos) | Declarar [S]; demo unilateral + bilateral simulado | Abierto |
+| R01 | Debido a que el teléfono debe sostener dos enlaces BLE a la vez y el segundo ESP32 no se había probado con sensores, podría fallar la sesión bilateral, lo que provocaría presentar el bilateral sólo como [S] | Técnico | Int. | Antes | 3 | 3 | 9 | Mitigar (protocolo `04` §3 con criterios previos) | Declarar [S]; demo unilateral + bilateral simulado | **No materializado** (11/11): dos enlaces simultáneos, 714 registros por módulo a 20,03 reg/s, 0 huecos (`9befa503`). Queda la corrida de ≥ 120 s |
+| R17 | Debido a que la pérdida de un módulo se detecta por el tiempo de supervisión del enlace BLE, podría tardar ≈ 4,5 s en registrarse (medido el 11/11; el criterio era ≤ 3 s), lo que provocaría que el inicio del tramo incompleto quede marcado tarde | Técnico | Int. | Operación | 4 | 2 | 8 | Aceptar y declarar (las métricas bilaterales usan sólo tramos con ambos módulos; evolución: detectar por ausencia de registros o reducir el tiempo de supervisión) | Informar el dato en resultados y limitaciones | Materializado y declarado |
 | R02 | Debido a la saturación del talón con apoyo del pie (93–95 % del rango), podría perderse información en apoyos fuertes, lo que provocaría reparto sesgado hacia el antepié | Técnico | Int. | Antes/Operación | 3 | 3 | 9 | Mitigar (bajar R del talón si H3 lo indica; contar % en 4095) | Declarar como limitación | Abierto |
 | R03 | Debido al creep y a la repetibilidad ≈10 % de los FSR, podría interpretarse como cambio lo que es variación del montaje, lo que provocaría conclusiones erróneas al comparar sesiones | Técnico/Datos | Int. | Operación | 4 | 3 | 12 | Mitigar (comparabilidad, protocolo fijo, advertencias en informe) | Limitar conclusiones a descriptivas | Mitigado parcialmente |
 | R04 | Debido a la inactividad del plan Supabase Free, podría pausarse el proyecto, lo que provocaría fallo de login, sincronización y asistente en la defensa | Terceros | Ext. | Durante | 3 | 4 | 12 | Mitigar (verificar «Active» el día anterior; actividad periódica) | App funciona local-first; asistente por LM Studio | Abierto |
@@ -209,18 +210,22 @@ Supuestos y restricciones van **separados** de los riesgos (ver `01` §7–8). P
 | Objetivo | Prueba | Resultado (dato) | Limitación | Fuente |
 |---|---|---|---|---|
 | OE2 Adquisición | USB 3 canales | 475 registros, 0 saltos, 50,00 ms (49,98–50,00), 0 `read_error` | Banco; un módulo | `04` §2.2 |
-| OE2 Sensores | Ensayos de banco | 3 canales independientes (3583/3846/3501); creep 2150→2600 en 5 s (10 kΩ); repetibilidad ≈10 %; 2,2/4,7 kΩ elegidos | Sin calibración; H3 pendiente 6/11 | `04` §2.2 |
+| OE2 Sensores | Ensayos de banco | 3 canales independientes (3583/3846/3501); creep 2150→2600 en 5 s (10 kΩ); repetibilidad ≈10 %; 2,2/4,7 kΩ elegidos | Sin calibración; H3 por sensor pendiente (opcional); `R_MEDIAL`/`R_LATERAL` llegaron a 4095 apretando con la mano (4,7 kΩ) | `04` §2.2 |
 | OE3 Transmisión | H5 USB, H6 BLE | 502/502; 2069/2069 a 20,0 reg/s; reconexión en ≈5 s con 804 registros al 100 % | Fuente sintética en H5/H6 | `04` §2.1 |
 | OE4 App y sesiones | Sesiones físicas BLE | 436 registros (23,4 s) y 609 registros (32,0 s), sin saltos | Talón 93–95 % del rango | `04` §2.2 |
-| OE4 Bilateral | Pruebas automáticas + simulación | Desfase simulado 700 ms + deriva 1 % → estimado −760..−650 ms; módulo perdido/recuperado | Con hardware: **completar 6/11** | `04` §3(c) |
+| OE2 Segundo módulo | USB, módulo derecho (11/11) | 397 registros, 0 saltos, 50,00 ms (49,98–50,00), 0 errores; cada sensor mueve sólo su canal | Corrida de ~20 s (el criterio pedía 60 s); falta confirmar medial/lateral | `04` §3 bis |
+| OE4 Bilateral (simulación) | Pruebas automáticas + simulación | Desfase simulado 700 ms + deriva 1 % → estimado −760..−650 ms; módulo perdido/recuperado | Datos simulados | `04` §3(c) |
+| OE4 Bilateral (dos placas) | Sesión BLE `9befa503` (11/11) | 714 registros por módulo, 20,03 reg/s cada uno, 0 huecos, 0 muestras inválidas; primera recepción con 55 ms de diferencia | 35,6 s (el criterio pedía ≥ 120 s); sensores apretados a mano; firmware 0.3.0 izq. / 0.3.1 der. | `04` §3 bis |
+| OE4/OE10 Pérdida de un módulo | Corte de alimentación `2523ea01` (11/11) | Pérdida registrada ≈ 4,5 s después del corte (**no cumple** ≤ 3 s); recuperación automática con nueva captura; tramo incompleto 13 s; `complete_fraction` 75,5 %; 16 248 muestras válidas, 0 con error; el otro módulo siguió a 20,0 reg/s | Dato «malo» a informar: demora de detección | `04` §3 bis |
+| OE5 Métricas bilaterales | `bilateral-1.0` sobre `2523ea01` | Izq./der. 60,4 / 39,6 % en tramos completos (64,5 / 35,5 % sobre todo); desfase declarado 125 ms | Cuentas ADC, apretando a mano: no describe un apoyo | `04` §3 bis |
 | OE5 Métricas | 29 pruebas + sesiones físicas | Descriptores y reparto calculados; n/d cuando falta un canal | Cuentas ADC | `04` §1 |
-| OE5 Comparación | Dos sesiones físicas 3/11 y protocolo (d) | **Completar 6/11** | Repetibilidad ≈10 % | `04` §3(d) |
+| OE5 Comparación | Dos sesiones físicas 3/11 (unilateral) y protocolo (d) | Unilateral: hecho. Bilateral: **pendiente** (sesión de ≥ 120 s y su repetición) | Repetibilidad ≈10 % | `04` §3(d) |
 | OE6 Historial y remoto | Respaldo P05; Supabase | 24 sesiones / 6506 registros / 39 036 muestras restaurados; 25 sesiones sincronizadas; RLS 10/10; modo avión OK | Error `permission denied` encontrado y corregido (dato «malo» a informar) | `04` §2.3 |
-| OE7 Informe | PDF de sesión y comparación | Generado con procedencia, calidad, limitaciones | Revisión por profesional no realizada | `etapa-12` |
+| OE7 Informe | PDF de sesión y comparación | Generado con procedencia, calidad, limitaciones; PDF de sesión bilateral del 11/11 (mostró dos defectos, corregidos en 0.15.3: tasa promediada sobre el tramo sin un módulo y comparables unilaterales) | Revisión por profesional no realizada | `etapa-12` |
 | OE8 Asistente | Batería de preguntas (5) en dos modos | Completar con evidencia de `test-data/asistente/` | Filtro clínico por patrones en español; sin streaming | `04` §2.4 |
 | OE9 Entrenamiento | 15 pruebas + uso en teléfono 0.15.1 | Bug encontrado y corregido (cierre de la app por hooks) | Declarado, sin sincronización | `etapa-15` |
 | OE1 Relevamiento | Entrevista traumatólogo + encuesta | **Completar** (respuestas, n, hallazgos) | Muestra pequeña, no representativa | Drive |
-| Hipótesis | Síntesis | Verificada para unilateral en banco; bilateral según 6/11 | No extrapolable a marcha | — |
+| Hipótesis | Síntesis | Verificada para unilateral en banco; bilateral verificada en corridas cortas (11/11), con la detección de pérdida más lenta que el criterio | No extrapolable a marcha | — |
 
 Incluir también (Clase 12): requisitos FR/NFR con estado (tabla de `01`), diseño, construcción/integración (etapas), pruebas técnicas y de aceptación (aceptación = criterios fijados en `04` §3), comparación con el estado del arte (tabla de productos de 3.1.3).
 
@@ -235,7 +240,7 @@ Incluir también (Clase 12): requisitos FR/NFR con estado (tabla de `01`), dise�
 - Es posible organizar las lecturas en sesiones con calidad explícita, persistirlas localmente, respaldarlas y sincronizarlas con aislamiento por usuario (RLS 10/10, modo avión).
 - Las métricas descriptivas en cuentas ADC permiten comparar sesiones bajo condiciones compatibles, con límites dados por creep y repetibilidad (≈10 %).
 - Un asistente con LLM puede explicar indicadores precalculados dentro de un alcance acotado, con rechazo fijo de consultas clínicas, tanto con proveedor externo como con modelo local.
-- Bilateral: «la lógica de correspondencia y las métricas bilaterales se verificaron con simulación» (+ «y con dos módulos físicos» **sólo si** el 6/11 cumple los criterios).
+- Bilateral (permitido desde el 11/11): el teléfono sostuvo dos enlaces BLE simultáneos a 20 reg/s por módulo sin pérdida de registros en banco (714 + 714, 0 huecos); la sesión continúa cuando se pierde un módulo, lo recupera sin intervención y calcula lo bilateral sólo en los tramos con ambos; el desfase entre módulos se declara (125 ms) y no se corrige. Con sus límites: corridas de 36 s y 79 s, sensores apretados a mano, detección de la pérdida en ≈ 4,5 s (no ≤ 3 s).
 
 ### Conclusiones NO permitidas
 
@@ -243,7 +248,9 @@ Incluir también (Clase 12): requisitos FR/NFR con estado (tabla de `01`), dise�
 - Que es un wearable usable en carrera, caminata o gimnasio (no se probó montado en el calzado ni en movimiento).
 - Que fue validado con usuarios o que es usable/útil para deportistas (no hubo pruebas con personas; la encuesta es percepción de la propuesta).
 - Que el asistente es seguro clínicamente o que no alucina (sólo que tiene barreras y fue probado con una batería acotada).
-- Que el bilateral funciona con hardware, si el 6/11 no se completó.
+- Que el reparto izquierda/derecha medido describe el apoyo de una persona (las sesiones bilaterales del 11/11 fueron con los sensores apretados a mano; falta la sesión de ≥ 120 s con el pie).
+- Que dos sesiones bilaterales son comparables o repetibles, o que la sincronización remota de una sesión bilateral está verificada (no se probó con placas).
+- Que la pérdida de un módulo se detecta en menos de 3 s, o que los dos módulos están sincronizados (sólo hay correspondencia por recepción con desfase declarado).
 - Que el modelo de negocio es viable si el VAN da negativo.
 
 ### Estructura sugerida (Clase 12)

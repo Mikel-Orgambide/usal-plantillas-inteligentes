@@ -1,6 +1,6 @@
 # 02 · Arquitectura y código del prototipo
 
-Material de base para la tesis (capítulos 4, 7 y anexos). No es texto para copiar: son los hechos verificados contra el código del repositorio al 5/11/2026 (commit `01487bf`, app **0.15.2**, firmware **0.3.1**). Cada afirmación cita la ruta del archivo. Lo que no se pudo confirmar en el código está marcado **«a verificar»**.
+Material de base para la tesis (capítulos 4, 7 y anexos). No es texto para copiar: son los hechos verificados contra el código del repositorio al 5/11/2026 (commit `01487bf`, app **0.15.2**, firmware **0.3.1**); actualizado el 11/11/2026 al commit `cb3b25b` (app **0.15.3**) tras la validación con dos placas. Cada afirmación cita la ruta del archivo. Lo que no se pudo confirmar en el código está marcado **«a verificar»**.
 
 Estados usados en las tablas: **[H]** validado con hardware real · **[S]** validado sólo con simulación o pruebas automáticas · **[D]** diseñado o preparado, sin ejecutar.
 
@@ -77,7 +77,9 @@ Workspaces npm declarados en `package.json` raíz: `apps/*`, `packages/*`. Scrip
 
 | Elemento | Versión | Fuente |
 |---|---|---|
-| App (nombre visible «NSL») | 0.15.2 | `apps/mobile/app.json` (`expo.version`) |
+| App (nombre visible «NSL») | 0.15.3 | `apps/mobile/app.json` (`expo.version`) |
+| Firmware en el repositorio | 0.3.1 | `firmware/` |
+| Firmware cargado en las placas de la evidencia | Izquierda `ESP32-9E7EE4` (`ESP32-FSR-L-001`): **0.3.0** · derecha `ESP32-68D1D8` (`ESP32-FSR-R-001`): **0.3.1** | `04_Evidencia_y_pruebas.md` §3 bis. 0.3.1 sólo agrega el entorno `esp32-analog-right`; la placa izquierda no se recargó |
 | Expo SDK | ~57.0.31 | `apps/mobile/package.json` |
 | React Native / React | 0.86.3 / 19.2.3 | ídem |
 | expo-router | ~57.0.29 | ídem |
@@ -120,7 +122,7 @@ Proyecto PlatformIO en C++17 sobre Arduino Core para ESP32. Decisión de transpo
 |---|---|---|---|
 | `esp32-synthetic` (por defecto) | `-DACQ_SYNTHETIC=1` | Firmware completo con señal **sintética** de 6 canales generada en la placa | Probar transporte USB/BLE y la app sin sensores (H1, H5, H6) |
 | `esp32-analog` | `-DACQ_ANALOG=1` | Firmware completo, **3 FSR del pie izquierdo** (`ESP32-FSR-L-001`) | Módulo izquierdo real |
-| `esp32-analog-right` | `-DACQ_ANALOG=1 -DACQ_FOOT_RIGHT=1` | Igual, **pie derecho** (`ESP32-FSR-R-001`, códigos `R_*`) | Segundo módulo (ADR 0011) |
+| `esp32-analog-right` | `-DACQ_ANALOG=1 -DACQ_FOOT_RIGHT=1` | Igual, **pie derecho** (`ESP32-FSR-R-001`, códigos `R_*`) | Segundo módulo (ADR 0011); cargado el 11/11 en la placa `ESP32-68D1D8`, con banco propio en una segunda protoboard |
 | `esp32-adc-test` | `build_src_filter = +<adc_test/>` | Programa mínimo `src/adc_test/adc_test.cpp`: imprime 6 cuentas crudas cada 100 ms | Banco del ADC (H2–H4), sin BLE ni contrato |
 
 Parámetros comunes: `monitor_speed = 230400`, `upload_speed = 115200` (a 460800 la carga se cortó al 54 %), `monitor_filters = default, log2file` (guarda logs en `firmware/logs/`).
@@ -307,6 +309,7 @@ Lo usa la app al abrir una sesión (`apps/mobile/src/application/useSessions.ts`
 29 pruebas (repositorio, cola de escritura, respaldo, estado de sincronización, entrenamiento). Driver abstracto (`src/driver.ts`) implementado con `expo-sqlite` en la app (`apps/mobile/src/infrastructure/sqlite/ExpoSqliteDriver.ts`) y con `node:sqlite` en pruebas (`src/node/`).
 
 - **Conexión** (`src/migrate.ts`): `PRAGMA foreign_keys = ON` (verificado), `busy_timeout = 5000`, `journal_mode = WAL`. Versión del esquema en `PRAGMA user_version`; migraciones en orden, cada una en su transacción.
+- **`listSessions` (0.15.3)** (`src/repository.ts`): cada `SessionSummary` incluye `configuration_ids`, los identificadores de configuración distintos de las capturas de la sesión unidos con « + » (`GROUP_CONCAT`); identifica el conjunto de módulos de la sesión y es la clave con la que el informe decide qué sesiones son comparables.
 - **Migraciones** (`src/schema.ts`):
 
   | v | Qué agrega |
@@ -339,11 +342,13 @@ Lo usa la app al abrir una sesión (`apps/mobile/src/application/useSessions.ts`
 - `buildSessionReportHtml(bundle)`: HTML autocontenido (estilos y SVG inline, A4) que la app convierte a PDF con `expo-print` y comparte con `expo-sharing` (`apps/mobile/src/infrastructure/report/report.ts`). Cabecera: «Informe de sesión para revisión profesional — Describe mediciones y su calidad; la interpretación corresponde al profesional. No constituye diagnóstico.» Marca en versión clara.
 - Secciones: 1 Identificación (seudónimo: «usuario local» o `usuario` + 8 caracteres del id; nunca el correo), 2 Montaje y canales (instrumentados y no disponibles), 3 Origen de la señal y transporte, 4 Calidad del registro, 5 Indicadores (tabla por canal; reparto; izquierda/derecha o «n/d · requiere ambos pies»), 6 Gráficos (serie temporal por canal submuestreada a ≤ 600 puntos y barras de medias), 7 Comparabilidad, 7b Entrenamiento asociado «declarado por el usuario», 8 Limitaciones y lectura (texto fijo).
 - `buildComparisonReportHtml(A, B)`: identificación, comparabilidad, diferencias B − A por posición, gráficos lado a lado, limitaciones.
+- **Tasa efectiva por captura (0.15.3)**: en la sección de calidad la tasa se calcula como Σ(n_c − 1) / Σ(duración_c) sobre las capturas (n_c registros y duración por reloj del módulo de cada captura) y se rotula «registros/s por módulo (media de las capturas) · X s de señal». Hasta 0.15.2 se dividía por la duración total de la sesión, de modo que el tramo sin un módulo bajaba la tasa (17,6 reg/s en `2523ea01` con ambos módulos a 20 reg/s). `packages/report/src/report.ts`.
+- **Sesiones comparables (0.15.3)**: la lista de comparables del informe exige el mismo conjunto de configuraciones, `(s.configuration_ids ?? s.configuration_id) === configKey` (`apps/mobile/src/infrastructure/report/report.ts`); antes una sesión bilateral listaba como comparables sesiones unilaterales del mismo módulo.
 - `buildSessionCsv(bundle)` (`src/csv.ts`): una fila por muestra con columnas `session_id, device_id, capture_id, sequence, received_at, channel_id, foot, zone, time_us, raw_value, unit, status`; UTF-8 con BOM (para Excel), coma, punto decimal, CRLF, `read_error` con valor vacío.
 
 ### 4.9 `assistant` — asistente explicativo
 
-28 pruebas. ADR 0012 y sus ajustes del 4/11.
+30 pruebas (28 al 5/11 + 2 del filtro de alcance, 6/11). ADR 0012 y sus ajustes del 4/11.
 
 Pipeline (`apps/mobile/src/application/assistantStore.ts` + `packages/assistant/src/*`):
 
@@ -376,7 +381,7 @@ Pipeline (`apps/mobile/src/application/assistantStore.ts` + `packages/assistant/
 
 ### 5.1 Datos generales
 - Expo SDK 57 (`expo ~57.0.31`), React Native 0.86.3, React 19.2.3, TypeScript estricto, `expo-router ~57.0.29` (rutas por archivos en `src/app/`), *dev build* (`expo-dev-client`; no funciona en Expo Go por BLE nativo).
-- `app.json`: nombre visible **NSL**, versión **0.15.2**, orientación vertical, `userInterfaceStyle: dark`, paquete Android `com.mikelorgambide.plantillasinteligentes`, esquema `plantillas`, fondo `#0c0d10`. Plugins: `expo-router`, `expo-font`, `react-native-ble-manager` (`neverForLocation`, BLE no obligatorio), `expo-splash-screen`, `expo-sharing`, `expo-build-properties` (`android.usesCleartextTraffic: true`, necesario para el modo asistente «Servidor propio» por http en la LAN; a verificar si se restringe por dominio: hoy es global).
+- `app.json`: nombre visible **NSL**, versión **0.15.3**, orientación vertical, `userInterfaceStyle: dark`, paquete Android `com.mikelorgambide.plantillasinteligentes`, esquema `plantillas`, fondo `#0c0d10`. Plugins: `expo-router`, `expo-font`, `react-native-ble-manager` (`neverForLocation`, BLE no obligatorio), `expo-splash-screen`, `expo-sharing`, `expo-build-properties` (`android.usesCleartextTraffic: true`, necesario para el modo asistente «Servidor propio» por http en la LAN; a verificar si se restringe por dominio: hoy es global).
 - Dependencias funcionales: `expo-sqlite` (base local y almacén de ajustes), `react-native-ble-manager 12.5.3`, `@supabase/supabase-js ^2.118`, `expo-print` + `expo-sharing` (PDF/CSV), `expo-document-picker` + `expo-file-system` (respaldo), `expo-keep-awake` (pantalla encendida al grabar), `expo-crypto` (UUID), `react-native-svg` (gráficos y FootMap), `react-native-reanimated`, `@expo-google-fonts/manrope`.
 
 ### 5.2 Capas internas (`apps/mobile/src/`)
@@ -483,7 +488,7 @@ Pruebas SQL (`supabase/tests/`): `auth-shim.sql` (simula `auth.uid()` en Postgre
 ---
 
 ## 9. Integración continua
-`.github/workflows/ci.yml` (en `push` a `main` y en *pull requests*): `ubuntu-latest`, Node según `.nvmrc`, `npm ci`, `npm run typecheck` (todos los espacios de trabajo) y `npm test` (las 199 pruebas de `packages/*`). No compila el firmware ni la app nativa, ni corre las pruebas SQL de Supabase (a verificar si existe otro flujo). Ver 2.3.
+`.github/workflows/ci.yml` (en `push` a `main` y en *pull requests*): `ubuntu-latest`, Node según `.nvmrc`, `npm ci`, `npm run typecheck` (todos los espacios de trabajo) y `npm test` (las 201 pruebas de `packages/*`). No compila el firmware ni la app nativa, ni corre las pruebas SQL de Supabase (a verificar si existe otro flujo). Ver 2.3.
 
 ---
 
@@ -496,16 +501,17 @@ Pruebas SQL (`supabase/tests/`): `auth-shim.sql` (simula `auth.uid()` en Postgre
 | Firmware: lectura analógica 3 canales, 20 reg/s, cola, NVS | `firmware/src/*.cpp`, `firmware/include/*.h` | banco con `check_serial.py` | [H] |
 | Firmware: transporte USB JSON | `usb_transport.*` | `check_serial.py` | [H] |
 | Firmware + app: BLE un módulo | `ble_transport.*`, `packages/ble`, `infrastructure/ble/deviceStore.ts` | 20 (placa falsa) + sesiones reales | [H] |
+| Firmware + app: BLE con dos módulos simultáneos | ídem (un `deviceStore` por pie) | pruebas «two boards» + sesiones `9befa503` y `2523ea01` | [H] (11/11: 20,03 reg/s por módulo, 0 huecos) |
 | Contrato de datos y validación | `packages/contract` | 25 | [S] (+ uso con datos reales) |
 | Simulador y escenarios de falla | `packages/simulator` | 16 | [S] |
-| Coordinador de sesión, recuperación | `packages/session` | 19 | [H] un módulo / [S] fallas |
+| Coordinador de sesión, recuperación | `packages/session` | 19 | [H] uno y dos módulos, pérdida y recuperación de un módulo (11/11) / [S] resto de fallas |
 | Persistencia SQLite v1–v8, cola, idempotencia | `packages/storage` | 29 | [H] |
 | Métricas `desc-1.0`, `dist-1.0`, carga, comparación | `packages/metrics` | 29 | [H] con FSR reales (un pie) |
-| Bilateral `bilateral-1.0` (dos módulos) | `packages/metrics/src/bilateral.ts`, `session` | 7 + simulador bilateral | [S] / [D] validación física |
+| Bilateral `bilateral-1.0` (dos módulos) | `packages/metrics/src/bilateral.ts`, `session` | 7 + simulador bilateral + sesiones `9befa503` y `2523ea01` | [H] recorrido básico con dos placas (11/11: tramos completos, `complete_fraction`, `offset_ms`) / [S] deriva de reloj y comparación entre sesiones bilaterales |
 | Informe PDF y CSV | `packages/report`, `infrastructure/report` | 9 | [H] |
 | Respaldo y restauración | `packages/storage/src/backup.ts`, `infrastructure/backup` | incl. en storage | [S] (a verificar prueba en teléfono) |
-| Sincronización Supabase | `packages/sync`, `supabase/migrations/0001–0003` | 9 + SQL | [S] (+ `remote-check.mjs`) |
-| Asistente (alcance, contexto, cliente, Edge Function) | `packages/assistant`, `supabase/functions/assistant` | 28 | [S] / uso real a verificar |
+| Sincronización Supabase | `packages/sync`, `supabase/migrations/0001–0003` | 9 + SQL | [S] (+ `remote-check.mjs`); [H] unilateral en el teléfono; bilateral sin verificar con una sesión de dos placas |
+| Asistente (alcance, contexto, cliente, Edge Function) | `packages/assistant`, `supabase/functions/assistant` | 30 | [S] / uso real a verificar |
 | Rutinas y entrenamiento local, carga asistida | `packages/training`, `activityStore.ts` | 15 | [S] |
 | Entrenamiento: sincronización remota | `supabase/migrations/0005` | — | [D] (sólo esquema) |
 | App (pantallas) | `apps/mobile/src/app` | sin pruebas unitarias | prueba manual; capturas en `docs/capturas/` |

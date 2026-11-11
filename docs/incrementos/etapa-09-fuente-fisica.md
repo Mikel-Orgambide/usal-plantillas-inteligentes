@@ -81,3 +81,7 @@ Observaciones: los pines no conectados leen ruido (≈400–480 en `R_MEDIAL`): 
 - [ ] Primera sesión física en la app (BLE, H6 con sensores): conteo = `transmitted`, mapeo correcto en siluetas, prueba de desconexión.
 - [ ] Ensayo de apoyo estático (parado, talones arriba, puntas arriba) en dos sesiones y comparación en la app.
 - [ ] Foto cenital del banco con rótulos; cantidades finales del inventario.
+
+## Segundo banco (11/11/2026)
+
+El 11/11 se armó un segundo banco, en **otra protoboard**, para el módulo derecho (cada módulo tiene la suya): misma configuración que el izquierdo (FSR406 con 2,2 kΩ en talón a GPIO36; FSR402 con 4,7 kΩ en antepié a GPIO39 y GPIO34), placa `ESP32-68D1D8` con el entorno `esp32-analog-right` (firmware 0.3.1, `ESP32-FSR-R-001`, canales `R_HEEL`/`R_MEDIAL`/`R_LATERAL`). Por USB: 397 registros (0..396), 0 saltos, período 50,00 ms (49,98–50,00), 0 lecturas fallidas; reposo 0 en los tres canales y cada sensor mueve sólo el suyo (máximos 3658 / 4063 / 3803). Logs en `test-data/fisico/logs-serie/device-monitor-261111-163349.txt` y `…-163551.txt`. Pendiente: corrida de 60 s, confirmar que medial y lateral no están cruzados (SVN/P34) y vigilar la saturación puntual del antepié con 4,7 kΩ. La placa izquierda (`ESP32-9E7EE4`) sigue con firmware 0.3.0. La sesión con ambos módulos está en `etapa-13-bilateral.md`.

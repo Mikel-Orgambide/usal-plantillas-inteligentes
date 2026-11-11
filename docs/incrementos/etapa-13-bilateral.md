@@ -1,6 +1,6 @@
 # Etapa 13 — Sesión bilateral con dos módulos (ADR 0011)
 
-- Fecha: 2026-11-04. Estado: **implementada y comprobada con dos fuentes simuladas**; **pendiente de validación física** con dos ESP32 (previsto para el 6/11/2026).
+- Fecha: 2026-11-04. Estado: **implementada y comprobada con dos fuentes simuladas** (4/11) y **validada con dos ESP32 en su recorrido básico el 11/11/2026** (la prueba estaba prevista para el 6/11; la segunda placa llegó el 11/11). Pendiente: sesión de ≥ 120 s con el pie, comparación y sincronización bilateral.
 - Alcance: la app conecta hasta dos módulos a la vez (uno por pie), graba una sesión con dos capturas independientes, muestra el estado de cada módulo, calcula izquierda/derecha y asimetría sólo en los tramos con ambos presentes, y lo declara en el detalle, la comparación y el informe PDF. Firmware: entorno `esp32-analog-right` (`ESP32-FSR-R-001`, firmware 0.3.1) para el segundo ESP32.
 
 ## Qué se implementó
@@ -42,7 +42,9 @@ Hasta la etapa 11 el servidor guardaba una sola configuración por sesión (`ses
 - Probado en PostgreSQL 16 local con `supabase/tests/auth-shim.sql`: `tests/check-bilateral.sql` (dos configuraciones, repetición sin duplicar, cabecera antigua, cuenta B sin acceso, anónimo rechazado) y `tests/check-rls.sql` después de 0003 → `test-data/remote/check-bilateral-2026-11-04.txt` y `check-rls-tras-0003-2026-11-04.txt`.
 - **Pendiente (Mikel):** aplicar `0003_session_configurations.sql` en el SQL Editor del proyecto de Supabase antes de sincronizar sesiones con la app 0.14.0; sin ella, las sesiones quedan «pendientes» con el detalle «configuraciones 0 de N».
 
-## Pendiente para la validación física (6/11/2026)
+## Plan para la validación física (previsto 6/11, ejecutado en parte el 11/11)
+
+Hecho el 11/11: 1, 2 y, de 4, tasa por módulo, desfase, fracción completa y pérdida/recuperación. Pendiente: 3 (sesión con el pie y su repetición), descartes por USB durante la sesión, 5 y 6.
 
 1. Cablear el segundo banco de tres divisores (FSR406 2,2 kΩ; FSR402 4,7 kΩ ×2) y cargar `pio run -e esp32-analog-right -t upload`; confirmar `info` con `ESP32-FSR-R-001`.
 2. En la app: Plantillas → conectar la primera placa → «Buscar el módulo del pie derecho» → conectar la segunda. Preparación debe mostrar 6 de 6 posiciones.
@@ -51,6 +53,6 @@ Hasta la etapa 11 el servidor guardaba una sola configuración por sesión (`ses
 5. H3 por sensor (seis) con `esp32-adc-test`.
 6. Remoto: `session.configuration` guarda sólo el primer módulo; evaluar ampliar el esquema (evolución futura).
 
-## Validación con dos placas (11/11/2026, parcial)
+## Validación con dos placas (11/11/2026)
 
-Segunda placa `ESP32-68D1D8` con `esp32-analog-right` (firmware 0.3.1) y banco propio. Por USB: 397 registros sin saltos, período 50,00 ms, 0 errores, cada sensor mueve sólo su canal. Primera sesión bilateral por BLE (`9befa503`, 35,6 s): 714 registros por módulo, 20,03 reg/s en cada uno, 0 huecos, 0 muestras inválidas. Detalle, archivos y lo que falta (corrida larga, corte de 5 s, sincronización, Comparación) en `docs/tesis/04_Evidencia_y_pruebas.md` §3 bis.
+Segunda placa `ESP32-68D1D8` con `esp32-analog-right` (firmware 0.3.1) y banco propio. Por USB: 397 registros sin saltos, período 50,00 ms, 0 errores, cada sensor mueve sólo su canal. Primera sesión bilateral por BLE (`9befa503`, 35,6 s): 714 registros por módulo, 20,03 reg/s en cada uno, 0 huecos, 0 muestras inválidas. Prueba de corte (`2523ea01`, 1 min 19 s): al desenchufar la placa izquierda, «Módulo perdido» se registró ≈ 4,5 s después del corte (el criterio era ≤ 3 s: no se cumple y se declara); recuperación automática con nueva captura (B65 → B66), tramo incompleto de 13 s, fracción completa 75,5 %, izq./der. 60,4 / 39,6 % en tramos completos, desfase declarado 125 ms, 16 248 muestras válidas y 0 con error; el módulo derecho siguió a 20,0 reg/s. La placa izquierda corre firmware 0.3.0 y la derecha 0.3.1. Correcciones derivadas en la app 0.15.3: tasa efectiva por captura, comparables por conjunto de configuraciones y capturas rotuladas por pie. Detalle, archivos y lo que falta (corrida de ≥ 120 s con el pie, Comparación, sincronización, H3) en `docs/tesis/04_Evidencia_y_pruebas.md` §3 bis.

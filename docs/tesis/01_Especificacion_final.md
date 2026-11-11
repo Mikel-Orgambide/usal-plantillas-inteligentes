@@ -1,6 +1,6 @@
 # 01 — Especificación final del prototipo (alcance congelado al 5/11/2026)
 
-- Versión de la app: 0.15.2 · firmware 0.3.1 · esquema local SQLite v8 · migraciones remotas 0001–0005 (0005 preparada, transferencia no implementada).
+- Versión de la app: 0.15.3 · firmware 0.3.1 (placa derecha; la izquierda quedó con 0.3.0) · actualizado el 11/11/2026 con la validación con dos placas · esquema local SQLite v8 · migraciones remotas 0001–0005 (0005 preparada, transferencia no implementada).
 - Fuente técnica de verdad: `docs/especificacion/08_Alcance_Final_del_Prototipo.md`. Este archivo la reorganiza como especificación (objetivos → requisitos → evidencia) para los caps. 1, 4 y 7.
 - Estados: **[H]** hardware · **[S]** simulación/pruebas automáticas · **[D]** diseñado · **[F]** futuro (ver `00_LEEME.md`).
 
@@ -8,8 +8,8 @@
 
 | Dimensión | Decisión al 5/11/2026 | Origen |
 |---|---|---|
-| Montaje | **Banco en protoboard** (MJ 830 puntos), sensores sobre el piso, apoyo estático del pie. Sin plantilla dentro del calzado, sin cableado al cuerpo, sin autonomía con batería | Decisión del autor 3/11 (`etapa-09-fuente-fisica.md`) |
-| Topología | **Dos módulos ESP32, uno por pie**: `ESP32-FSR-L-001` (izquierdo, [H]) y `ESP32-FSR-R-001` (derecho, firmware listo, prueba 6/11) | ADR 0011 |
+| Montaje | **Banco en protoboard** (MJ 830 puntos, una protoboard por módulo), sensores sobre el piso, apoyo estático del pie. Sin plantilla dentro del calzado, sin cableado al cuerpo, sin autonomía con batería | Decisión del autor 3/11 (`etapa-09-fuente-fisica.md`) |
+| Topología | **Dos módulos ESP32, uno por pie**: `ESP32-FSR-L-001` (izquierdo, placa `ESP32-9E7EE4`, [H]) y `ESP32-FSR-R-001` (derecho, placa `ESP32-68D1D8`, [H] desde el 11/11); ambos construidos y probados juntos por BLE | ADR 0011 |
 | Sensores | 3 por pie: FSR406 talón (divisor 2,2 kΩ), FSR402 antepié medial y lateral (4,7 kΩ). ADC 12 bits del ESP32, cuentas 0–4095 | Etapa 9 |
 | Tasa | 20 registros/s por módulo (período 50 ms), registro con 3 muestras | Firmware 0.3.1 |
 | Transporte | BLE GATT (NimBLE) hacia la app; USB JSON por línea (230400 baud) para diagnóstico en PC | ADR 0006 |
@@ -33,17 +33,17 @@ Notas para la redacción:
 | # | Objetivo específico | Qué lo cumple en el prototipo | Estado | Evidencia |
 |---|---|---|---|---|
 | OE1 | Relevar el estado del arte de plantillas instrumentadas, wearables deportivos y métricas plantares, y las necesidades de usuarios y profesionales | Cap. 3 (base bibliográfica de 50 refs); entrevista a traumatólogo; encuesta | Literatura: hecho; entrevista/encuesta: **pendiente de realizar/registrar** | Drive: Base bibliográfica; Cierre 27/10 |
-| OE2 | Diseñar e implementar un módulo de adquisición con ESP32 y tres FSR por pie, con muestreo periódico e identificación de cada registro | Firmware 0.3.1 `esp32-analog` / `esp32-analog-right`; contrato v1.0 | [H] izquierdo; [D]→6/11 derecho | `etapa-09`, `test-data/fisico/logs-serie/` |
+| OE2 | Diseñar e implementar un módulo de adquisición con ESP32 y tres FSR por pie, con muestreo periódico e identificación de cada registro | Firmware 0.3.1 `esp32-analog` / `esp32-analog-right`; contrato v1.0 | [H] izquierdo (3/11) y derecho (11/11: 397 registros USB, 0 saltos, 50,00 ms, 0 errores) | `etapa-09`, `test-data/fisico/logs-serie/` |
 | OE3 | Definir un contrato de datos y un protocolo de transmisión inalámbrica que permita detectar pérdidas y reconstruir la secuencia | Contrato v1.0 (C01–C12), BLE GATT registro binario 9+6n bytes, `sequence`, `time_us`, `read_error` | [H] | `packages/contract`, ADR 0006, `etapa-08b` |
-| OE4 | Implementar una aplicación móvil que reciba, valide, visualice en tiempo real y almacene localmente las sesiones de uno o dos módulos | App Expo 0.15.2; SQLite; sesión unilateral y bilateral | [H] unilateral; [S] bilateral | `etapa-08b`, `etapa-09`, `etapa-13` |
-| OE5 | Calcular indicadores descriptivos versionados y de calidad de señal, y comparar sesiones compatibles | `desc-1.0`, `dist-1.0`, `bilateral-1.0`; comparabilidad | [H] desc/dist/comparación; [S] bilateral | `packages/metrics` (29 pruebas), sesiones `test-data/fisico/` |
+| OE4 | Implementar una aplicación móvil que reciba, valide, visualice en tiempo real y almacene localmente las sesiones de uno o dos módulos | App Expo 0.15.3; SQLite; sesión unilateral y bilateral | [H] unilateral (3/11) y bilateral con dos placas (11/11: `9befa503`, `2523ea01`) | `etapa-08b`, `etapa-09`, `etapa-13` |
+| OE5 | Calcular indicadores descriptivos versionados y de calidad de señal, y comparar sesiones compatibles | `desc-1.0`, `dist-1.0`, `bilateral-1.0`; comparabilidad | [H] desc/dist/comparación unilateral; [H] `bilateral-1.0` en tramos completos (11/11); [S] comparación entre sesiones bilaterales | `packages/metrics` (29 pruebas), sesiones `test-data/fisico/` |
 | OE6 | Conservar el historial con respaldo local y copia remota protegida por titular | Respaldo/restauración; Supabase con RLS | [H] | `etapa-10`, `etapa-11`, `test-data/remote/` |
 | OE7 | Generar un informe exportable para revisión profesional | PDF de sesión y comparación; CSV | [H] PDF; [S] CSV | ADR 0010, `etapa-12` |
 | OE8 | Incorporar un asistente explicativo acotado que traduzca los indicadores sin emitir diagnósticos | Asistente ADR 0012 (dos modos, tres niveles) | [H] (4/11, sesiones físicas) | `etapa-14`; registro local; `test-data/asistente/` **a crear** |
 | OE9 | Registrar el entrenamiento declarado (rutinas, series, RPE) y vincularlo con las sesiones medidas | Paquete training, ADR 0013 | [S] (pruebas automáticas) + uso en teléfono 0.15.1 | `etapa-15`, 15 pruebas |
-| OE10 | Evaluar técnicamente el prototipo (integridad, tasa efectiva, saturación, repetibilidad, pérdida y reconexión) | Pruebas H1–H6, banco FSR, pruebas automáticas (199) | [H]/[S]; pendientes 6/11 | `04_Evidencia_y_pruebas.md` |
+| OE10 | Evaluar técnicamente el prototipo (integridad, tasa efectiva, saturación, repetibilidad, pérdida y reconexión) | Pruebas H1–H6, banco FSR, pruebas automáticas (201) | [H]/[S]; con dos placas el 11/11 (`04` §3 bis); pendientes: sesión ≥ 120 s, comparación bilateral, H3 | `04_Evidencia_y_pruebas.md` |
 
-Hipótesis (para reemplazar la de la Entrega 5): proponer una hipótesis tecnológica verificable, p. ej.: *«Es posible adquirir lecturas de tres FSR por pie con módulos ESP32 a 20 registros/s, transmitirlas por BLE a un teléfono sin pérdida de registros en condiciones de banco, y convertirlas en sesiones con indicadores descriptivos comparables entre sesiones.»* Se verifica con H5/H6/etapa 9 (unilateral) y queda parcialmente verificada para el bilateral hasta el 6/11. No formular hipótesis sobre rendimiento, fatiga o lesiones.
+Hipótesis (para reemplazar la de la Entrega 5): proponer una hipótesis tecnológica verificable, p. ej.: *«Es posible adquirir lecturas de tres FSR por pie con módulos ESP32 a 20 registros/s, transmitirlas por BLE a un teléfono sin pérdida de registros en condiciones de banco, y convertirlas en sesiones con indicadores descriptivos comparables entre sesiones.»* Se verifica con H5/H6/etapa 9 (unilateral) y, para el bilateral, con las sesiones del 11/11 (714 registros por módulo a 20,03 reg/s sin huecos; corte y recuperación de un módulo), en corridas cortas de banco: falta la corrida de ≥ 120 s y la comparación entre dos sesiones bilaterales. No formular hipótesis sobre rendimiento, fatiga o lesiones.
 
 ## 4. Requisitos funcionales
 
@@ -53,24 +53,24 @@ Hipótesis (para reemplazar la de la Entrega 5): proponer una hipótesis tecnol�
 | RF-02 | Marcar lecturas fallidas como `read_error` (nunca cero por ausencia) | [H] (sintético: 5 read_error esperados en H5) | `test-data/firmware/h5-usb-2026-10-19-firmware-0.1.0-230400.txt` |
 | RF-03 | Transmitir por USB (JSON por línea) para diagnóstico | [H] | `test-data/firmware/h1-…`, `h5-…`; logs de serie etapa 9 |
 | RF-04 | Anunciarse por BLE con identificación del dispositivo, configuración y canales; notificar registros binarios | [H] | `etapa-08b`; `test-data/firmware/h6-ble-*.log`; pruebas `packages/ble` (20) |
-| RF-05 | Buscar y conectar uno o dos módulos desde la app (una fila por pie, estado por módulo) | [H] uno · [S] dos | Pantalla Plantillas; `etapa-13`; pruebas «two boards» |
+| RF-05 | Buscar y conectar uno o dos módulos desde la app (una fila por pie, estado por módulo) | [H] uno y dos (11/11: dos enlaces simultáneos, MTU 185) | Pantalla Plantillas; `etapa-13`; pruebas «two boards»; `04` §3 bis |
 | RF-06 | Detectar desconexión, reconectar automáticamente y registrar el evento; reiniciar la captura en el módulo | [H] (reconexión en 5 s, B22→B23) | `test-data/firmware/h6-ble-2026-10-20-reconexion-status.log` |
 | RF-07 | Validar cada registro contra el contrato v1.0 (C01–C12) y descartar inválidos con motivo | [H]/[S] | `packages/contract` (25 pruebas) |
 | RF-08 | Preparar una sesión (actividad, contexto, rutina opcional) y grabarla con gráfico en vivo, calidad y siluetas | [H] | `docs/capturas/0.12.0-fsr/01..04-grabacion-pie-fsr.png` |
-| RF-09 | Sesión bilateral: correspondencia por instante de recepción, desfase declarado, intervalos completos, `module_lost/recovered` | [S] | `etapa-13`; pruebas `packages/session` bilateral ×7; `test-data/remote/check-bilateral-2026-11-04.txt` |
+| RF-09 | Sesión bilateral: correspondencia por instante de recepción, desfase declarado, intervalos completos, `module_lost/recovered` | [H] (11/11: `9befa503` y corte `2523ea01`; pérdida detectada a ≈ 4,5 s, no ≤ 3 s) · [S] deriva de reloj y fallas simuladas | `etapa-13`; pruebas `packages/session` bilateral ×7; `test-data/remote/check-bilateral-2026-11-04.txt` |
 | RF-10 | Persistir localmente sesiones, capturas, registros, eventos y resultados (SQLite con migraciones) | [H] | `packages/storage` (29 pruebas); `etapa-10` (.db 4,4 MB integrity ok) |
 | RF-11 | Calcular descriptores por posición `desc-1.0` (media, máx., desvío, válidas/inválidas) | [H] | `packages/metrics`; sesiones `test-data/fisico/*.plantillas.json` |
-| RF-12 | Calcular reparto antepié/retropié, variabilidad, izq./der. y asimetría por zona `dist-1.0` (izq./der. sólo con ambos pies) | [H] antepié/talón · [S] izq./der. | `packages/metrics/src/distribution.ts` |
-| RF-13 | Calcular calidad: esperados/recibidos, huecos, lecturas fallidas, desconexiones, tasa efectiva, por módulo | [H]/[S] | Detalle de sesión; PDF |
+| RF-12 | Calcular reparto antepié/retropié, variabilidad, izq./der. y asimetría por zona `dist-1.0` (izq./der. sólo con ambos pies) | [H] antepié/talón · [H] izq./der. en tramos completos (11/11, `2523ea01`: 60,4 / 39,6 %, sensores apretados a mano) | `packages/metrics/src/distribution.ts` |
+| RF-13 | Calcular calidad: esperados/recibidos, huecos, lecturas fallidas, desconexiones, tasa efectiva, por módulo | [H] (dos módulos, 11/11; la tasa se calcula por captura desde 0.15.3) | Detalle de sesión; PDF `test-data/fisico/informe-2026-11-11-2523ea01-bilateral-corte.pdf` |
 | RF-14 | Mostrar Hoy (día navegable, indicadores, entrenamiento, sesiones) e Historial por día | [H] | `03_Funcionalidades_por_pantalla.md` |
-| RF-15 | Comparar dos sesiones compatibles (misma configuración y procedencia) con diferencias por posición y reparto; bloquear las no comparables | [H] (dos sesiones físicas 3/11) | `packages/metrics` compare/comparability (U03) |
-| RF-16 | Exportar informe PDF de sesión y de comparación para revisión profesional | [H] | ADR 0010; `etapa-12`; `test-data/fisico/informe-ejemplo-3-canales.html` |
+| RF-15 | Comparar dos sesiones compatibles (misma configuración y procedencia) con diferencias por posición y reparto; bloquear las no comparables | [H] unilateral (dos sesiones físicas 3/11) · [S] entre sesiones bilaterales (pendiente con placas) | `packages/metrics` compare/comparability (U03) |
+| RF-16 | Exportar informe PDF de sesión y de comparación para revisión profesional | [H] sesión unilateral y bilateral (11/11) y comparación unilateral · pendiente PDF de comparación bilateral | ADR 0010; `etapa-12`; `test-data/fisico/informe-ejemplo-3-canales.html` |
 | RF-17 | Exportar CSV por muestra y paquete de sesión `.plantillas.json` | [S] CSV · [H] paquete | `packages/report` (9 pruebas); `test-data/fisico/*.plantillas.json` |
 | RF-18 | Respaldo completo y restauración desde archivo | [H] | `etapa-10`; `test-data/backup/sesion-2026-10-20-977b2add.plantillas.json` |
 | RF-19 | Modo de demostración con fuente simulada determinista, marcada `simulated` | [H]/[S] | Ajustes → Demostración; `packages/simulator` (16) |
-| RF-20 | Cuenta de usuario y sincronización de sesiones cerradas con confirmación por cantidades | [H] | `etapa-11`; `test-data/remote/2026-10-27-0*.png`, `remote-check-2026-10-27-supabase.txt` |
+| RF-20 | Cuenta de usuario y sincronización de sesiones cerradas con confirmación por cantidades | [H] unilateral · [S] bilateral (migración 0003 probada con datos simulados; sin verificar con una sesión de dos placas) | `etapa-11`; `test-data/remote/2026-10-27-0*.png`, `remote-check-2026-10-27-supabase.txt` |
 | RF-21 | Asistente explicativo en dos modos (nube gestionada / servidor propio) con rechazo fijo de consultas clínicas | [H] | `etapa-14`; ADR 0012 |
-| RF-22 | Carga asistida de series por lenguaje natural con tarjeta de confirmación | [S] | `packages/assistant` (28), `packages/training` (parsing) |
+| RF-22 | Carga asistida de series por lenguaje natural con tarjeta de confirmación | [S] | `packages/assistant` (30), `packages/training` (parsing) |
 | RF-23 | Rutinas (propias o del profesional), entrenamiento con series (reps, peso, RPE, nota), caminata/tiempo, descanso, vínculo con sesión | [S] + uso en teléfono 0.15.1 | `etapa-15`; `packages/training` (15) |
 | RF-24 | Sincronizar rutinas y entrenamientos | [D] (esquema 0005) | `supabase/migrations/0005_training.sql` |
 
@@ -86,10 +86,11 @@ Hipótesis (para reemplazar la de la Entrega 5): proponer una hipótesis tecnol�
 | RNF-06 | Trazabilidad de métricas | Cada resultado lleva versión (`desc-1.0`, `dist-1.0`, `bilateral-1.0`) | [H] | `packages/metrics` |
 | RNF-07 | Procedencia explícita | `physical`/`simulated` en cada captura; informe lo declara | [H] | Contrato; PDF |
 | RNF-08 | Fluidez de la interfaz en grabación | Redibujo limitado a 8 Hz sin perder registros | [H] | `etapa-08b` |
-| RNF-09 | Reproducibilidad del software | Pruebas automáticas deterministas; 199 pruebas en verde; typecheck | [S] | `npm test`, `04_Evidencia_y_pruebas.md` |
+| RNF-09 | Reproducibilidad del software | Pruebas automáticas deterministas; 201 pruebas en verde; typecheck | [S] | `npm test`, `04_Evidencia_y_pruebas.md` |
 | RNF-10 | Costo de operación acotado | Servicios en planes gratuitos; LLM por uso con límite (30 consultas/h por usuario) | [H] | `05_Mapa_tesis.md` §Cap. 5 |
 | RNF-11 | Prudencia en la comunicación | Ninguna pantalla, informe ni respuesta del asistente presenta fuerza, presión, fatiga o diagnóstico; respuestas IA marcadas «Generado por IA · revisar» | [H] (revisión de textos) | ADR 0010, 0012 |
-| RNF-12 | Desfase entre módulos declarado | `offset_ms` informado; correspondencia por recepción | [S] (simulado 700 ms + deriva 1 %: estimado −760..−650 ms) | `etapa-13` |
+| RNF-12 | Desfase entre módulos declarado | `offset_ms` informado; correspondencia por recepción | [H] declarado con dos placas (125 ms en `2523ea01`; primera recepción con 55 ms de diferencia en `9befa503`) · [S] exactitud de la estimación (simulado 700 ms + deriva 1 %: −760..−650 ms); sin contraste con una referencia externa | `etapa-13` |
+| RNF-14 | Detección de la pérdida de un módulo | `module_lost` registrado ≤ 3 s después del corte (criterio fijado en `04` §3) | **No cumplido**: ≈ 4,5 s el 11/11 (tiempo de supervisión del enlace BLE); se declara | `04` §3 bis; `09` |
 | RNF-13 | Instalación reproducible | README con inicio rápido de 15 min | [D]→ verificar con persona externa | `README.md` |
 
 ## 6. Qué NO hace el prototipo (escribirlo explícitamente)

@@ -31,7 +31,7 @@ Instrucciones persistentes para los asistentes de código: `CLAUDE.md` (raíz) y
 
 | Producto | Verificación |
 |---|---|
-| Código | 199 pruebas automáticas deterministas en verde; `typecheck`; revisión de diffs; pruebas en el teléfono físico por versión (0.11 → 0.15.2) |
+| Código | 201 pruebas automáticas deterministas en verde; `typecheck`; revisión de diffs; pruebas en el teléfono físico por versión (0.11 → 0.15.3) |
 | Firmware | Ejecución en la placa real; logs USB/BLE con conteo de secuencia y período (`test-data/firmware/`, `test-data/fisico/logs-serie/`) |
 | Seguridad remota | `remote-check.mjs` 10/10 contra Supabase; RLS en PostgreSQL local |
 | Afirmaciones técnicas en documentos | Contraste con código y registros; convención [H]/[S]/[D]/[F]; ninguna magnitud física atribuida sin evidencia |

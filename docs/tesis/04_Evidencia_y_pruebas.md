@@ -1,11 +1,11 @@
 # 04 — Evidencia y pruebas
 
-- Corte: 5/11/2026 (app 0.15.2, firmware 0.3.1). Completar las tablas vacías el 6/11 y actualizar estados en `01_Especificacion_final.md` y `docs/especificacion/08_Alcance_Final_del_Prototipo.md`.
+- Corte: 5/11/2026 (app 0.15.2, firmware 0.3.1); actualizado el 11/11/2026 con los resultados con dos placas (§3 bis; app 0.15.2 durante las pruebas, corregida a 0.15.3 después). La prueba prevista para el 6/11 se hizo el 11/11, cuando llegó la segunda placa. Las tablas vacías de §3 se completan si se ejecutan las corridas largas; los estados ya están actualizados en `01_Especificacion_final.md` y `docs/especificacion/08_Alcance_Final_del_Prototipo.md`.
 - Para el cap. 7: cada fila de resultado debe citar número + ruta. Lo que falle se informa igual (la cátedra pide datos buenos y malos, Clase 12).
 
 ## 1. Pruebas automáticas (software)
 
-Ejecución: `npm test` en la raíz (todas las workspaces, Vitest) y `npm run typecheck`. Total al 5/11: **199 pruebas, todas en verde**. Son deterministas (simulador con semilla, `now` inyectado) → estado [S].
+Ejecución: `npm test` en la raíz (todas las workspaces, Vitest) y `npm run typecheck`. Total al 11/11: **201 pruebas** (199 al 5/11; el 6/11 se sumaron 2 al filtro de alcance del asistente), en verde en la última ejecución completa. Son deterministas (simulador con semilla, `now` inyectado) → estado [S].
 
 | Paquete | Pruebas | Qué cubren |
 |---|---:|---|
@@ -17,9 +17,9 @@ Ejecución: `npm test` en la raíz (todas las workspaces, Vitest) y `npm run typ
 | `metrics` | 29 | `desc-1.0` con fixtures A–D, `dist-1.0` (reparto, asimetría, variabilidad, n/d con canales faltantes), comparación y comparabilidad (U03), métricas unilaterales y bilaterales |
 | `sync` | 9 | Lotes (250), reintentos (3), confirmación por cantidades, estados pendiente/confirmada |
 | `report` | 9 | CSV ×2; PDF bilateral, unilateral, simulado, comparación, sección 7b de entrenamiento |
-| `assistant` | 28 | Cliente directo (LM Studio) y por proxy (función), armado de contexto, preguntas de seguimiento, filtro de alcance (nivel 3 clínico), prompt compartido, contexto de entrenamiento |
+| `assistant` | 30 | Cliente directo (LM Studio) y por proxy (función), armado de contexto, preguntas de seguimiento, filtro de alcance (nivel 3 clínico), prompt compartido, contexto de entrenamiento |
 | `training` | 15 | Cursor de actividad, descanso bloqueante, caminata, validación de rutinas/series, resumen (volumen Σ reps×kg, minutos, RPE medio), parsing de carga asistida, entrenamiento libre |
-| **Total** | **199** | |
+| **Total** | **201** | |
 
 Pruebas de la base remota (no Vitest):
 - `scripts/remote-check.mjs` contra Supabase real: **10/10** (dos cuentas A y B; cada una ve sólo lo suyo; inserciones ajenas rechazadas) → `test-data/remote/remote-check-2026-10-27-supabase.txt` [H].
@@ -85,7 +85,7 @@ Limitaciones a declarar: talón cerca de saturación con apoyo del pie (margen �
 
 - **Evidencia a guardar (carpeta `test-data/asistente/`, aún no existe):** capturas de la prueba de conexión en cada modo, una respuesta en alcance, una respuesta fija clínica, la misma pregunta en ambos modos; CSV de `assistant_usage`; export de `assistant_exchange` desde un respaldo; tiempos de respuesta observados y errores.
 
-## 3. Protocolos pendientes para el 6/11 (criterios fijados ANTES de ejecutar)
+## 3. Protocolos con dos placas (previstos para el 6/11, ejecutados en parte el 11/11; criterios fijados ANTES de ejecutar)
 
 Reglas generales: anotar fecha/hora, versión de firmware y app, resistencias, posición de cada sensor; guardar logs en `test-data/fisico/` (o subcarpeta `2026-11-06/`), exports `.plantillas.json` y capturas en `docs/capturas/0.15.2-bilateral/`. Si un criterio no se cumple, **no se cambia el criterio**: se registra el resultado, se busca la causa y, si se corrige, se repite y se informan ambas corridas.
 
@@ -132,7 +132,7 @@ Si falla: placa no aparece → driver CP2102/cable de datos, mantener IO0 al car
 
 ### (c) Sesión bilateral por BLE (dos placas)
 
-Pasos: ambos módulos alimentados por USB; app 0.15.2 → Plantillas → conectar izquierdo y derecho → Nueva sesión → grabar **≥ 120 s** de apoyo bipodal con cambios de carga (20 s centrado, 20 s peso a izquierda, 20 s peso a derecha, 20 s antepié, 20 s talones, 20 s centrado). Luego una segunda sesión de 60 s en la que, a los 30 s, se **desconecta la alimentación de una placa durante 5 s** y se vuelve a conectar. Exportar ambas sesiones y sincronizar.
+Pasos: ambos módulos alimentados por USB; app 0.15.3 → Plantillas → conectar izquierdo y derecho → Nueva sesión → grabar **≥ 120 s** de apoyo bipodal con cambios de carga (20 s centrado, 20 s peso a izquierda, 20 s peso a derecha, 20 s antepié, 20 s talones, 20 s centrado). Luego una segunda sesión de 60 s en la que, a los 30 s, se **desconecta la alimentación de una placa durante 5 s** y se vuelve a conectar. Exportar ambas sesiones y sincronizar.
 
 | Criterio | Aceptación | Izquierdo | Derecho |
 |---|---|---|---|
@@ -148,7 +148,7 @@ Pasos: ambos módulos alimentados por USB; app 0.15.2 → Plantillas → conecta
 | Apagado 5 s: métricas | Izq./der. calculado sólo en intervalos completos; `complete_fraction` < 1 refleja el corte | | |
 | Sincronización | Sesión confirmada en Supabase con registros de ambos módulos (cantidades coinciden) | | |
 
-Si falla: tasa baja con dos placas → revisar intervalo de conexión BLE y redibujo; desfase inestable → declarar (correspondencia por recepción, ADR 0011) y reportar el rango; sin `module_recovered` → reconexión manual desde Plantillas y registrar como limitación. Si no hay segunda placa operativa el 6/11, bilateral queda [S] y se declara así.
+Si falla: tasa baja con dos placas → revisar intervalo de conexión BLE y redibujo; desfase inestable → declarar (correspondencia por recepción, ADR 0011) y reportar el rango; sin `module_recovered` → reconexión manual desde Plantillas y registrar como limitación. Si no hay segunda placa operativa, bilateral queda [S] y se declara así (no fue el caso: la placa llegó el 11/11, ver §3 bis).
 
 ### (d) Dos sesiones con el mismo protocolo (Comparación y PDF)
 
@@ -166,7 +166,7 @@ Si falla: diferencia > 10 pp → informar como resultado (repetibilidad del mont
 
 ## 3 bis. Resultados parciales del 11/11/2026 (segunda placa)
 
-La segunda placa llegó el 11/11 (no el 6/11). Lo de abajo es lo ejecutado ese día; **no reemplaza** los protocolos (b) y (c), que piden corridas más largas y la prueba de corte. Las tablas de (a)–(d) siguen abiertas.
+La segunda placa llegó el 11/11 (no el 6/11). Lo de abajo es lo ejecutado ese día; **no reemplaza** los protocolos (b) y (c), que piden corridas más largas (la prueba de corte sí se hizo, más abajo). Las tablas de (a)–(d) siguen abiertas para las corridas de 60 s (USB) y ≥ 120 s (BLE), H3 y Comparación.
 
 **Módulo derecho por USB** — `ESP32-68D1D8`, `ESP32-FSR-R-001`, firmware 0.3.1, banco propio en una segunda protoboard (FSR406 con 2,2 kΩ en talón; FSR402 con 4,7 kΩ en antepié). Logs: `test-data/fisico/logs-serie/device-monitor-261111-163349.txt` (carga e `info`) y `…-163551.txt` (captura).
 
@@ -195,7 +195,7 @@ Observación: el segundo sensor apretado movió `R_LATERAL` y el tercero `R_MEDI
 | Dispersión de la recepción (p5–p95 de `received_at − time_us`) | 37 ms | 35 ms | Informativo: cota de la correspondencia por recepción |
 | Máximos por canal | L_HEEL 3299 · L_MEDIAL 3543 · L_LATERAL 3910 | R_HEEL 3731 · R_MEDIAL 3964 · R_LATERAL 4043 | Sin saturación (0 lecturas en 4095) |
 
-Primera recepción de cada módulo con 55 ms de diferencia (izquierdo 19:41:06.577Z, derecho 19:41:06.632Z); última con la misma diferencia: los dos enlaces se sostienen en paralelo a 20 reg/s sin pérdidas. **Con esto la sesión bilateral pasa de [S] a [H] en su recorrido básico** (dos placas reales, dos enlaces BLE simultáneos, una sesión, export). Siguen pendientes de (c): corrida de ≥ 120 s con la consigna de cargas, `offset_ms` y `complete_fraction` leídos del Detalle, prueba de corte de 5 s y sincronización; y los protocolos (a) y (d).
+Primera recepción de cada módulo con 55 ms de diferencia (izquierdo 19:41:06.577Z, derecho 19:41:06.632Z); última con la misma diferencia: los dos enlaces se sostienen en paralelo a 20 reg/s sin pérdidas. **Con esto la sesión bilateral pasa de [S] a [H] en su recorrido básico** (dos placas reales, dos enlaces BLE simultáneos, una sesión, export). Siguen pendientes de (c): corrida de ≥ 120 s con la consigna de cargas y sincronización de una sesión bilateral; y los protocolos (a) y (d). La prueba de corte, con `offset_ms` y `complete_fraction`, está en la tabla siguiente.
 
 **Prueba de corte de un módulo** — sesión `2523ea01`, 11/11 16:45, 1 min 19 s, ambas placas por BLE; a mitad de la sesión se desenchufó el USB de la placa izquierda unos segundos. Evidencia: informe PDF generado por la app 0.15.2 en `test-data/fisico/informe-2026-11-11-2523ea01-bilateral-corte.pdf` y captura de la lista de eventos del Detalle.
 

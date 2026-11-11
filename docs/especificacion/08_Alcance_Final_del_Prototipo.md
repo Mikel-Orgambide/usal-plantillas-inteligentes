@@ -1,6 +1,6 @@
 # Alcance final del prototipo (cierre del desarrollo, 4 de noviembre de 2026)
 
-Proyecto Final de Ingeniería en Informática — Mikel Orgambide Rueda. Versión de la app: 0.15.2; firmware 0.3.1.
+Proyecto Final de Ingeniería en Informática — Mikel Orgambide Rueda. Versión de la app: 0.15.3; firmware 0.3.1 (placa derecha; la izquierda conserva 0.3.0). Actualizado el 11/11/2026 con la validación con dos placas.
 Propósito: describir **qué hace realmente** la plataforma al cierre del desarrollo (etapas 0–15), separando en cada punto lo **validado con hardware real**, lo **implementado y probado con datos simulados** y lo **diseñado o documentado sin implementar**. Es la base para reescribir los capítulos de la tesis: ningún capítulo debe afirmar más de lo que dice este documento, y cada afirmación remite a su evidencia en `docs/incrementos/`.
 
 Leyenda de estado: **[H]** validado con hardware real (FSR + ESP32 + app) · **[S]** implementado y probado con pruebas automáticas y datos simulados · **[D]** diseñado o preparado, no implementado o no validado.
@@ -15,8 +15,8 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 |---|---|---|
 | Sensores | **[H]** | FSR406 en el talón y FSR402 en antepié medial y lateral, divisor resistivo (2,2 kΩ talón, 4,7 kΩ antepié), ADC 12 bits del ESP32 (cuentas 0–4095, unidad `adc_count`). Elección por ensayo (etapa 9). |
 | Módulo unilateral izquierdo `ESP32-FSR-L-001` | **[H]** | 3 canales, 20 registros/s, USB y BLE; 475 registros sin saltos por USB; sesiones físicas con apoyo del pie (etapa 9, 3/11). |
-| Módulo derecho `ESP32-FSR-R-001` | **[D]** | Firmware listo (`esp32-analog-right`); segundo ESP32 previsto para el 6/11. |
-| Sesión bilateral (dos módulos) | **[S]** | Dos fuentes BLE independientes, estado por módulo, tramos incompletos, correspondencia por recepción con desfase declarado (ADR 0011, etapa 13). Validado con dos fuentes simuladas; con dos placas: pendiente. |
+| Módulo derecho `ESP32-FSR-R-001` | **[H]** | Placa `ESP32-68D1D8`, `esp32-analog-right` 0.3.1, banco propio en una segunda protoboard. USB 11/11: 397 registros, 0 saltos, 50,00 ms, 0 errores. Pendiente: corrida de 60 s y confirmar medial/lateral. |
+| Sesión bilateral (dos módulos) | **[H]** recorrido básico / **[S]** resto | Dos fuentes BLE independientes, estado por módulo, tramos incompletos, correspondencia por recepción con desfase declarado (ADR 0011, etapa 13). Con dos placas (11/11): `9befa503`, 714 registros por módulo a 20,03 reg/s, 0 huecos; `2523ea01`, corte de un módulo con recuperación automática (pérdida detectada a ≈ 4,5 s, no ≤ 3 s), `complete_fraction` 75,5 %, desfase 125 ms. Sólo con simulación: comparación entre sesiones bilaterales, sincronización bilateral, deriva de reloj. Pendiente: sesión de ≥ 120 s con el pie. |
 | Montaje | **[H]** banco | Protoboard, sensores sobre el piso con moneda, apoyo estático del pie. Plantilla en calzado, cableado al cuerpo y autonomía: **[D]**, evolución futura (decisión del 3/11). |
 | Calibración a fuerza/presión | **[D]** | No implementada; los valores son cuentas ADC. Caracterización H3 por sensor pendiente. |
 
@@ -26,9 +26,9 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 |---|---|
 | Contrato v1.0: configuración (dispositivo, canales, modelo anunciado, unidad), captura, registro con secuencia, muestra con `time_us`, valor y estado (`ok`/`read_error`, nunca cero por ausencia) | **[H]** |
 | Procedencia `physical`/`simulated` separada del transporte (BLE/USB) | **[H]** |
-| Sesión: actividad, contexto, inicio/fin, estado, eventos (conexión, captura, desconexión, reconexión, módulo perdido/recuperado) | **[H]** (unilateral) / **[S]** (bilateral) |
+| Sesión: actividad, contexto, inicio/fin, estado, eventos (conexión, captura, desconexión, reconexión, módulo perdido/recuperado) | **[H]** (unilateral y bilateral, incluido módulo perdido/recuperado el 11/11) |
 | Persistencia local SQLite (v6), respaldo y restauración, exportación de sesión (`.plantillas.json`) y CSV | **[H]** |
-| Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; migración 0003 para bilateral **[S]** |
+| Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; migración 0003 para bilateral **[S]** (sin verificar todavía con una sesión de dos placas) |
 | Entrenamiento declarado: rutinas (propias o del profesional), ejercicios objetivo, entrenamientos, series (reps, peso, duración, distancia, RPE, molestia como nota), vínculo sesión↔serie, actividad unificada con descansos, tipo de rutina opcional e historial de entrenamientos separado (ADR 0013, etapa 15) | **[S]** (local; remoto preparado **[D]**) |
 | Actividad unificada (ajuste 4/11): rutina ejercicio por ejercicio dentro de la sesión de plantillas, serie precargada y corregible, descanso entre series con cuenta regresiva, cronómetro de caminata, isla flotante con la actividad en curso, entrenamientos en Historial también sin sesión medida | **[S]** |
 
@@ -38,8 +38,8 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 |---|---|---|---|
 | Descriptores por posición: media, máximo, desvío poblacional, n válidas/inválidas | `desc-1.0` | **[H]** | Cero válidas ⇒ no disponible |
 | Reparto antepié/talón sobre posiciones instrumentadas; variabilidad | `dist-1.0` | **[H]** | |
-| Izquierda/derecha y asimetría por zona | `dist-1.0` / `bilateral-1.0` | **[S]** | Sólo con ambos pies y tramos completos; si no, n/d |
-| Calidad: registros esperados/recibidos, huecos de secuencia, lecturas fallidas, desconexiones, tasa efectiva; por módulo | — | **[H]** / **[S]** | |
+| Izquierda/derecha y asimetría por zona | `dist-1.0` / `bilateral-1.0` | **[H]** (11/11, sensores apretados a mano) | Sólo con ambos pies y tramos completos; si no, n/d. En `2523ea01`: 60,4 / 39,6 % en tramos completos |
+| Calidad: registros esperados/recibidos, huecos de secuencia, lecturas fallidas, desconexiones, tasa efectiva; por módulo | — | **[H]** | Con dos módulos el 11/11; la tasa se calcula por captura desde 0.15.3 |
 | Comparación entre sesiones compatibles (misma configuración y procedencia): diferencias por posición y de reparto | — | **[H]** con dos sesiones físicas | |
 | Resumen diario (Hoy): indicadores del día y sesiones | — | **[H]** | |
 | Entrenamiento: series, volumen Σ reps×kg, minutos, RPE medio | — | **[S]** | Totales **declarados**, no medidos |
@@ -67,7 +67,7 @@ Sesiones cerradas con cuenta iniciada, confirmadas por cantidades (ADR 0008, eta
 
 ## 9. Lo que queda fuera (evolución futura)
 
-Plantilla integrada en el calzado y autonomía; calibración a fuerza; segundo módulo validado físicamente (previsto 6/11); sincronización de rutinas; herramientas de consulta a la base para el asistente; streaming de respuestas; integración con otros wearables; portal profesional; pruebas de uso con personas y utilidad clínica.
+Plantilla integrada en el calzado y autonomía; calibración a fuerza; sesión bilateral de ≥ 120 s con el pie, comparación entre sesiones bilaterales y sincronización bilateral verificada (pendientes tras la validación con dos placas del 11/11); detección de la pérdida de un módulo en menos de ≈ 4,5 s; sincronización de rutinas; herramientas de consulta a la base para el asistente; streaming de respuestas; integración con otros wearables; portal profesional; pruebas de uso con personas y utilidad clínica.
 
 ## 10. Evidencia
 

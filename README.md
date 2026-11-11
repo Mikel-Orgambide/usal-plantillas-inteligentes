@@ -4,7 +4,7 @@
 
 **NSL** · Plantillas inteligentes — plataforma wearable que adquiere, transmite, procesa, almacena y visualiza señales plantares. Proyecto Final de Ingeniería en Informática (Universidad del Salvador) · Mikel Orgambide Rueda · 2026.
 
-Repositorio: `Mikel-Orgambide/usal-plantillas-inteligentes` · versión entregada: tag `entrega-final` (app 0.15.2, firmware 0.3.1).
+Repositorio: `Mikel-Orgambide/usal-plantillas-inteligentes` · versión entregada: tag `entrega-final` (app 0.15.3, firmware 0.3.1).
 
 Un ESP32 por pie lee sensores de fuerza resistivos (FSR) y envía los registros por Bluetooth a una aplicación Android, que los organiza en sesiones, calcula indicadores descriptivos, guarda el historial, compara sesiones compatibles, genera un informe para revisión profesional, registra el entrenamiento declarado y ofrece un asistente explicativo. El sistema **describe mediciones y su calidad; no diagnostica ni estima fatiga**.
 
@@ -19,7 +19,7 @@ git clone https://github.com/Mikel-Orgambide/usal-plantillas-inteligentes.git
 cd usal-plantillas-inteligentes
 npm install            # Node 24 (.nvmrc) y npm 11
 npm run typecheck      # tipos de todos los paquetes y la app
-npm test               # 199 pruebas (vitest), deterministas, sin teléfono ni placa
+npm test               # 201 pruebas (vitest), deterministas, sin teléfono ni placa
 ```
 
 **B. App con datos de demostración (≈5 min, teléfono Android)**
@@ -189,11 +189,12 @@ Distinguimos siempre lo **validado con hardware real**, lo **implementado y comp
 
 | Validado con hardware real | Implementado, comprobado con simulación o pruebas automáticas | Diseño / evolución futura |
 |---|---|---|
-| Módulo unilateral de tres FSR (2,2 kΩ talón, 4,7 kΩ antepié) leído por el ESP32: reposo 0, respuesta monótona, sin saturación con el pie (3/11) | Sesión bilateral con dos módulos BLE, estado por módulo, pérdida y reconexión de uno, métricas `bilateral-1.0` (etapa 13; validación con dos placas prevista el 6/11) | Plantilla física integrada en calzado, cableado al cuerpo, alimentación autónoma, marcha |
+| Dos módulos de tres FSR (2,2 kΩ talón, 4,7 kΩ antepié), uno por pie y cada uno en su protoboard: reposo 0, respuesta monótona; izquierdo sin saturación con el pie (3/11), derecho validado por USB (11/11: 397 registros, 0 saltos) | Comparación entre dos sesiones bilaterales y sincronización de una sesión bilateral (etapa 13: probadas con dos fuentes simuladas; pendientes con placas) | Plantilla física integrada en calzado, cableado al cuerpo, alimentación autónoma, marcha |
 | USB: 475 registros sin saltos a 50,00 ms, 0 lecturas fallidas | Rutinas y entrenamiento declarado, actividad con descansos, carga asistida de series (etapa 15) | Calibración a newtons o presión |
 | BLE → app: dos sesiones físicas (436 y 609 registros, sin saltos), apoyo estático con el pie, pie derecho «n/d» | CSV por muestra | Sincronización de rutinas y entrenamientos (esquema 0005 preparado) |
 | Informe PDF sobre las sesiones físicas (etapa 12) | Respaldo, restauración y sincronización con Supabase y RLS 10/10 (etapas 10 y 11, verificadas en el teléfono con sesiones simuladas y sintéticas) | Pruebas de uso con personas |
 | Asistente explicativo en modo nube y servidor propio con sesiones físicas (etapa 14, 4/11) | | |
+| Sesión bilateral con dos placas por BLE (11/11): 714 registros por módulo a 20,03 reg/s, 0 huecos; corte de un módulo con recuperación automática, métricas `bilateral-1.0` sólo en tramos completos e informe PDF. La pérdida se detectó a ≈ 4,5 s (criterio ≤ 3 s, no cumplido) | | |
 
 Todas las pruebas con hardware se hicieron **en banco, sobre protoboard**, con la electrónica fuera del calzado y alimentación por USB; no hubo pruebas de uso con personas.
 
