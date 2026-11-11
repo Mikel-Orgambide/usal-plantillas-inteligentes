@@ -148,6 +148,8 @@ export interface SessionSummary extends SessionRow {
   readonly gap_count: number;
   readonly event_count: number;
   readonly configuration_id: string | null;
+  /** Todas las configuraciones de la sesión (una por módulo), ordenadas y unidas con « + ». */
+  readonly configuration_ids: string | null;
 }
 
 export type InsertOutcome =
@@ -350,7 +352,8 @@ export class SessionRepository {
         (SELECT COUNT(*) FROM event e WHERE e.session_id = s.id) AS event_count,
         (SELECT COUNT(*) FROM sample sm JOIN record r ON r.id = sm.record_id JOIN capture c ON c.id = r.capture_id WHERE c.session_id = s.id AND sm.status = 'read_error') AS read_error_count,
         (SELECT COUNT(*) FROM event e WHERE e.session_id = s.id AND e.type = 'sequence_gap') AS gap_count,
-        (SELECT c.configuration_id FROM capture c WHERE c.session_id = s.id ORDER BY c.id LIMIT 1) AS configuration_id
+        (SELECT c.configuration_id FROM capture c WHERE c.session_id = s.id ORDER BY c.id LIMIT 1) AS configuration_id,
+        (SELECT GROUP_CONCAT(cid, ' + ') FROM (SELECT DISTINCT c.configuration_id AS cid FROM capture c WHERE c.session_id = s.id ORDER BY cid)) AS configuration_ids
       FROM session s
       ${where}
       ORDER BY s.started_at DESC`, params);

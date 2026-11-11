@@ -126,6 +126,15 @@ export default function SessionDetailScreen() {
 
   const { session, captures, events, quality, series, metrics, modules, bilateral } = detail;
   const multi = modules.length > 1;
+  // Con dos módulos, cada captura se rotula con su pie («Izquierdo 1», «Derecho», «Izquierdo 2»).
+  const captureLabel = (i: number): string => {
+    const cap = metrics[i]?.capture;
+    const mod = cap ? modules.find((m) => m.device_id === cap.device_id) : undefined;
+    if (!multi || !mod || !mod.foot) return `Captura ${i + 1}`;
+    const name = mod.foot === "left" ? "Izquierdo" : mod.foot === "right" ? "Derecho" : "Módulo";
+    const same = metrics.filter((x) => x.capture.device_id === cap!.device_id);
+    return same.length > 1 ? `${name} ${same.findIndex((x) => x.capture.id === cap!.id) + 1}` : name;
+  };
   const window = metrics[Math.min(captureIndex, Math.max(0, metrics.length - 1))];
   const [lc, rc] = ZONE_CHANNELS[zone];
   const duration = session.duration_ms ?? 0;
@@ -213,9 +222,14 @@ export default function SessionDetailScreen() {
       {metrics.length > 1 ? (
         <View style={[styles.chipsRow, { marginTop: space[3] }]}>
           {metrics.map((m, i) => (
-            <Chip key={m.capture.id} variant={i === captureIndex ? "selected" : "neutral"} onPress={() => setCaptureIndex(i)}>{`Captura ${i + 1}`}</Chip>
+            <Chip key={m.capture.id} variant={i === captureIndex ? "selected" : "neutral"} onPress={() => setCaptureIndex(i)}>{captureLabel(i)}</Chip>
           ))}
         </View>
+      ) : null}
+      {multi && metrics.length > 1 ? (
+        <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[2] }}>
+          Cada captura pertenece a un módulo: acá el otro pie figura como n/d. El reparto entre ambos pies está más arriba.
+        </Text>
       ) : null}
       {!window ? (
         <Text variant="caption" color={colors.textSecondary} style={{ marginTop: space[3] }}>

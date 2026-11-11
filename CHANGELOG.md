@@ -6,6 +6,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 - Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
 
+## [0.15.3] — 2026-11-11
+
+- Informe PDF: la tasa efectiva se calcula por captura (un módulo ausente ya no baja la tasa informada) y la lista de sesiones comparables exige el mismo conjunto de configuraciones (antes bastaba la del primer módulo).
+- Detalle: con dos módulos, las capturas se rotulan con su pie («Izquierdo 1», «Derecho», «Izquierdo 2») y se aclara que el otro pie figura como n/d en esa vista.
+- Evidencia: módulo derecho por USB, primera sesión bilateral con dos placas y prueba de corte de un módulo (`docs/tesis/04_Evidencia_y_pruebas.md` §3 bis).
+
 ## [0.15.2] - 2026-11-04 — pulido de la actividad, el historial y la navegación
 
 ### Cambiado

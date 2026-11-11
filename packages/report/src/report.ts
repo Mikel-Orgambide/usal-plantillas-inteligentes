@@ -122,7 +122,16 @@ function analyse(b: SessionBundle): Analysis {
   let tMin = Number.POSITIVE_INFINITY, tMax = Number.NEGATIVE_INFINITY;
   for (const c of channels) for (const t of series[c]!.t) { if (t < tMin) tMin = t; if (t > tMax) tMax = t; }
   const spanSeconds = Number.isFinite(tMin) && tMax > tMin ? tMax - tMin : null;
-  const rate = spanSeconds && records.length > 1 ? (records.length - 1) / spanSeconds / Math.max(1, configurations.length) : null;
+  // Tasa efectiva: registros sobre el tiempo de señal de cada captura (un módulo ausente no baja la tasa de los demás).
+  const spanByCapture = new Map<string, { min: number; max: number; n: number }>();
+  for (const r of records) {
+    const t = r.samples[0]?.time_us; if (t === undefined) continue;
+    const e = spanByCapture.get(r.capture_id);
+    if (!e) spanByCapture.set(r.capture_id, { min: t, max: t, n: 1 }); else { if (t < e.min) e.min = t; if (t > e.max) e.max = t; e.n += 1; }
+  }
+  let rateN = 0, rateT = 0;
+  for (const e of spanByCapture.values()) if (e.n > 1 && e.max > e.min) { rateN += e.n - 1; rateT += (e.max - e.min) / 1e6; }
+  const rate = rateT > 0 ? rateN / rateT : null;
   let bilateral: BilateralMetrics | null = null;
   if (configurations.length === 2) {
     const devByCapture = new Map(b.captures.map((c) => [c.external_capture_id, c.device_id]));
@@ -281,7 +290,7 @@ function sectionQuality(a: Analysis): string {
 <tr><td>Saltos de secuencia</td><td>${num(q.gaps)}${q.missing ? ` (${num(q.missing)} registros faltantes)` : ""}</td></tr>
 <tr><td>Desconexiones / reconexiones</td><td>${num(q.disconnections)} / ${num(q.reconnections)}${q.restarts ? ` · reinicios de captura: ${num(q.restarts)}` : ""}</td></tr>
 ${bilateralRows(a.bilateral)}
-<tr><td>Tasa efectiva</td><td>${q.rate === null ? "n/d" : `${num(q.rate, 1)} registros/s`} sobre ${q.spanSeconds === null ? "n/d" : `${num(q.spanSeconds, 1)} s`} de señal</td></tr>
+<tr><td>Tasa efectiva</td><td>${q.rate === null ? "n/d" : `${num(q.rate, 1)} registros/s por módulo`} (media de las capturas) · ${q.spanSeconds === null ? "n/d" : `${num(q.spanSeconds, 1)} s`} de señal</td></tr>
 </table>
 <p class="muted">Un salto de secuencia o una desconexión marca un intervalo sin datos; esos intervalos no deben leerse como ausencia de apoyo.</p>`;
 }

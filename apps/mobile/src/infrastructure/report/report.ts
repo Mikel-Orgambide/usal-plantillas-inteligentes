@@ -37,8 +37,10 @@ export async function shareSessionReport(sessionId: string): Promise<string> {
   const bundle = await loadBundle(sessionId);
   const { repository } = await getDatabase();
   const all = await repository.listSessions();
+  // Comparable = mismo conjunto de configuraciones (todos los módulos), no sólo la del primero.
+  const configKey = [...new Set(bundle.captures.map((c) => c.configuration_id))].sort().join(" + ");
   const comparable = all
-    .filter((s) => s.id !== sessionId && s.source === bundle.configuration.source && s.user_id === bundle.session.user_id)
+    .filter((s) => s.id !== sessionId && s.source === bundle.configuration.source && s.user_id === bundle.session.user_id && (s.configuration_ids ?? s.configuration_id) === configKey)
     .slice(0, 8)
     .map((s) => ({ id: s.id, started_at: s.started_at, activity: s.activity }));
   const html = buildSessionReportHtml(bundle, {

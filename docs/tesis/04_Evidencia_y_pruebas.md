@@ -197,6 +197,20 @@ Observación: el segundo sensor apretado movió `R_LATERAL` y el tercero `R_MEDI
 
 Primera recepción de cada módulo con 55 ms de diferencia (izquierdo 19:41:06.577Z, derecho 19:41:06.632Z); última con la misma diferencia: los dos enlaces se sostienen en paralelo a 20 reg/s sin pérdidas. **Con esto la sesión bilateral pasa de [S] a [H] en su recorrido básico** (dos placas reales, dos enlaces BLE simultáneos, una sesión, export). Siguen pendientes de (c): corrida de ≥ 120 s con la consigna de cargas, `offset_ms` y `complete_fraction` leídos del Detalle, prueba de corte de 5 s y sincronización; y los protocolos (a) y (d).
 
+**Prueba de corte de un módulo** — sesión `2523ea01`, 11/11 16:45, 1 min 19 s, ambas placas por BLE; a mitad de la sesión se desenchufó el USB de la placa izquierda unos segundos. Evidencia: informe PDF generado por la app 0.15.2 en `test-data/fisico/informe-2026-11-11-2523ea01-bilateral-corte.pdf` y captura de la lista de eventos del Detalle.
+
+| Criterio de (c), apagado | Observado | ¿Cumple? |
+|---|---|---|
+| Evento de pérdida | «Módulo perdido» a 00:50 (`ESP32-9E7EE4`, izquierdo; «la sesión siguió con el otro») y «Desconectado · enlace cortado (código 147)» | Sí, registrado |
+| Demora de detección | La primera captura izquierda tiene 910 registros (≈ 45,5 s a 20 reg/s) y la pérdida se registró a los 50 s: ≈ 4,5 s entre el corte real y el evento (estimado; es el tiempo de supervisión del enlace BLE) | **No** cumple el ≤ 3 s fijado; se declara |
+| Recuperación | «Módulo recuperado» y «Reconectado» a 01:04, «tramo incompleto de 00:13»; «Reinicio de captura» con nueva captura `ESP32-9E7EE4-B66-C1` (B65 → B66) | Sí (automática, sin intervención en la app) |
+| El otro módulo | Derecho: 1541 muestras por canal en 77 s (20,0 reg/s), sin huecos | Sí |
+| Calidad global | 2708 registros, 16 248 muestras válidas, 0 con error, 0 saltos de secuencia; 1 desconexión, 1 reconexión, 1 reinicio de captura | Sí |
+| Métricas | `complete_fraction` 75,5 % en 2 tramos; izq./der. 64,5 / 35,5 % sobre todo y **60,4 / 39,6 % sólo en tramos completos**; asimetría por zona (tramos completos) talón 0,27 · medial 0,34 · lateral 0,04 | Sí: el corte se refleja y lo bilateral se calcula sólo con ambos presentes |
+| Desfase declarado | 125 ms, estimado por recepción (no se corrige) | Informado |
+
+Observaciones: `R_MEDIAL` y `R_LATERAL` llegaron a 4095 (saturación puntual apretando con la mano, 4,7 kΩ). El informe 0.15.2 mostraba «tasa efectiva 17,6 reg/s» porque promediaba el tramo sin el módulo izquierdo, y listaba como comparables sesiones unilaterales anteriores; ambas cosas se corrigieron en 0.15.3 (tasa por captura; comparables sólo con el mismo conjunto de configuraciones).
+
 ## 4. Pruebas que no se realizarán (declararlas)
 
 - Pruebas de uso/usabilidad con personas (SUS u otras): fuera de alcance.

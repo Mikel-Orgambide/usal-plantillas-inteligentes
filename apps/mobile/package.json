@@ -1,6 +1,6 @@
 {
   "name": "@plantillas/mobile",
-  "version": "0.15.2",
+  "version": "0.15.3",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
