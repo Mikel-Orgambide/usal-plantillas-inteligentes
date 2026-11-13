@@ -211,6 +211,34 @@ Primera recepción de cada módulo con 55 ms de diferencia (izquierdo 19:41:06.5
 
 Observaciones: `R_MEDIAL` y `R_LATERAL` llegaron a 4095 (saturación puntual apretando con la mano, 4,7 kΩ). El informe 0.15.2 mostraba «tasa efectiva 17,6 reg/s» porque promediaba el tramo sin el módulo izquierdo, y listaba como comparables sesiones unilaterales anteriores; ambas cosas se corrigieron en 0.15.3 (tasa por captura; comparables sólo con el mismo conjunto de configuraciones).
 
+## 3 ter. Sesión bilateral del 13/11/2026 (90 s, app 0.15.3)
+
+Sesión `d3367518`, 13/11 16:41 (hora local), 1 min 32 s, actividad «Caminata», izquierdo `ESP32-9E7EE4` (firmware 0.3.0) + derecho `ESP32-68D1D8` (0.3.1), ambas placas en protoboard alimentadas por USB, sensores cargados a mano. Evidencia: `test-data/fisico/sesion-2026-11-13-d3367518-bilateral.csv` (10 815 filas = 3605 registros × 3 canales) e informe PDF de la app 0.15.3 en `test-data/fisico/informe-2026-11-13-d3367518-bilateral.pdf`. Es la corrida bilateral más larga registrada; **no** alcanza los ≥ 120 s ni sigue la consigna de seis fases de (c), por lo que esos dos puntos se declaran como no ejecutados tal como fueron fijados.
+
+| Criterio de (c) | Izquierdo | Derecho | ¿Cumple? |
+|---|---|---|---|
+| Registros | 1802 (secuencia 4..1805) | 1803 (0..1802) | — |
+| Duración por reloj del módulo | 90,0 s | 90,1 s | Corrida de 90 s; el criterio pedía ≥ 120 s |
+| Tasa efectiva | 20,0 reg/s | 20,0 reg/s | Sí (≥ 19,8) |
+| Período entre registros | mín 50,0 · media 50,00 · máx 50,0 ms | ídem | Sí |
+| Huecos de secuencia | 0 | 0 | Sí |
+| Muestras no válidas | 0 de 5406 | 0 de 5409 | Sí |
+| Mayor intervalo entre recepciones en el teléfono | 0,16 s | 0,16 s | — |
+| Dispersión de la recepción (p5–p95) | 41 ms | 40 ms | Informativo |
+| Estabilidad de la recepción (mediana 2.ª mitad − 1.ª mitad) | 0 ms | 0 ms | Sí (< 50 ms) |
+| Desfase declarado por la app | 194 ms, por recepción, no se corrige | | Informado |
+| Fracción con ambos módulos | 99,9 % | | Sí (≥ 0,95) |
+| Máximos por canal | L_HEEL 3430 · L_MEDIAL 3742 · L_LATERAL 3942 | R_HEEL 3954 · R_MEDIAL 3984 · R_LATERAL 3969 | Sin saturación (0 lecturas en 4095) |
+| Desconexiones / reconexiones | 0 / 0 | | Sí |
+
+Indicadores del informe (descriptores de la lectura en cuentas ADC, no fuerza ni presión): antepié/talón 64,3 / 35,7 %; izquierdo/derecho 52,4 / 47,6 % (52,3 / 47,7 % en tramos completos); asimetría por zona talón −0,04 · medial 0,03 · lateral 0,16; variabilidad 1,22.
+
+**Coherencia izquierda/derecha con la carga aplicada** (reparto izquierdo en ventanas de 5 s, calculado sobre el CSV): al cargar sólo el módulo izquierdo el reparto fue 1,00 (0–5 s, 20–25 s, 80–90 s); al cargar sólo el derecho, 0,00–0,16 (5–10 s, 70–80 s); con carga sostenida en ambos (25–60 s), entre 0,47 y 0,56. El criterio «peso a izquierda ⇒ > 0,5; peso a derecha ⇒ < 0,5» se cumple en esos tramos. Los tres canales de cada módulo subieron y bajaron juntos, así que esta sesión **no** aporta evidencia sobre el reparto antepié/talón (no hubo fases diferenciadas de antepié y talones).
+
+Verificaciones de la app 0.15.3 en hardware: la tasa efectiva se informa por módulo (20,0); el Detalle rotula las capturas «Izquierdo» y «Derecho» y muestra el otro pie como «no instrumentado» en cada una; la lista de eventos registra conexión e inicio/detención de captura por dispositivo. `L_LATERAL`, que había quedado en 0 en la sesión de comprobación `1108d2d2` del 12/11 (causa no registrada: conexión en la protoboard o sensor no cargado), respondió con normalidad (máximo 3942).
+
+Siguen sin ejecutarse: corrida de ≥ 120 s con la consigna completa, protocolo (a) H3 por sensor, protocolo (d) Comparación entre dos sesiones con el mismo protocolo, y la confirmación en Supabase de una sesión bilateral.
+
 ## 4. Pruebas que no se realizarán (declararlas)
 
 - Pruebas de uso/usabilidad con personas (SUS u otras): fuera de alcance.
