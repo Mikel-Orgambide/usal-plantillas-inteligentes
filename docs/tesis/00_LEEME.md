@@ -1,6 +1,6 @@
 # docs/tesis — material base para redactar la tesis
 
-- Fecha de corte: 5/11/2026; **actualizado el 11/11/2026** con la validación con dos placas. App 0.15.3; firmware 0.3.1 en la placa derecha y 0.3.0 en la izquierda (no se recargó; 0.3.1 sólo agrega el entorno del pie derecho).
+- Fecha de corte: 5/11/2026; actualizado el 11/11/2026 con la validación con dos placas y **cerrado el 13/11/2026** (ver `10_Cierre_del_prototipo.md`). App 0.15.3; firmware 0.3.1 en la placa derecha y 0.3.0 en la izquierda (no se recargó; 0.3.1 sólo agrega el entorno del pie derecho).
 - Propósito: reunir en un solo lugar, en forma de puntos y tablas, todo lo que la tesis puede afirmar sobre el prototipo, con la ruta de la evidencia en el repositorio. **No es prosa académica**: es la materia prima para redactar en Google Docs y luego pasar a LaTeX (template de la cátedra: `https://github.com/Noorman999/usal-proyecto-final-template`).
 - Regla: si algo no figura acá o en los documentos enlazados, no se afirma en la tesis sin verificarlo primero en el código o en los registros.
 
@@ -16,6 +16,8 @@
 | `05_Mapa_tesis.md` | Recorrido por cada parte del documento: qué pide la cátedra, qué conservar de la Entrega 5, qué cambiar, qué agregar y de qué archivo del repo sale | Todos |
 | `06_Defensa.md` | Guion de demo (< 4 min), carga de datos de demostración, plan de respaldo, checklist del día, video, preguntas del jurado con datos | Defensa del 17/11 (o la fecha que fije la cátedra) |
 | `07_Glosario_y_siglas.md` | Glosario, siglas y símbolos (lo escribe otro agente) | Preliminares (glosario/siglas/símbolos) |
+| `09_Deudas_y_limitaciones.md` | Deudas técnicas y limitaciones conocidas, con su estado | 6, 7, 8, defensa |
+| `10_Cierre_del_prototipo.md` | **Empezar por acá.** Síntesis del cierre: qué hace el sistema y cómo, qué quedó demostrado y qué no, qué se puede afirmar, requisitos de la cátedra con su estado y pasos para cerrar el repositorio | Todos |
 | `08_Uso_de_IA.md` | Material para la declaración de uso de IA: herramientas, para qué, qué hizo el autor, cómo se verificó | Preliminares (declaración de uso de IA), cap. 2 (metodología), apéndice de prompts |
 
 Documentos del repo que estos archivos citan con frecuencia:
@@ -40,7 +42,7 @@ Documentos del repo que estos archivos citan con frecuencia:
 Reglas de uso:
 
 - Un estado [H] exige número + ruta del registro (`test-data/...` o `docs/capturas/...`). Sin registro, baja a [S] o [D].
-- Una función puede tener estados distintos por parte: p. ej., bilateral = [H] en su recorrido básico desde el 11/11 (dos enlaces BLE simultáneos, sesión con dos módulos, pérdida y recuperación de uno, métricas en tramos completos, informe PDF), y [S] en lo que no se probó con placas: comparación entre dos sesiones bilaterales y sincronización bilateral verificada (ver `04_Evidencia_y_pruebas.md` §3 bis).
+- Una función puede tener estados distintos por parte: p. ej., bilateral = [H] en su recorrido básico desde el 11/11 (dos enlaces BLE simultáneos, sesión con dos módulos, pérdida y recuperación de uno, métricas en tramos completos, informe PDF), más comparación entre dos sesiones bilaterales y sincronización bilateral desde el 13/11, y [S] en lo que no se probó con placas: deriva de reloj y exactitud del desfase (ver `04_Evidencia_y_pruebas.md` §3 bis, §3 ter y §3 quater).
 - Las magnitudes son **cuentas ADC (0–4095)** sin calibración: nunca escribir «presión», «fuerza», «kg» o «N» como salida del prototipo.
 - Diferenciar siempre medición → lectura descriptiva → patrón → recomendación → diagnóstico (el prototipo llega hasta lectura descriptiva; no diagnostica).
 - Diferenciar lo demostrado por la literatura, lo demostrado por el prototipo, lo diseñado y lo futuro (instrucciones del proyecto).
@@ -73,3 +75,13 @@ La segunda placa llegó el **11/11** (no el 6/11, como preveían estos documento
 - **Prueba de corte** `2523ea01`: pérdida detectada ≈ 4,5 s después del corte (**no cumple** el ≤ 3 s fijado; se declara), recuperación automática con nueva captura, tramo incompleto de 13 s, `complete_fraction` 75,5 %, izq./der. 60,4 / 39,6 % en tramos completos, desfase declarado 125 ms, 16 248 muestras válidas y 0 con error.
 - **App 0.15.3**: tasa efectiva calculada por captura (antes promediaba el tramo sin un módulo), sesiones comparables sólo con el mismo conjunto de configuraciones, capturas del Detalle rotuladas por pie.
 - **Sigue pendiente**: sesión de ≥ 120 s con el pie y la consigna de cargas; su repetición para Comparación y el PDF de comparación; sincronización verificada de una sesión bilateral; H3 por sensor (opcional); corrida USB de 60 s del módulo derecho; confirmar medial/lateral del derecho; saturación puntual de `R_MEDIAL`/`R_LATERAL` con 4,7 kΩ al apretar con la mano.
+
+## Cierre 13/11
+
+Validación con hardware cerrada; sin cambios de código desde 0.15.3. Lo incorporado (detalle en `04` §3 ter y §3 quater; síntesis en `10_Cierre_del_prototipo.md`):
+
+- **Sesión bilateral de 90 s** `d3367518`: 1802 + 1803 registros, 20,0 reg/s, 0 huecos, 0 errores, 99,9 % con ambos módulos, sin saturación; reparto izq./der. coherente con la carga aplicada.
+- **Comparación entre dos sesiones bilaterales** (`f66ec0f5` y `d3367518`): comparables; diferencia izq./der. de 4,6 puntos; PDF de comparación generado.
+- **Sincronización bilateral**: ambas sesiones en Supabase con las mismas cantidades que en el teléfono.
+- **No ejecutado, se declara**: sesión de ≥ 120 s con consigna de seis fases; H3 por sensor; corrida USB de 60 s del derecho; orden medial/lateral del derecho; saturación del antepié con el pie; asistente sobre la comparación bilateral. La lista «Sigue pendiente» de la actualización del 11/11 debe leerse como «no ejecutado» salvo comparación y sincronización, que se hicieron.
+- Pendientes que ya no son de desarrollo sino del autor: entrevista y encuesta, costos reales, video de demo, acceso al repositorio para la cátedra, tag `entrega-final`.

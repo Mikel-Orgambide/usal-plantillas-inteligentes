@@ -16,7 +16,7 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 | Sensores | **[H]** | FSR406 en el talón y FSR402 en antepié medial y lateral, divisor resistivo (2,2 kΩ talón, 4,7 kΩ antepié), ADC 12 bits del ESP32 (cuentas 0–4095, unidad `adc_count`). Elección por ensayo (etapa 9). |
 | Módulo unilateral izquierdo `ESP32-FSR-L-001` | **[H]** | 3 canales, 20 registros/s, USB y BLE; 475 registros sin saltos por USB; sesiones físicas con apoyo del pie (etapa 9, 3/11). |
 | Módulo derecho `ESP32-FSR-R-001` | **[H]** | Placa `ESP32-68D1D8`, `esp32-analog-right` 0.3.1, banco propio en una segunda protoboard. USB 11/11: 397 registros, 0 saltos, 50,00 ms, 0 errores. Pendiente: corrida de 60 s y confirmar medial/lateral. |
-| Sesión bilateral (dos módulos) | **[H]** recorrido básico / **[S]** resto | Dos fuentes BLE independientes, estado por módulo, tramos incompletos, correspondencia por recepción con desfase declarado (ADR 0011, etapa 13). Con dos placas (11/11): `9befa503`, 714 registros por módulo a 20,03 reg/s, 0 huecos; `2523ea01`, corte de un módulo con recuperación automática (pérdida detectada a ≈ 4,5 s, no ≤ 3 s), `complete_fraction` 75,5 %, desfase 125 ms. Sólo con simulación: comparación entre sesiones bilaterales, sincronización bilateral, deriva de reloj. Pendiente: sesión de ≥ 120 s con el pie. |
+| Sesión bilateral (dos módulos) | **[H]** recorrido básico / **[S]** resto | Dos fuentes BLE independientes, estado por módulo, tramos incompletos, correspondencia por recepción con desfase declarado (ADR 0011, etapa 13). Con dos placas (11/11): `9befa503`, 714 registros por módulo a 20,03 reg/s, 0 huecos; `2523ea01`, corte de un módulo con recuperación automática (pérdida detectada a ≈ 4,5 s, no ≤ 3 s), `complete_fraction` 75,5 %, desfase 125 ms. Sólo con simulación: comparación entre sesiones bilaterales, sincronización bilateral, deriva de reloj. Pendiente: sesión de ≥ 120 s con el pie. 13/11: sesión de 90 s `d3367518` (1802 + 1803 registros, 0 huecos, 99,9 % con ambos), comparación con `f66ec0f5` y PDF de comparación, y ambas sincronizadas en Supabase: también **[H]**. Sigue **[S]**: deriva de reloj y exactitud del desfase. |
 | Montaje | **[H]** banco | Protoboard, sensores sobre el piso con moneda, apoyo estático del pie. Plantilla en calzado, cableado al cuerpo y autonomía: **[D]**, evolución futura (decisión del 3/11). |
 | Calibración a fuerza/presión | **[D]** | No implementada; los valores son cuentas ADC. Caracterización H3 por sensor pendiente. |
 
@@ -28,7 +28,7 @@ Una plataforma wearable que convierte la lectura de sensores plantares en regist
 | Procedencia `physical`/`simulated` separada del transporte (BLE/USB) | **[H]** |
 | Sesión: actividad, contexto, inicio/fin, estado, eventos (conexión, captura, desconexión, reconexión, módulo perdido/recuperado) | **[H]** (unilateral y bilateral, incluido módulo perdido/recuperado el 11/11) |
 | Persistencia local SQLite (v6), respaldo y restauración, exportación de sesión (`.plantillas.json`) y CSV | **[H]** |
-| Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; migración 0003 para bilateral **[S]** (sin verificar todavía con una sesión de dos placas) |
+| Cuenta y copia remota (Supabase: sesiones, capturas, registros, resultados, configuraciones de todos los módulos) | **[H]** unilateral sincronizada; bilateral **[H]** (13/11: dos sesiones de dos placas confirmadas con cantidades coincidentes) |
 | Entrenamiento declarado: rutinas (propias o del profesional), ejercicios objetivo, entrenamientos, series (reps, peso, duración, distancia, RPE, molestia como nota), vínculo sesión↔serie, actividad unificada con descansos, tipo de rutina opcional e historial de entrenamientos separado (ADR 0013, etapa 15) | **[S]** (local; remoto preparado **[D]**) |
 | Actividad unificada (ajuste 4/11): rutina ejercicio por ejercicio dentro de la sesión de plantillas, serie precargada y corregible, descanso entre series con cuenta regresiva, cronómetro de caminata, isla flotante con la actividad en curso, entrenamientos en Historial también sin sesión medida | **[S]** |
 
@@ -67,7 +67,7 @@ Sesiones cerradas con cuenta iniciada, confirmadas por cantidades (ADR 0008, eta
 
 ## 9. Lo que queda fuera (evolución futura)
 
-Plantilla integrada en el calzado y autonomía; calibración a fuerza; sesión bilateral de ≥ 120 s con el pie, comparación entre sesiones bilaterales y sincronización bilateral verificada (pendientes tras la validación con dos placas del 11/11); detección de la pérdida de un módulo en menos de ≈ 4,5 s; sincronización de rutinas; herramientas de consulta a la base para el asistente; streaming de respuestas; integración con otros wearables; portal profesional; pruebas de uso con personas y utilidad clínica.
+Plantilla integrada en el calzado y autonomía; calibración a fuerza; sesión bilateral de ≥ 120 s con el pie y consigna de cargas (no ejecutada: la más larga es de 90 s con carga manual, 13/11); detección de la pérdida de un módulo en menos de ≈ 4,5 s; sincronización de rutinas; herramientas de consulta a la base para el asistente; streaming de respuestas; integración con otros wearables; portal profesional; pruebas de uso con personas y utilidad clínica.
 
 ## 10. Evidencia
 

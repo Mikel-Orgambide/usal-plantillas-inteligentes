@@ -34,6 +34,16 @@ Sin `.env` la app funciona sólo en local (sin cuenta, sincronización ni asiste
 
 Cargar `esp32-analog` (pie izquierdo) y `esp32-analog-right` (pie derecho) desde `firmware/` con PlatformIO; en la app, **Plantillas** → conectar ambos módulos → **Nueva sesión**. Cableado y pines en [Firmware del ESP32](#firmware-del-esp32) y en [`docs/incrementos/etapa-09-fuente-fisica.md`](docs/incrementos/etapa-09-fuente-fisica.md).
 
+## Capturas
+
+Detalle de una sesión con dos módulos (13/11/2026, app 0.15.3): carga por posición de cada pie, señal de ambos talones y eventos por dispositivo. Más capturas en [`docs/capturas`](docs/capturas/); informes PDF de ejemplo en [`test-data/fisico`](test-data/fisico/).
+
+<p>
+<img src="docs/capturas/0.15.3/01-detalle-bilateral-izquierdo.png" alt="Detalle: pie izquierdo" width="230">
+<img src="docs/capturas/0.15.3/02-detalle-bilateral-derecho.png" alt="Detalle: pie derecho" width="230">
+<img src="docs/capturas/0.15.3/03-detalle-bilateral-grafico-eventos.png" alt="Detalle: gráfico y eventos" width="230">
+</p>
+
 ## Arquitectura
 
 Cuatro capas (especificación `docs/especificacion/02` y `04`):
@@ -189,12 +199,12 @@ Distinguimos siempre lo **validado con hardware real**, lo **implementado y comp
 
 | Validado con hardware real | Implementado, comprobado con simulación o pruebas automáticas | Diseño / evolución futura |
 |---|---|---|
-| Dos módulos de tres FSR (2,2 kΩ talón, 4,7 kΩ antepié), uno por pie y cada uno en su protoboard: reposo 0, respuesta monótona; izquierdo sin saturación con el pie (3/11), derecho validado por USB (11/11: 397 registros, 0 saltos) | Comparación entre dos sesiones bilaterales y sincronización de una sesión bilateral (etapa 13: probadas con dos fuentes simuladas; pendientes con placas) | Plantilla física integrada en calzado, cableado al cuerpo, alimentación autónoma, marcha |
+| Dos módulos de tres FSR (2,2 kΩ talón, 4,7 kΩ antepié), uno por pie y cada uno en su protoboard: reposo 0, respuesta monótona; izquierdo sin saturación con el pie (3/11), derecho validado por USB (11/11: 397 registros, 0 saltos) | Deriva de reloj entre módulos y exactitud del desfase estimado (etapa 13: dos fuentes simuladas; sin referencia externa) | Plantilla física integrada en calzado, cableado al cuerpo, alimentación autónoma, marcha |
 | USB: 475 registros sin saltos a 50,00 ms, 0 lecturas fallidas | Rutinas y entrenamiento declarado, actividad con descansos, carga asistida de series (etapa 15) | Calibración a newtons o presión |
-| BLE → app: dos sesiones físicas (436 y 609 registros, sin saltos), apoyo estático con el pie, pie derecho «n/d» | CSV por muestra | Sincronización de rutinas y entrenamientos (esquema 0005 preparado) |
+| BLE → app: dos sesiones físicas (436 y 609 registros, sin saltos), apoyo estático con el pie, pie derecho «n/d» | Asistente sobre una comparación bilateral | Sincronización de rutinas y entrenamientos (esquema 0005 preparado) |
 | Informe PDF sobre las sesiones físicas (etapa 12) | Respaldo, restauración y sincronización con Supabase y RLS 10/10 (etapas 10 y 11, verificadas en el teléfono con sesiones simuladas y sintéticas) | Pruebas de uso con personas |
 | Asistente explicativo en modo nube y servidor propio con sesiones físicas (etapa 14, 4/11) | | |
-| Sesión bilateral con dos placas por BLE (11/11): 714 registros por módulo a 20,03 reg/s, 0 huecos; corte de un módulo con recuperación automática, métricas `bilateral-1.0` sólo en tramos completos e informe PDF. La pérdida se detectó a ≈ 4,5 s (criterio ≤ 3 s, no cumplido) | | |
+| Sesión bilateral con dos placas por BLE (11/11): 714 registros por módulo a 20,03 reg/s, 0 huecos; corte de un módulo con recuperación automática, métricas `bilateral-1.0` sólo en tramos completos e informe PDF. La pérdida se detectó a ≈ 4,5 s (criterio ≤ 3 s, no cumplido). 13/11: sesión de 90 s (1802 + 1803 registros, 0 huecos), comparación entre dos sesiones bilaterales con PDF y sincronización confirmada en Supabase con cantidades coincidentes | | |
 
 Todas las pruebas con hardware se hicieron **en banco, sobre protoboard**, con la electrónica fuera del calzado y alimentación por USB; no hubo pruebas de uso con personas.
 
@@ -209,7 +219,7 @@ Todas las pruebas con hardware se hicieron **en banco, sobre protoboard**, con l
 
 ## Documentación para la tesis
 
-[`docs/tesis/`](docs/tesis/) reúne, en puntos y tablas, el material para redactar el documento final: índice y convención de estados ([`00_LEEME.md`](docs/tesis/00_LEEME.md)), especificación final con requisitos y evidencia, arquitectura y código, funcionalidades por pantalla, evidencia y protocolos de prueba, mapa capítulo por capítulo, guion de defensa, glosario y declaración de uso de IA.
+[`docs/tesis/`](docs/tesis/) reúne, en puntos y tablas, el material para redactar el documento final. La síntesis del cierre (qué hace, qué quedó demostrado, qué no y el estado de los requisitos de la cátedra) está en [`10_Cierre_del_prototipo.md`](docs/tesis/10_Cierre_del_prototipo.md). El resto: índice y convención de estados ([`00_LEEME.md`](docs/tesis/00_LEEME.md)), especificación final con requisitos y evidencia, arquitectura y código, funcionalidades por pantalla, evidencia y protocolos de prueba, mapa capítulo por capítulo, guion de defensa, glosario y declaración de uso de IA.
 
 ## Evidencia y decisiones
 

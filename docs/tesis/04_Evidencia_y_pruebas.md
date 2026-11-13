@@ -237,7 +237,43 @@ Indicadores del informe (descriptores de la lectura en cuentas ADC, no fuerza ni
 
 Verificaciones de la app 0.15.3 en hardware: la tasa efectiva se informa por módulo (20,0); el Detalle rotula las capturas «Izquierdo» y «Derecho» y muestra el otro pie como «no instrumentado» en cada una; la lista de eventos registra conexión e inicio/detención de captura por dispositivo. `L_LATERAL`, que había quedado en 0 en la sesión de comprobación `1108d2d2` del 12/11 (causa no registrada: conexión en la protoboard o sensor no cargado), respondió con normalidad (máximo 3942).
 
-Siguen sin ejecutarse: corrida de ≥ 120 s con la consigna completa, protocolo (a) H3 por sensor, protocolo (d) Comparación entre dos sesiones con el mismo protocolo, y la confirmación en Supabase de una sesión bilateral.
+**Comparación entre dos sesiones bilaterales (protocolo (d))** — sesión A `f66ec0f5` (13/11 16:48:52, 1 min 35 s, 3731 registros, 0 saltos, 99,9 % con ambos módulos, desfase 235 ms) contra sesión B `d3367518` (16:41:16, la de arriba). Separadas por 7 min 36 s, mismo montaje sin mover los sensores, carga manual sin secuencia cronometrada. Evidencia: `test-data/fisico/informe-comparacion-2026-11-13-f66ec0f5-d3367518-bilateral.pdf` (app 0.15.3). De `f66ec0f5` no se exportó CSV: sus números salen del informe y de Supabase.
+
+| Criterio de (d) | Observado | ¿Cumple? |
+|---|---|---|
+| Comparabilidad | «Comparten configuración y origen de señal»: `ESP32-FSR-L-001 + ESP32-FSR-R-001`, `physical` | Sí |
+| Diferencia en antepié/talón | 64,0 / 36,0 % (A) y 64,3 / 35,7 % (B): 0,3 puntos | Sí (≤ 10), con la salvedad de que no hubo fases diferenciadas de antepié y talón |
+| Diferencia en izq./der. (tramos completos) | 47,7 / 52,3 % (A) y 52,3 / 47,7 % (B): 4,6 puntos | Sí (≤ 10) |
+| PDF de comparación | Generado con identificación, comparabilidad, diferencias por posición, gráficos enfrentados y limitaciones | Sí |
+| Asistente («¿qué cambió respecto de la anterior?») | No ejecutado con estas sesiones | No ejecutado |
+| Duración y secuencia | ≈ 90 s cada una (el protocolo pedía 60 s con tres fases de 20 s); secuencia de carga manual, no idéntica | Desvío del protocolo; se declara |
+
+Medias por posición (cuentas ADC), A → B: `L_HEEL` 1065 → 1406 (+32,0 %) · `L_MEDIAL` 911 → 1358 (+49,1 %) · `L_LATERAL` 1129 → 1518 (+34,5 %) · `R_HEEL` 1276 → 1513 (+18,5 %) · `R_MEDIAL` 1059 → 1279 (+20,8 %) · `R_LATERAL` 1065 → 1102 (+3,5 %). Máximos entre 3395 y 4037, ninguno en 4095. Las medias difieren porque dependen de cuánto tiempo estuvo cargado cada sensor, que no se controló; los repartos (proporciones) fueron más estables que las medias. No es una medida de repetibilidad del sensor.
+
+**Sincronización de sesiones bilaterales** — consulta en el SQL Editor de Supabase (proyecto `plantillas-inteligentes`) el 13/11, que cuenta los registros por captura de las dos sesiones. Evidencia: `test-data/remote/2026-11-13-supabase-sesiones-bilaterales-registros.png`.
+
+| Sesión | Captura | Registros en Supabase | En el teléfono | ¿Coincide? |
+|---|---|---|---|---|
+| `d3367518` | `ESP32-68D1D8-B9-C1` (derecho) | 1803 | 1803 (CSV) | Sí |
+| `d3367518` | `ESP32-9E7EE4-B70-C1` (izquierdo) | 1802 | 1802 (CSV) | Sí |
+| `f66ec0f5` | `ESP32-68D1D8-B9-C2` (derecho) | 1866 | 3731 en total (informe) | Sí: 1866 + 1865 = 3731 |
+| `f66ec0f5` | captura del izquierdo `ESP32-9E7EE4-B70-…` | 1865 | | |
+
+Las dos sesiones quedaron en el servidor con sus dos capturas cada una y las cantidades iguales a las locales: el criterio «sesión confirmada en Supabase con registros de ambos módulos» de (c) se cumple, y la sincronización bilateral pasa de [S] a [H].
+
+## 3 quater. Cierre de la validación (13/11/2026)
+
+Con esto se cierra la validación con hardware. Estado final de cada protocolo de §3; lo no ejecutado **no** se completará antes de la entrega y se declara como tal.
+
+| Protocolo | Estado final | Qué se declara |
+|---|---|---|
+| (a) H3, caracterización de los 6 sensores | **No ejecutado** | Sin curva lectura–carga por sensor; sin calibración |
+| (b) Módulo derecho por USB | **Ejecutado en parte** (11/11): identificación, secuencia, período y respuesta por canal cumplen | Corrida de ≈ 20 s (397 registros), no de 60 s; orden medial/lateral del derecho sin confirmar |
+| (c) Sesión bilateral por BLE | **Ejecutado con desvíos**: tasa, huecos, validez, fracción completa, estabilidad de la recepción, coherencia izq./der. y sincronización cumplen (11/11 y 13/11) | Corrida más larga de 90 s (no ≥ 120 s); carga manual sin las seis fases; sin evidencia de antepié/talón con dos placas |
+| (c) Apagado de un módulo | **Ejecutado** (11/11): pérdida, recuperación automática, nueva captura, métricas en tramos completos | Detección a ≈ 4,5 s: **no cumple** el ≤ 3 s fijado |
+| (d) Comparación y PDF | **Ejecutado con desvíos** (13/11) con dos sesiones bilaterales | Sesiones de ≈ 90 s con carga manual no cronometrada; asistente no probado sobre esta comparación |
+
+Las tablas de §3 quedan con sus criterios originales, sin completar, como registro de lo que se fijó antes de ejecutar; los resultados están en §3 bis y §3 ter.
 
 ## 4. Pruebas que no se realizarán (declararlas)
 

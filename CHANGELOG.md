@@ -4,7 +4,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 ## [Sin publicar]
 
-- Pendiente: validación física de la sesión bilateral con dos ESP32 (6/11/2026); caracterización H3 por sensor; despliegue de la función `assistant` y validación del asistente en ambos modos.
+- Sin cambios de código desde 0.15.3.
+- 13/11/2026, cierre de la validación con hardware: sesión bilateral de 90 s (`d3367518`), comparación entre dos sesiones bilaterales con PDF (`f66ec0f5`), sincronización bilateral verificada en Supabase; capturas 0.15.3 en el README; `docs/tesis/10_Cierre_del_prototipo.md`.
+- No ejecutado (se declara): sesión de ≥ 120 s con consigna de cargas, caracterización H3 por sensor, corrida USB de 60 s del módulo derecho.
 
 ## [0.15.3] — 2026-11-11
 
