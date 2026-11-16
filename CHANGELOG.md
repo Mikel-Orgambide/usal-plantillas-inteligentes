@@ -4,6 +4,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). L
 
 ## [Sin publicar]
 
+- 16/11/2026, limpieza documental de la rama principal (sin cambios en la aplicación, el firmware, los paquetes, los contratos ni los datos de prueba). La etiqueta `entrega-final` (`1169f82`) conserva el estado evaluado en la tesis, con todos los archivos retirados.
+  - README reordenado para la evaluación: puntos de entrada, requisitos, tres recorridos, datos de prueba, resultados y límites; versiones ensayadas precisadas (app 0.15.3, firmware 0.3.0 izquierdo y 0.3.1 derecho) e instrucciones para obtener el APK.
+  - Índices nuevos: `docs/README.md`, `docs/tesis/00_LEEME.md` y `docs/especificacion/00_LEEME.md`; `docs/tesis/06_Defensa.md` queda como recorrido reproducible de la demostración; `docs/diseno/marca/README.md` reúne las reglas de la marca; `test-data/README.md` describe las carpetas reales.
+  - Retirados (instrucciones internas, guías de redacción y duplicados): `CLAUDE.md`, `apps/mobile/AGENTS.md`, `docs/tesis/05_Mapa_tesis.md`, `docs/especificacion/01`, `06` y `07`, `docs/diseno/figma.md`, `docs/diseno/brief-interfaz.md` (queda la copia del paquete de diseño) y `docs/plantillas-inteligentes-diseno.zip` (instantánea anterior de la carpeta expandida).
 - Sin cambios de código desde 0.15.3.
 - 13/11/2026, cierre de la validación con hardware: sesión bilateral de 90 s (`d3367518`), comparación entre dos sesiones bilaterales con PDF (`f66ec0f5`), sincronización bilateral verificada en Supabase; capturas 0.15.3 en el README; `docs/tesis/10_Cierre_del_prototipo.md`.
 - No ejecutado (se declara): sesión de ≥ 120 s con consigna de cargas, caracterización H3 por sensor, corrida USB de 60 s del módulo derecho.

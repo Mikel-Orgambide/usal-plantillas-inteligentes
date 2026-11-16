@@ -87,7 +87,7 @@ Hipótesis (para reemplazar la de la Entrega 5): proponer una hipótesis tecnol�
 | RNF-07 | Procedencia explícita | `physical`/`simulated` en cada captura; informe lo declara | [H] | Contrato; PDF |
 | RNF-08 | Fluidez de la interfaz en grabación | Redibujo limitado a 8 Hz sin perder registros | [H] | `etapa-08b` |
 | RNF-09 | Reproducibilidad del software | Pruebas automáticas deterministas; 201 pruebas en verde; typecheck | [S] | `npm test`, `04_Evidencia_y_pruebas.md` |
-| RNF-10 | Costo de operación acotado | Servicios en planes gratuitos; LLM por uso con límite (30 consultas/h por usuario) | [H] | `05_Mapa_tesis.md` §Cap. 5 |
+| RNF-10 | Costo de operación acotado | Servicios en planes gratuitos; LLM por uso con límite (30 consultas/h por usuario) | [H] | Tesis, capítulo 5 |
 | RNF-11 | Prudencia en la comunicación | Ninguna pantalla, informe ni respuesta del asistente presenta fuerza, presión, fatiga o diagnóstico; respuestas IA marcadas «Generado por IA · revisar» | [H] (revisión de textos) | ADR 0010, 0012 |
 | RNF-12 | Desfase entre módulos declarado | `offset_ms` informado; correspondencia por recepción | [H] declarado con dos placas (125 ms en `2523ea01`; primera recepción con 55 ms de diferencia en `9befa503`) · [S] exactitud de la estimación (simulado 700 ms + deriva 1 %: −760..−650 ms); sin contraste con una referencia externa | `etapa-13` |
 | RNF-14 | Detección de la pérdida de un módulo | `module_lost` registrado ≤ 3 s después del corte (criterio fijado en `04` §3) | **No cumplido**: ≈ 4,5 s el 11/11 (tiempo de supervisión del enlace BLE); se declara | `04` §3 bis; `09` |

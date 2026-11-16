@@ -1,7 +1,7 @@
 # 08 — Material para la declaración de uso de inteligencia artificial
 
 - Requisito (Clase 5): declarar el uso de IA en la metodología; el autor es responsable; verificar datos; **guardar los prompts** (apéndice o carpeta de Drive); no copiar sin leer; el plagio a partir de un LLM es plagio. Clase 13: la declaración de uso de IA va en los preliminares.
-- Coherencia: amplía la declaración de la Entrega 5 (preliminares y 2.14), que preveía «documentar el uso en programación, pruebas y procesamiento cuando ocurra», y `docs/especificacion/06_Sintesis_Continuidad_y_Uso_IA.md` (uso de Codex del 13/10 para documentación). Se mantiene la distinción que ya hacía la E5: **IA como asistencia al desarrollo** vs. **IA integrada en la plataforma**.
+- Coherencia: amplía la declaración de la Entrega 5 (preliminares y 2.14), que preveía «documentar el uso en programación, pruebas y procesamiento cuando ocurra», y la síntesis del uso de Codex del 13/10 para documentación ([`06_Sintesis_Continuidad_y_Uso_IA.md`](https://github.com/Mikel-Orgambide/usal-plantillas-inteligentes/blob/entrega-final/docs/especificacion/06_Sintesis_Continuidad_y_Uso_IA.md), en la etiqueta `entrega-final`). Se mantiene la distinción que ya hacía la E5: **IA como asistencia al desarrollo** vs. **IA integrada en la plataforma**.
 
 ## 1. Herramientas usadas como asistencia (desarrollo y documentación)
 
@@ -14,7 +14,7 @@
 | **Claude Code** (Anthropic) | 18/10–5/11/2026 | Programación asistida de todo el monorepo (firmware, contrato, paquetes, app, migraciones, función), pruebas automáticas, documentación técnica (ADR, incrementos), análisis de logs y sesiones | Código, pruebas (199), ADR 0001–0013, bitácora de etapas | Definió requisitos y decisiones (ADR), armó el hardware, ejecutó todas las pruebas físicas, probó cada build en el teléfono, reportó fallas y validó correcciones |
 | **Claude Design** (Anthropic) | Octubre–noviembre 2026 | Exploración de la interfaz y de la marca .NSL | Propuestas visuales (brief en el doc del proyecto `diseno/brief-interfaz.md`) | Eligió la dirección visual; se implementó en la app (ADR 0005, 0009) |
 
-Instrucciones persistentes para los asistentes de código: `CLAUDE.md` (raíz) y `apps/mobile/AGENTS.md` fijan reglas del dominio (cuentas ADC, `read_error` nunca cero, procedencia, ADR 0011), de modo que la asistencia respete el contrato.
+Instrucciones persistentes para los asistentes de código: `CLAUDE.md` (raíz) y `apps/mobile/AGENTS.md` (retiradas de la rama principal el 16/11/2026; visibles en la etiqueta `entrega-final`) fijaron reglas del dominio (cuentas ADC, `read_error` nunca cero, procedencia, ADR 0011), de modo que la asistencia respete el contrato.
 
 ## 2. IA integrada en la plataforma (funcionalidad del producto)
 
@@ -52,7 +52,7 @@ Instrucciones persistentes para los asistentes de código: `CLAUDE.md` (raíz) y
 - Conversaciones de claude.ai del proyecto «Proyecto Final Tesis – Plantillas Inteligentes» (exportar o enlazar las principales por capítulo).
 - Sesiones de Claude Code: resumen por etapa ya reflejado en `docs/incrementos/etapa-*.md` y en los mensajes de commit (82 commits al 5/11; co-autoría declarada en los commits).
 - Prompt de sistema del asistente integrado: `packages/assistant/src/prompt.ts` (copia en `supabase/functions/assistant/index.ts`) → apéndice E.
-- Síntesis del uso de Codex del 13/10: `docs/especificacion/06_Sintesis_Continuidad_y_Uso_IA.md`.
+- Síntesis del uso de Codex del 13/10: `docs/especificacion/06_Sintesis_Continuidad_y_Uso_IA.md` (en la etiqueta `entrega-final`). Ejemplos de instrucciones a herramientas de diseño: `docs/diseno/prompts-claude-design.md` y `docs/diseno/marca/PROMPT-integracion-marca-NSL.md`.
 - Indicar que es una **síntesis reconstruida**, no transcripción literal de todos los prompts (como ya anticipaba la E5).
 
 ## 6. Borrador de puntos para la declaración (para redactar)

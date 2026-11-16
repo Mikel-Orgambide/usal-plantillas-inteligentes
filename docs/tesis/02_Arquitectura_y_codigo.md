@@ -431,7 +431,7 @@ Persistidos en el `kv-store` de expo-sqlite, clave `settings.v1`. Valores por de
 - **Tokens** (`theme/tokens.ts`), paleta oscura: `bg #0c0d10`, `surface #15181c`, `surfaceElevated #1f2329`, `line #2b3038`, `textPrimary #f2f4f7`, `textSecondary #98a2ad`, `accent #b48cff` (violeta), `accentDeep #6a44c4`, `alert #e3a856` (ámbar), `stale #6a7481`. Variante clara para el PDF (acento `#5b3fb8`). Espaciado 4–48; radios `sm 6`, `md 12`, `lg 20`, `pill`. Tipografía **Manrope** 400/500/600; 800 sólo para la marca.
 - **Componentes** (`components/`): `ActivityIsland` (isla flotante del entrenamiento en curso), `AssistantFab` (botón flotante del asistente), `BigNumbers`, `Brand`, `Button`, `Card`, `Chip`, `DayCard`, `FootMap` (mapa de los dos pies con un círculo por posición; no instrumentada = vacío), `Halo`, `Header`, `Icon`, `LineChart`, `ListRow`, `MeterRow`, `Ring`, `RoutinePane`, `Screen`, `Segmented`, `Sheet`, `StatusBanner`, `Text`, `TextButton`, `ValueCard`.
 - **Marca** (ADR 0009, `components/Brand.tsx`): «**.NSL**» en Manrope 800 con tracking cerrado y un **punto en `accent`** delante de la N, apoyado en la línea base; el punto simboliza el apoyo que miden los sensores (mismo círculo que FootMap). Variante `mark` = «.N». Etiqueta accesible «NSL · Plantillas inteligentes». Íconos de Android con fondo `#0c0d10`.
-- Brief de interfaz en el proyecto: `diseno/brief-interfaz.md` (Claude Project); ADR 0005 (interfaz).
+- Brief de interfaz: `docs/plantillas-inteligentes-diseno/brief-interfaz.md`; ADR 0005 (interfaz).
 
 ---
 

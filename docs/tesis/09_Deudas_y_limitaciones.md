@@ -1,6 +1,6 @@
 # 09 · Deudas técnicas y limitaciones conocidas
 
-Relevamiento del 6/11/2026 al recorrer el código para esta documentación; actualizado el 11/11/2026 con lo observado en la validación con dos placas (ítems 21–28) y el 13/11/2026 al cerrar la validación (ítems 22, 26, 27, 29 y 30). Sirve para el capítulo 6 (riesgos), el 7 (limitaciones de los resultados), el 8 (recomendaciones y trabajo futuro) y para responder «¿qué no funcionó / qué harían distinto?» en la defensa (`06_Defensa.md`).
+Relevamiento del 6/11/2026 al recorrer el código para esta documentación; actualizado el 11/11/2026 con lo observado en la validación con dos placas (ítems 21–28) y el 13/11/2026 al cerrar la validación (ítems 22, 26, 27, 29 y 30). Sirve para el capítulo 6 (riesgos), el 7 (limitaciones de los resultados), el 8 (recomendaciones y trabajo futuro) y para responder «¿qué no funcionó / qué harían distinto?» en la defensa.
 
 Estado: **corregida** (ya resuelta en el repo), **declarar** (limitación aceptada que va al documento), **pendiente** (podría corregirse; no bloquea la entrega).
 

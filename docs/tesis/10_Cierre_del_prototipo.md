@@ -2,7 +2,7 @@
 
 - Estado: **desarrollo y validación cerrados**. App 0.15.3 · firmware 0.3.1 (placa derecha) y 0.3.0 (placa izquierda) · contrato v1.0 · 201 pruebas automáticas.
 - Desde el 11/11 no hubo cambios de código: lo del 13/11 es evidencia y documentación.
-- Este archivo es la síntesis para redactar: qué hace el sistema, cómo lo hace, qué quedó demostrado, qué no, y qué pide la cátedra para la entrega. El detalle está en `01`–`09`; acá cada afirmación remite a su fuente.
+- Este archivo es la síntesis del cierre: qué hace el sistema, cómo lo hace, qué quedó demostrado, qué no, y qué pide la cátedra para la entrega. El detalle está en `01`–`09`; acá cada afirmación remite a su fuente.
 - Estados: **[H]** hardware real con registro guardado · **[S]** simulación o pruebas automáticas · **[D]** diseñado · **[F]** futuro (`00_LEEME.md`).
 
 ## 1. Qué es el sistema
@@ -96,8 +96,8 @@ Lo que **no** se puede afirmar: precisión de medida, validez clínica, detecci�
 | Capturas del sistema en el README | Cumplido (13/11) | `README.md` «Capturas», `docs/capturas/` |
 | Documentación técnica que no entra en el PDF | Cumplido | `docs/` (especificación, ADR, incrementos, tesis) |
 | Acceso de lectura para el profesor y el coach (mail USAL) | **Pendiente (autor)** | GitHub → Settings → Collaborators |
-| Tag `entrega-final` en el commit que se defiende | **Pendiente (autor)**, al terminar | `git tag entrega-final` |
-| Enlace al repo y tag citados en la segunda página y en el anexo de repositorios | **Pendiente (documento)** | `05_Mapa_tesis.md` |
+| Tag `entrega-final` en el commit que se defiende | Cumplido: etiqueta en `1169f82` | `git tag -l entrega-final` |
+| Enlace al repo y tag citados en la segunda página y en el anexo de repositorios | Cumplido (16/11): segunda página y anexo I del PDF | PDF de la tesis |
 
 ### Sistema el día de la defensa
 
@@ -113,7 +113,7 @@ Lo que **no** se puede afirmar: precisión de medida, validez clínica, detecci�
 
 ### Documento
 
-Estructura exigida (preliminares, capítulos 1–8, bibliografía, apéndices y anexos) y qué tomar de cada archivo: `05_Mapa_tesis.md`. Declaración de uso de IA: `08_Uso_de_IA.md`. Glosario y siglas: `07_Glosario_y_siglas.md`. Pendientes del autor que afectan al documento: entrevista y encuesta, costos reales pagados, declaración de originalidad.
+Estructura exigida (preliminares, capítulos 1–8, bibliografía, apéndices y anexos) según la Clase 13. Declaración de uso de IA: `08_Uso_de_IA.md`. Glosario y siglas: `07_Glosario_y_siglas.md`. Pendientes del autor que afectan al documento: entrevista y encuesta, costos reales pagados, declaración de originalidad.
 
 ### Preguntas del jurado (Clase 13) y dónde está la respuesta
 
@@ -124,7 +124,7 @@ Estructura exigida (preliminares, capítulos 1–8, bibliografía, apéndices y 
 | ¿Qué está implementado y qué simulado? | §2 y §3; `01` (RF con estado) |
 | ¿Qué no funcionó y qué harían distinto? | §4; `09` |
 | ¿Qué parte es propia y qué de terceros? | `02_Arquitectura_y_codigo.md`; `08_Uso_de_IA.md` |
-| Preguntas económicas (tasa, clientes, VAN) | `05_Mapa_tesis.md` cap. 5 |
+| Preguntas económicas (tasa, clientes, VAN) | Tesis, capítulo 5 |
 
 ## 7. Pasos para cerrar el repositorio
 
